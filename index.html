@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Storage Portal</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<script src="./asset-inventory.js"></script>
+<style>
+  /* =========================================================
+     DESIGN TOKENS  -  ortak tema (huawei.html ile uyumlu)
+     ========================================================= */
+  :root {
+    --bg:#080c14;
+    --surface:#0d1420;
+    --surface2:#111b2e;
+    --border:#1e2d44;
+    --accent:#e8b84b;
+    --accent2:#4b9fe8;
+    --accent3:#4be8a0;
+    --purple:#c084fc;
+    --danger:#e84b4b;
+    --warn:#e8844b;
+    --text:#c8d8f0;
+    --text-dim:#5a7090;
+    --text-bright:#e8f2ff;
+    --grid:#0f1928;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg);
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(30,45,68,.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,45,68,.3) 1px, transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* =========================================================
+     SHELL & HEADER
+     ========================================================= */
+  .shell { position:relative; z-index:1; max-width:1600px; margin:0 auto; padding:24px; }
+
+  header {
+    display:flex; align-items:flex-end; justify-content:space-between;
+    margin-bottom:32px; padding-bottom:20px;
+    border-bottom:1px solid var(--border);
+  }
+  .brand { display:flex; align-items:center; gap:14px; }
+  .brand-icon {
+    width:42px; height:42px;
+    border:2px solid var(--accent);
+    display:grid; place-items:center;
+    animation:pulse-border 3s ease-in-out infinite;
+  }
+  @keyframes pulse-border {
+    0%,100% { box-shadow:0 0 0 0 rgba(232,184,75,.4); }
+    50%     { box-shadow:0 0 0 6px rgba(232,184,75,0); }
+  }
+  .brand-icon svg {
+    width:22px; height:22px;
+    stroke:var(--accent); fill:none;
+    stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round;
+  }
+  .brand-title {
+    font-family:'Syne', sans-serif;
+    font-size:22px; font-weight:800;
+    color:var(--text-bright);
+    letter-spacing:-.5px;
+  }
+  .brand-sub {
+    font-size:10px; color:var(--text-dim);
+    letter-spacing:3px; text-transform:uppercase;
+    margin-top:2px;
+  }
+  .header-meta {
+    text-align:right; font-size:11px;
+    color:var(--text-dim); line-height:1.8;
+  }
+  .live-dot {
+    display:inline-block; width:6px; height:6px;
+    background:var(--accent3); border-radius:50%;
+    margin-right:6px;
+    animation:blink 2s ease-in-out infinite;
+    vertical-align:middle;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* =========================================================
+     SUMMARY CARDS
+     ========================================================= */
+  .summary-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+    gap:16px;
+    margin-bottom:28px;
+  }
+  .stat-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:20px;
+    position:relative;
+    overflow:hidden;
+    transition:border-color .2s, transform .2s;
+  }
+  .stat-card::before {
+    content:'';
+    position:absolute; top:0; left:0;
+    width:3px; height:100%;
+  }
+  .stat-card.gold::before  { background:var(--accent); }
+  .stat-card.blue::before  { background:var(--accent2); }
+  .stat-card.green::before { background:var(--accent3); }
+  .stat-card.red::before   { background:var(--danger); }
+
+  /* Layer Grid (SAN/NAS/S3) */
+  .layer-grid {
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;
+    margin-bottom:32px;
+  }
+  .layer-card {
+    background:var(--surface); border:1px solid var(--border);
+    padding:18px 22px; position:relative; overflow:hidden;
+    text-decoration:none; color:inherit; transition:all .2s;
+    display:block;
+  }
+  .layer-card::before {
+    content:''; position:absolute; top:0; left:0; height:100%; width:3px;
+  }
+  .layer-san::before { background:var(--accent2); }
+  .layer-nas::before { background:var(--accent3); }
+  .layer-s3::before  { background:var(--purple); }
+  .layer-card:hover {
+    border-color:var(--accent); transform:translateY(-2px);
+    box-shadow:0 4px 18px rgba(232,184,75,.12);
+  }
+  .layer-hdr {
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
+  }
+  .layer-tag {
+    font-size:10px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--text-dim); font-weight:500;
+  }
+  .layer-arrow {
+    color:var(--text-dim); transition:color .2s;
+  }
+  .layer-card:hover .layer-arrow { color:var(--accent); }
+  .layer-value {
+    font-family:'Syne',sans-serif; font-size:30px; font-weight:800;
+    color:var(--text-bright); line-height:1.1; margin-bottom:4px;
+  }
+  .layer-sub {
+    font-size:10px; color:var(--text-dim); margin-bottom:12px;
+    letter-spacing:.5px;
+  }
+  .layer-bar {
+    height:3px; background:var(--grid); overflow:hidden; margin-bottom:8px;
+  }
+  .layer-bar-fill {
+    height:100%; width:0%; transition:width .8s ease;
+  }
+  .layer-foot {
+    font-size:10px; color:var(--text-dim); line-height:1.6;
+  }
+  .layer-foot strong { color:var(--text); font-weight:500; }
+  .stat-card:hover {
+    border-color:var(--accent);
+    transform:translateY(-2px);
+  }
+  .stat-label {
+    font-size:10px;
+    letter-spacing:2px; text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:8px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .stat-value {
+    font-family:'Syne', sans-serif;
+    font-size:28px; font-weight:700;
+    color:var(--text-bright);
+    line-height:1;
+  }
+  .stat-unit {
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; color:var(--text-dim);
+    margin-left:4px;
+  }
+  .stat-sub {
+    font-size:11px; color:var(--text-dim);
+    margin-top:6px;
+  }
+
+  /* =========================================================
+     SECTION TITLE
+     ========================================================= */
+  .section-title {
+    font-family:'Syne', sans-serif;
+    font-size:14px; font-weight:700;
+    color:var(--accent);
+    letter-spacing:2px; text-transform:uppercase;
+    margin-bottom:16px; margin-top:32px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--border);
+  }
+
+  /* =========================================================
+     APP CARDS GRID
+     ========================================================= */
+  .apps-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+    gap:16px;
+  }
+  .app-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    position:relative;
+    overflow:hidden;
+    transition:border-color .25s, box-shadow .25s;
+    animation:fadeInUp .4s ease both;
+    text-decoration:none;
+    color:inherit;
+    display:flex; flex-direction:column;
+  }
+  @keyframes fadeInUp {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .app-card::before {
+    content:'';
+    position:absolute; top:0; left:0;
+    width:3px; height:100%;
+    background:var(--accent2);
+  }
+  .app-card.type-pmax::before   { background:var(--accent2); }
+  .app-card.type-huawei::before  { background:var(--accent3); }
+  .app-card.type-san::before     { background:var(--accent); }
+  .app-card.type-pure::before    { background:#f67c00; }
+  .app-card.type-netapp::before  { background:#00b4d8; }
+  .app-card.type-hitachi::before { background:#cc2936; }
+  .app-card.type-ecs::before     { background:#6e44b2; }
+  .app-card.type-report::before  { background:var(--accent2); }
+  .app-card.type-app::before     { background:var(--accent2); }
+  .app-card.type-zone::before    { background:#e8844b; }
+  .app-card.type-mgmt::before    { background:#c084fc; }
+  .app-card:hover:not(.app-disabled) {
+    border-color:rgba(75,159,232,.5);
+    box-shadow:0 0 30px rgba(75,159,232,.07);
+  }
+  .app-card.app-disabled {
+    opacity:.5; cursor:default; pointer-events:none;
+  }
+  .app-card-header {
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:16px 18px 12px;
+    border-bottom:1px solid var(--border);
+    background:var(--surface2);
+  }
+  .app-card-name {
+    font-family:'Syne', sans-serif;
+    font-size:16px; font-weight:700;
+    color:var(--text-bright);
+  }
+  .app-card-sub {
+    font-size:11px; color:var(--text-dim);
+    margin-top:3px;
+  }
+  .status-badge {
+    font-size:10px; padding:3px 8px;
+    border-radius:2px; letter-spacing:1px;
+    text-transform:uppercase; font-weight:500;
+    flex-shrink:0;
+  }
+  .badge-ok   { background:rgba(75,232,160,.15); color:var(--accent3); border:1px solid rgba(75,232,160,.3); }
+  .badge-soon { background:rgba(232,184,75,.12); color:var(--accent);  border:1px solid rgba(232,184,75,.3); }
+  .app-card-body { padding:16px 18px; flex:1; min-height:130px; }
+  .app-card-desc {
+    font-size:12px; color:var(--text);
+    line-height:1.8; margin-bottom:14px;
+  }
+  .feature-list { display:flex; flex-wrap:wrap; gap:6px; }
+  .feature-tag {
+    background:var(--grid);
+    border:1px solid var(--border);
+    padding:3px 9px;
+    font-size:10px; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:1px;
+  }
+  .app-card-footer {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 18px;
+    border-top:1px solid var(--border);
+    background:var(--surface2);
+    font-size:11px; margin-top:auto;
+  }
+  .footer-label {
+    color:var(--text-dim);
+    letter-spacing:1px; font-size:10px;
+    text-transform:uppercase;
+  }
+  .footer-open       { color:var(--accent); }
+  .footer-open.dim   { color:var(--text-dim); }
+
+  /* =========================================================
+     SPINNER (inline)
+     ========================================================= */
+  .spin-inline {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:9px; color:var(--accent2);
+    letter-spacing:1px;
+  }
+  .spin-inline::before {
+    content:'';
+    display:inline-block;
+    width:8px; height:8px;
+    border:1.5px solid var(--border);
+    border-top-color:var(--accent2);
+    border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* =========================================================
+     FOOTER
+     ========================================================= */
+  .dash-footer {
+    margin-top:40px; padding-top:16px;
+    border-top:1px solid var(--border);
+    display:flex; justify-content:space-between;
+    font-size:10px; color:var(--text-dim);
+    letter-spacing:1px;
+  }
+
+  /* =========================================================
+     DEBUG
+     ========================================================= */
+  #dbg-btn {
+    margin-top:16px;
+    font-size:10px; color:var(--text-dim);
+    cursor:pointer; letter-spacing:1px;
+    text-transform:uppercase;
+    display:inline-block;
+  }
+  #dbg-btn:hover { color:var(--accent2); }
+  #dbg-out {
+    display:none;
+    margin-top:8px; padding:14px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    font-size:10px; color:var(--text-dim);
+    line-height:1.9; white-space:pre-wrap;
+    max-height:360px; overflow-y:auto;
+  }
+  #dbg-out.show { display:block; }
+
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
+
+  /* ── LOADING OVERLAY ── */
+  #app-loading {
+    position:fixed; inset:0; z-index:9999;
+    background:var(--bg);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:20px;
+    transition:opacity .4s;
+  }
+  #app-loading.hidden { opacity:0; pointer-events:none; }
+  #app-loading .ld-logo {
+    font-family:'Syne',sans-serif; font-size:32px; font-weight:800;
+    color:var(--text-bright); letter-spacing:-1px;
+  }
+  #app-loading .ld-sub {
+    font-size:10px; color:var(--text-dim); letter-spacing:4px; text-transform:uppercase;
+  }
+  #app-loading .ld-spinner {
+    width:80px; height:80px;
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+  /* Storage rack - outer frame */
+  .ld-spinner::before {
+    content:'';
+    position:absolute;
+    width:64px; height:64px;
+    border:2px solid rgba(75,159,232,.3);
+    background:linear-gradient(180deg, 
+      rgba(13,20,32,.6) 0%, 
+      rgba(17,27,46,.4) 50%, 
+      rgba(13,20,32,.6) 100%);
+    box-shadow:
+      0 0 20px rgba(75,159,232,.1),
+      inset 0 0 20px rgba(0,0,0,.3),
+      inset 0 2px 0 rgba(75,159,232,.2),
+      inset 0 -2px 0 rgba(75,159,232,.2);
+  }
+  /* Storage disks container */
+  .ld-spinner .disk {
+    position:absolute;
+    width:48px;
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    z-index:2;
+  }
+  /* Individual disk slots */
+  .ld-spinner .disk-slot {
+    height:4px;
+    background:linear-gradient(90deg,
+      transparent 0%,
+      rgba(75,159,232,.6) 3%,
+      rgba(75,159,232,.8) 50%,
+      rgba(75,159,232,.6) 97%,
+      transparent 100%);
+    box-shadow:
+      0 0 6px rgba(75,159,232,.4),
+      inset 0 1px 0 rgba(255,255,255,.1);
+    animation:disk-pulse 2s ease-in-out infinite;
+  }
+  .ld-spinner .disk-slot:nth-child(1) { animation-delay:0s; }
+  .ld-spinner .disk-slot:nth-child(2) { animation-delay:0.15s; }
+  .ld-spinner .disk-slot:nth-child(3) { animation-delay:0.3s; }
+  .ld-spinner .disk-slot:nth-child(4) { animation-delay:0.45s; }
+  .ld-spinner .disk-slot:nth-child(5) { animation-delay:0.6s; }
+  /* Status indicator */
+  .ld-spinner::after {
+    content:'';
+    position:absolute;
+    top:6px;
+    right:6px;
+    width:6px;
+    height:6px;
+    background:var(--accent3);
+    border-radius:50%;
+    box-shadow:0 0 8px var(--accent3);
+    animation:status-blink 1.5s ease-in-out infinite;
+    z-index:3;
+  }
+  @keyframes disk-pulse {
+    0%, 100% { opacity:0.4; transform:scaleX(0.95); }
+    50% { opacity:1; transform:scaleX(1); }
+  }
+  @keyframes status-blink {
+    0%, 100% { opacity:1; }
+    50% { opacity:0.3; }
+  }
+  #app-loading .ld-msg {
+    font-size:11px; color:var(--text-dim); letter-spacing:2px;
+    animation:blink 1.5s ease-in-out infinite;
+  }
+  #app-loading .ld-bar-wrap {
+    width:260px; height:3px; background:var(--border); overflow:hidden;
+  }
+  #app-loading .ld-bar {
+    height:100%; width:0%; background:var(--accent);
+    transition:width .3s ease; border-radius:2px;
+  }
+</style>
+</head>
+<body>
+<div id="app-loading">
+  <div class="ld-logo">⬡ Storage Portal</div>
+  <div class="ld-sub">Enterprise · QNB/Enpara</div>
+  <div class="ld-spinner">
+    <div class="disk">
+      <div class="disk-slot"></div>
+      <div class="disk-slot"></div>
+      <div class="disk-slot"></div>
+      <div class="disk-slot"></div>
+      <div class="disk-slot"></div>
+    </div>
+  </div>
+  <div class="ld-msg" id="ld-msg">CSV dosyaları yükleniyor...</div>
+  <div class="ld-bar-wrap"><div class="ld-bar" id="ld-bar"></div></div>
+</div>
+<div class="shell">
+
+  <!-- ========== HEADER ========== -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <div class="brand-title">Enterprise Storage Portal</div>
+        <div class="brand-sub">Unified Infrastructure Dashboard</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div><span class="live-dot"></span>ACTIVE MONITORING</div>
+      <div id="clock">--:--:--</div>
+      <div id="hdr-stat" style="color:var(--text);">-</div>
+      <div id="data-fresh-badge" data-fresh-badge style="margin-top:2px"></div>
+    </div>
+  </header>
+
+  <!-- ========== SUMMARY ========== -->
+  <div class="summary-grid">
+
+    <div class="stat-card gold">
+      <div class="stat-label">Toplam Host <span class="spin-inline" id="sp-host">LOADING</span></div>
+      <div class="stat-value" id="v-hosts">-</div>
+      <div class="stat-sub" id="v-hosts-sub">Tum Storage Ortamlari</div>
+    </div>
+
+    <div class="stat-card blue">
+      <div class="stat-label">Toplam Kabinet <span class="spin-inline" id="sp-cab">LOADING</span></div>
+      <div class="stat-value" id="v-cabs">-</div>
+      <div class="stat-sub" id="v-cabs-sub">Aktif Cabinet Sayisi</div>
+    </div>
+
+    <div class="stat-card green">
+      <div class="stat-label">Toplam Kapasite <span class="spin-inline" id="sp-cap">LOADING</span></div>
+      <div class="stat-value"><span id="v-pb">-</span><span class="stat-unit">PB</span></div>
+      <div class="stat-sub" id="v-cap-sub">- TB | Used: - TB | Free: - TB</div>
+    </div>
+
+    <div class="stat-card red" onclick="openAlarmModal()" style="cursor:pointer" title="Tıkla — alarm detayı">
+      <div class="stat-label">Alarm Durumu <span class="spin-inline" id="sp-alarm">LOADING</span></div>
+      <div class="stat-value" id="v-alarms">-</div>
+      <div class="stat-sub" id="v-alarm-sub">Kritik (%65+) | Uyarı (%50+)</div>
+    </div>
+
+  </div>
+
+  <!-- ========== LAYER OZET BANDI (SAN / NAS / S3) ========== -->
+  <div class="layer-grid">
+    <a href="./cabinet-finder-v2.html" class="layer-card layer-san">
+      <div class="layer-hdr">
+        <span class="layer-tag">SAN / Block</span>
+        <span class="layer-arrow">&rarr;</span>
+      </div>
+      <div class="layer-value" id="layer-san-val">—</div>
+      <div class="layer-sub" id="layer-san-sub">Huawei + PowerMax + Pure FA</div>
+      <div class="layer-bar"><div class="layer-bar-fill" style="background:var(--accent2)" id="layer-san-bar"></div></div>
+      <div class="layer-foot" id="layer-san-foot">Yükleniyor...</div>
+    </a>
+
+    <a href="./cabinet-finder-v2.html" class="layer-card layer-nas">
+      <div class="layer-hdr">
+        <span class="layer-tag">NAS / File</span>
+        <span class="layer-arrow">&rarr;</span>
+      </div>
+      <div class="layer-value" id="layer-nas-val">—</div>
+      <div class="layer-sub" id="layer-nas-sub">Huawei + NetApp</div>
+      <div class="layer-bar"><div class="layer-bar-fill" style="background:var(--accent3)" id="layer-nas-bar"></div></div>
+      <div class="layer-foot" id="layer-nas-foot">Yükleniyor...</div>
+    </a>
+
+    <a href="./cabinet-finder-v2.html" class="layer-card layer-s3">
+      <div class="layer-hdr">
+        <span class="layer-tag">S3 / Object</span>
+        <span class="layer-arrow">&rarr;</span>
+      </div>
+      <div class="layer-value" id="layer-s3-val">—</div>
+      <div class="layer-sub" id="layer-s3-sub">ECS + Pure FB</div>
+      <div class="layer-bar"><div class="layer-bar-fill" style="background:var(--purple)" id="layer-s3-bar"></div></div>
+      <div class="layer-foot" id="layer-s3-foot">Yükleniyor...</div>
+    </a>
+  </div>
+
+  <!-- ========== CHANGE LOG + GARANTİ + KABİNET DURUMU ========== -->
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:28px">
+
+    <!-- Change Log -->
+    <div style="background:var(--surface);border:1px solid var(--border)">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Gece Ne Oldu</div>
+        <div style="font-size:9px;color:var(--text-dim)" id="cl-date-range">—</div>
+      </div>
+      <div id="change-log-list" style="min-height:180px;max-height:280px;overflow-y:auto">
+        <div style="text-align:center;padding:30px;color:var(--text-dim);font-size:11px">Yükleniyor...</div>
+      </div>
+    </div>
+
+    <!-- Garanti + Kabinet Durumu (unified card with tab switcher) -->
+    <div style="background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="gkd-title" style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Garanti Durumu</span>
+          <!-- Circle indicators -->
+          <div style="display:flex;gap:6px">
+            <span id="gkd-dot-warranty" onclick="switchGkdTab('warranty')" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent2);border:2px solid var(--accent2);cursor:pointer;opacity:1;transition:opacity .2s"></span>
+            <span id="gkd-dot-cabinet" onclick="switchGkdTab('cabinet')" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:transparent;border:2px solid var(--border);cursor:pointer;opacity:.5;transition:opacity .2s"></span>
+          </div>
+        </div>
+        <a id="gkd-link" href="./management.html" style="font-size:9px;color:var(--accent2);text-decoration:none">Kontrat Takip →</a>
+      </div>
+      <div style="position:relative;min-height:200px">
+        <!-- Garanti panel -->
+        <div id="gkd-panel-warranty" style="display:block">
+          <div id="warranty-list" style="min-height:180px;max-height:280px;overflow-y:auto">
+            <div style="text-align:center;padding:30px;color:var(--text-dim);font-size:11px">Yükleniyor...</div>
+          </div>
+        </div>
+        <!-- Kabinet panel -->
+        <div id="gkd-panel-cabinet" style="display:none">
+          <div id="cabinet-status-list" style="min-height:180px;max-height:280px;overflow-y:auto">
+            <div style="text-align:center;padding:30px;color:var(--text-dim);font-size:11px">Yükleniyor...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== ANALYTICS ========== -->
+  <div class="section-title">Analytics</div>
+  <div class="apps-grid">
+
+    <!-- Trend -->
+    <a href="./trend.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Trend Analizi</div>
+          <div class="app-card-sub">30 Günlük Değişim Takibi</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Tüm vendor'larda kapasite, doluluk, data reduction ve host sayısı trendleri — 30 günlük grafik ve günlük delta tablosu.</div>
+        <div class="feature-list">
+          <span class="feature-tag">30 Gün Grafik</span>
+          <span class="feature-tag">Delta Analizi</span>
+          <span class="feature-tag">Tüm Vendor</span>
+          <span class="feature-tag">Kabinet Bazlı</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Analytics</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- Impact Analysis -->
+    <a href="./impact.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Impact Analysis</div>
+          <div class="app-card-sub">Storage → Host → Switch</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Bir kabineti seç, o kabineti kullanan tüm host'ları ve bağlı switch'leri gör. "Bu kabineti reboot edersem kim etkilenir?" sorusuna anında cevap.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Bağımlılık</span>
+          <span class="feature-tag">Değişiklik Yönetimi</span>
+          <span class="feature-tag">Etki Analizi</span>
+          <span class="feature-tag">CSV Export</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">SAN Tool</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- Anomali Dedektörü -->
+    <a href="./anomaly.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Anomali Dedektörü</div>
+          <div class="app-card-sub">3-Sigma Kapasite Sapma</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Her kabinetin 7 günlük büyüme paternini öğrenir. Bugünkü değişim istatistiksel sınırı aşarsa anomali olarak işaretler — snapshot patlaması, yanlış provisioning erken yakalanır.</div>
+        <div class="feature-list">
+          <span class="feature-tag">3-Sigma</span>
+          <span class="feature-tag">Erken Uyarı</span>
+          <span class="feature-tag">Trend Sapma</span>
+          <span class="feature-tag">CSV Export</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Analytics</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- Capacity Planner -->
+    <a href="./capacity-planner.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Capacity Planner</div>
+          <div class="app-card-sub">What-If Senaryo & Projeksiyon</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">"+50 TB eklersek hangi kabinet önce dolar?" Senaryo gir, her kabinetin kritik eşiğe kaç gün kaldığını gör. 30 günlük trende dayalı lineer projeksiyon.</div>
+        <div class="feature-list">
+          <span class="feature-tag">What-If</span>
+          <span class="feature-tag">Projeksiyon</span>
+          <span class="feature-tag">Kritik Eşik ETA</span>
+          <span class="feature-tag">Senaryo</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Planning</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- Storage Lake (NEW) -->
+    <a href="./lake.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Storage Lake</div>
+          <div class="app-card-sub">Cross-Vendor Capacity Lake</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Tüm vendor'ların kapasite verisini tek bir "lake" görünümünde birleştirir — vendor bazlı renk kodlu dağılım, anlık kapasite ve doluluk.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Multi-Vendor</span>
+          <span class="feature-tag">Capacity Lake</span>
+          <span class="feature-tag">Dağılım</span>
+          <span class="feature-tag">Doluluk</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Analytics</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- Zone Builder -->
+    <a href="./zone-builder.html" class="app-card type-zone">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Zone Builder</div>
+          <div class="app-card-sub">NPIV / Normal Zone Generator</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Brocade SAN zone konfigürasyonu oluşturucu — NPIV ve Normal mod, Fabric A/B port preview, dynamic cfgadd.</div>
+        <div class="feature-list">
+          <span class="feature-tag">NPIV</span>
+          <span class="feature-tag">Normal Zone</span>
+          <span class="feature-tag">Fabric A/B</span>
+          <span class="feature-tag">cfgadd</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">SAN Tooling</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- ========== STORAGE SYSTEMS ========== -->
+  <div class="section-title">Storage Systems</div>
+  <div class="apps-grid">
+
+    <a href="./pmax.html" class="app-card type-pmax">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">PowerMax</div>
+          <div class="app-card-sub">Dell EMC PMAX / VMAX</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">PowerMax monitoring dashboard - pools, hosts, LUN groups ve kapasite analizi.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Pools</span>
+          <span class="feature-tag">Hosts</span>
+          <span class="feature-tag">Capacity</span>
+          <span class="feature-tag">LUN Groups</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Dell EMC Storage</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./huawei.html" class="app-card type-huawei">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Huawei</div>
+          <div class="app-card-sub">OceanStor / Dorado Dashboard</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Huawei OceanStor & Dorado fleet monitoring - saglik, kapasite ve host analizi.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Pools</span>
+          <span class="feature-tag">Health</span>
+          <span class="feature-tag">Capacity</span>
+          <span class="feature-tag">OS Dist.</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Huawei Storage</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./hitachi.html" class="app-card type-hitachi">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Hitachi</div>
+          <div class="app-card-sub">CCI · PROD + DR · FTP</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Hitachi pool kapasiteleri. CCI (raidcom) ile PROD/DR server'larda yerel toplanır, FTP üzerinden çekilen iki CSV birleştirilir.</div>
+        <div class="feature-list">
+          <span class="feature-tag">CCI</span>
+          <span class="feature-tag">PROD + DR</span>
+          <span class="feature-tag">Pools</span>
+          <span class="feature-tag">Capacity</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Hitachi Storage</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./san.html" class="app-card type-san">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">SAN</div>
+          <div class="app-card-sub">Brocade / FC Fabric</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">SAN fabric monitoring - Brocade switch envanteri, zone yapilandirmasi ve port analizi.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Switches</span>
+          <span class="feature-tag">Zones</span>
+          <span class="feature-tag">Ports</span>
+          <span class="feature-tag">FC Fabric</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Fibre Channel SAN</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- Pure FlashArray -->
+    <a href="./pure-fa.html" class="app-card type-pure">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Pure FlashArray</div>
+          <div class="app-card-sub">All-Flash Block Storage</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Pure FlashArray kapasite, host ve volume izleme — REST API ile token tabanli entegrasyon.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Capacity</span>
+          <span class="feature-tag">Hosts</span>
+          <span class="feature-tag">Volumes</span>
+          <span class="feature-tag">FC + iSCSI</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Pure Storage</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- Pure FlashBlade -->
+    <a href="./pure-fb.html" class="app-card type-pure">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Pure FlashBlade</div>
+          <div class="app-card-sub">Object + File Storage</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Pure FlashBlade S3 bucket ve NFS/SMB file system izleme — Virtual/Unique/DR kolonları, aylık büyüme delta takibi.</div>
+        <div class="feature-list">
+          <span class="feature-tag">S3 Buckets</span>
+          <span class="feature-tag">File Systems</span>
+          <span class="feature-tag">Delta %</span>
+          <span class="feature-tag">DR Ratio</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Pure Storage</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- NetApp -->
+    <a href="./netapp.html" class="app-card type-netapp">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">NetApp ONTAP</div>
+          <div class="app-card-sub">NAS / SAN Unified Storage</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">NetApp ONTAP cluster monitoring — aggregate kapasite, SVM listesi, volume envanteri ve data reduction oranları.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Aggregates</span>
+          <span class="feature-tag">Volumes</span>
+          <span class="feature-tag">SVM</span>
+          <span class="feature-tag">DR Ratio</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">NetApp Storage</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <!-- ECS -->
+    <a href="./ecs.html" class="app-card type-ecs">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Dell ECS</div>
+          <div class="app-card-sub">Elastic Cloud Storage</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">ECS bucket listesi, namespace ve kapasite izleme — REST API + SSH hibrit, önceki aya göre büyüme takibi.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Bucket List</span>
+          <span class="feature-tag">Delta %</span>
+          <span class="feature-tag">VDC Balance</span>
+          <span class="feature-tag">Replikasyon</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Dell EMC Object</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- ========== UTILITIES / SECONDARY HUB ========== -->
+  <div class="section-title">Utilities</div>
+  <div class="apps-grid">
+
+    <!-- Portal (NEW) -->
+    <a href="./portal.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Storage Portal SPA</div>
+          <div class="app-card-sub">Secondary Navigation Hub</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">İkincil navigasyon merkezi — tüm storage araçlarına hızlı erişim, SPA tabanlı yan menü ile kategorize edilmiş bağlantılar.</div>
+        <div class="feature-list">
+          <span class="feature-tag">SPA</span>
+          <span class="feature-tag">Navigasyon</span>
+          <span class="feature-tag">Kategorik</span>
+          <span class="feature-tag">Hızlı Erişim</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Secondary Hub</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./cabinet-finder.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Cabinet Finder</div>
+          <div class="app-card-sub">Inventory Search Tool</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Cabinet, rack ve envanter arama platformu - tum storage ortamlarinda host bazli sorgulama.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Inventory</span>
+          <span class="feature-tag">Search</span>
+          <span class="feature-tag">Rack</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Inventory System</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./cabinet-finder-v2.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Cabinet Finder v2</div>
+          <div class="app-card-sub">SAN · NAS · S3 Multi-Layer Search</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Host, volume, bucket veya kabinet ismi ile tüm storage ortamlarında arama — SAN, NAS ve S3 ayrı sekmelerinde boyut bilgisi ile.</div>
+        <div class="feature-list">
+          <span class="feature-tag">SAN / Block</span>
+          <span class="feature-tag">NAS / File</span>
+          <span class="feature-tag">S3 / Object</span>
+          <span class="feature-tag">Unified</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Multi-Layer Search</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./WWNResolver.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">WWN Resolver</div>
+          <div class="app-card-sub">FC Port Lookup Tool</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">WWN / WWPN sorgulama ve host-port eslesmesi - SAN fabric uzerinde port tanimlama araci.</div>
+        <div class="feature-list">
+          <span class="feature-tag">WWN</span>
+          <span class="feature-tag">WWPN</span>
+          <span class="feature-tag">FC Lookup</span>
+          <span class="feature-tag">Port Map</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">SAN Tool</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./hostwwnfinder.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Host WWN Finder</div>
+          <div class="app-card-sub">Host - WWN Unified Lookup</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Tum Huawei ve PowerMax host WWN'leri tek bir yerde - host adi veya WWN ile (kolonlu/saf hex) arama.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Host Lookup</span>
+          <span class="feature-tag">WWN Search</span>
+          <span class="feature-tag">Multi Vendor</span>
+          <span class="feature-tag">Format Free</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">SAN Tool</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./topology.html" class="app-card type-app">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Path Topology</div>
+          <div class="app-card-sub">Host → HBA → Switch → Storage</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Host'tan storage'a tam SAN path görünümü — hangi HBA hangi switch'e bağlı, Fabric A/B ayrımı, port ve alias bilgisi.</div>
+        <div class="feature-list">
+          <span class="feature-tag">SAN Path</span>
+          <span class="feature-tag">Fabric A/B</span>
+          <span class="feature-tag">WWN → Switch</span>
+          <span class="feature-tag">Host Arama</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">SAN Tool</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+    <a href="./report.html" class="app-card type-report">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Raporlama</div>
+          <div class="app-card-sub">Aylik / Printing / Katar</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Storage operasyonlari raporlama merkezi — aylik kapasite, printing ve katar raporlari.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Aylik</span>
+          <span class="feature-tag">Printing</span>
+          <span class="feature-tag">Katar</span>
+          <span class="feature-tag">CSV Upload</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Reporting Center</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- ========== OPERATIONS CENTER ========== -->
+  <div class="section-title">Operations Center</div>
+  <div class="apps-grid">
+
+    <a href="./management.html" class="app-card type-mgmt">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Operations Center</div>
+          <div class="app-card-sub">Storage Operations Command Center</div>
+        </div>
+        <span class="status-badge badge-ok">ONLINE</span>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Gunluk operasyon bilgileri, gorev takibi ve mail ile iletim merkezi. Tum bilgiler guncellenir ve mail gonderilebilir.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Operasyonlar</span>
+          <span class="feature-tag">Gorev Takibi</span>
+          <span class="feature-tag">Mail Gonder</span>
+          <span class="feature-tag">Notlar</span>
+        </div>
+      </div>
+      <div class="app-card-footer">
+        <span class="footer-label">Management</span>
+        <span class="footer-open">OPEN &rarr;</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div id="dbg-btn" onclick="document.getElementById('dbg-out').classList.toggle('show')">&#9654; Debug</div>
+  <div id="dbg-out"></div>
+
+  <!-- ALARM MODAL -->
+  <div id="alarm-modal" style="display:none;position:fixed;inset:0;background:rgba(8,12,20,.9);z-index:1000;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAlarmModal()">
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);width:90%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;">
+      <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">&#9888; Kapasite Alarm Listesi</div>
+        <button onclick="closeAlarmModal()" style="background:transparent;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:0 6px">&times;</button>
+      </div>
+      <div style="padding:18px;overflow-y:auto;flex:1;" id="alarm-list-body"></div>
+    </div>
+  </div>
+
+  <div class="dash-footer">
+    <span>ENTERPRISE STORAGE OPERATIONS CENTER</span>
+    <span>CENTRAL DASHBOARD v2.0</span>
+  </div>
+</div><!-- /shell -->
+
+<script>
+'use strict';
+
+/* ──────────────────────────────────────────────────────────────
+   CLOCK
+   ────────────────────────────────────────────────────────────── */
+(function () {
+  function tick() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleDateString('tr-TR') + ' · ' + now.toLocaleTimeString('tr-TR');
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+/* ──────────────────────────────────────────────────────────────
+   CSV PARSER  -  RFC 4180 uyumlu, BOM/CRLF dahil
+   ────────────────────────────────────────────────────────────── */
+
+
+/* ──────────────────────────────────────────────────────────────
+   SAYI PARSE  -  hem "1234.56" hem "1.234,56" calisir
+   ────────────────────────────────────────────────────────────── */
+
+
+/* Veri satiri mi? (TOPLAM/GENEL satirlarini at) */
+function isDataRow(r, key) {
+  const lok = (r['Lokasyon'] || '').trim();
+  const cab = (r[key] || '').trim();
+  if (!cab) return false;
+  if (lok === '---' || lok === '===') return false;
+  if (/^TOPLAM|^GENEL/i.test(cab)) return false;
+  return true;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   STATE
+   ────────────────────────────────────────────────────────────── */
+const STAT = {
+  hwCabs: 0, hwHosts: 0, hwCap: 0, hwUsed: 0, hwFree: 0, hwAlarms: 0, hwWarn: 0,
+  pmCabs: 0, pmHosts: 0, pmCap: 0, pmUsed: 0, pmFree: 0, pmAlarms: 0, pmWarn: 0,
+  puCabs: 0, puHosts: 0, puCap: 0, puUsed: 0, puFree: 0, puAlarms: 0, puWarn: 0,
+  alarmList: [],
+};
+const LOG = [];
+
+/* ──────────────────────────────────────────────────────────────
+   PROCESS  -  Huawei
+   Kolonlar: Lokasyon, Kabinet, IP, Total (TB), Used (TB), Subscribed (TB),
+             Free (TB), Doluluk (%), Data Reduction, Host Sayisi,
+             OS Dagilimi, Versiyon
+   ────────────────────────────────────────────────────────────── */
+function processHuawei(rows) {
+  rows.filter(r => isDataRow(r, 'Kabinet')).forEach(r => {
+    const totalRaw = r['Total (TB)'] || '';
+    if (totalRaw.toUpperCase() === 'HATA') return; // hata kabinetlerini sayma
+
+    STAT.hwCabs++;
+    const t = toN(r['Total (TB)']);
+    const u = toN(r['Used (TB)']);
+    const f = toN(r['Free (TB)']);
+    const p = toN(r['Doluluk (%)']);
+    const h = toN(r['Host Sayisi']);
+
+    STAT.hwCap  += t;
+    STAT.hwUsed += u;
+    STAT.hwFree += f;
+    STAT.hwHosts += h;
+
+    if (p >= 65) {
+      STAT.hwAlarms++;
+      STAT.alarmList.push({ vendor:'Huawei', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'critical' });
+    } else if (p >= 50) {
+      STAT.hwWarn++;
+      STAT.alarmList.push({ vendor:'Huawei', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'warning' });
+    }
+  });
+  LOG.push(`[HUAWEI] ${STAT.hwCabs} kabinet · ${STAT.hwCap.toFixed(2)} TB · ${STAT.hwHosts} host · ${STAT.hwAlarms} alarm · ${STAT.hwWarn} uyari`);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PROCESS  -  PowerMax
+   Yeni schema (Huawei ile ortak): Lokasyon, Kabinet, IP, Total (TB),
+   Used (TB), Subscribed (TB), Free (TB), Doluluk (%), Data Reduction,
+   Host Sayisi, OS Dagilimi, Versiyon
+   ────────────────────────────────────────────────────────────── */
+function processPowerMax(rows) {
+  rows.filter(r => isDataRow(r, 'Kabinet')).forEach(r => {
+    const totalRaw = r['Total (TB)'] || '';
+    if (totalRaw.toUpperCase() === 'HATA') return;
+
+    STAT.pmCabs++;
+    const t = toN(r['Total (TB)']);
+    const u = toN(r['Used (TB)']);
+    const f = toN(r['Free (TB)']);
+    const p = toN(r['Doluluk (%)']);
+    const h = toN(r['Host Sayisi']);
+
+    STAT.pmCap  += t;
+    STAT.pmUsed += u;
+    STAT.pmFree += f;
+    STAT.pmHosts += h;
+
+    if (p >= 65) {
+      STAT.pmAlarms++;
+      STAT.alarmList.push({ vendor:'PMAX', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'critical' });
+    } else if (p >= 50) {
+      STAT.pmWarn++;
+      STAT.alarmList.push({ vendor:'PMAX', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'warning' });
+    }
+  });
+  LOG.push(`[PMAX]   ${STAT.pmCabs} kabinet · ${STAT.pmCap.toFixed(2)} TB · ${STAT.pmHosts} host · ${STAT.pmAlarms} alarm · ${STAT.pmWarn} uyari`);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PURE FLASHARRAY CSV - aynı schema (Lokasyon, Kabinet, IP, Total/Used/Free/Doluluk/DR/Host/OS/Versiyon)
+   ────────────────────────────────────────────────────────────── */
+function processPure(rows) {
+  rows.filter(r => isDataRow(r, 'Kabinet')).forEach(r => {
+    const totalRaw = r['Total (TB)'] || '';
+    if (totalRaw.toUpperCase() === 'HATA') return;
+
+    STAT.puCabs++;
+    const t = toN(r['Total (TB)']);
+    const u = toN(r['Used (TB)']);
+    const f = toN(r['Free (TB)']);
+    const p = toN(r['Doluluk (%)']);
+    const h = toN(r['Host Sayisi']);
+
+    STAT.puCap  += t;
+    STAT.puUsed += u;
+    STAT.puFree += f;
+    STAT.puHosts += h;
+
+    if (p >= 65) {
+      STAT.puAlarms++;
+      STAT.alarmList.push({ vendor:'Pure FA', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'critical' });
+    } else if (p >= 50) {
+      STAT.puWarn++;
+      STAT.alarmList.push({ vendor:'Pure FA', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'warning' });
+    }
+  });
+  LOG.push(`[PURE]   ${STAT.puCabs} kabinet · ${STAT.puCap.toFixed(2)} TB · ${STAT.puHosts} host · ${STAT.puAlarms} alarm · ${STAT.puWarn} uyari`);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   RENDER
+   ────────────────────────────────────────────────────────────── */
+function render() {
+  const totHosts = STAT.hwHosts + STAT.pmHosts + STAT.puHosts;
+  const totCabs  = STAT.hwCabs  + STAT.pmCabs  + STAT.puCabs;
+  const totCap   = STAT.hwCap   + STAT.pmCap   + STAT.puCap;
+  const totUsed  = STAT.hwUsed  + STAT.pmUsed  + STAT.puUsed;
+  const totFree  = STAT.hwFree  + STAT.pmFree  + STAT.puFree;
+  const totAlm   = STAT.hwAlarms + STAT.pmAlarms + STAT.puAlarms;
+  const totWarn  = STAT.hwWarn   + STAT.pmWarn   + STAT.puWarn;
+  const pb = totCap / 1024;
+
+  const fmt = (n, frac = 0) => n.toLocaleString('tr-TR', { minimumFractionDigits:frac, maximumFractionDigits:frac });
+
+  document.getElementById('v-hosts').textContent = fmt(totHosts);
+  document.getElementById('v-hosts-sub').innerHTML =
+    `HW: <span style="color:var(--accent3)">${fmt(STAT.hwHosts)}</span> &nbsp;·&nbsp; ` +
+    `PMAX: <span style="color:var(--accent2)">${fmt(STAT.pmHosts)}</span>` +
+    (STAT.puHosts > 0 ? ` &nbsp;·&nbsp; Pure: <span style="color:var(--accent)">${fmt(STAT.puHosts)}</span>` : '');
+
+  document.getElementById('v-cabs').textContent = fmt(totCabs);
+  document.getElementById('v-cabs-sub').innerHTML =
+    `HW: <span style="color:var(--accent3)">${STAT.hwCabs}</span> &nbsp;·&nbsp; ` +
+    `PMAX: <span style="color:var(--accent2)">${STAT.pmCabs}</span>` +
+    (STAT.puCabs > 0 ? ` &nbsp;·&nbsp; Pure: <span style="color:var(--accent)">${STAT.puCabs}</span>` : '');
+
+  document.getElementById('v-pb').textContent = fmt(pb, 2);
+  document.getElementById('v-cap-sub').innerHTML =
+    `${fmt(totCap, 0)} TB &nbsp;·&nbsp; Used: ${fmt(totUsed, 0)} TB &nbsp;·&nbsp; Free: ${fmt(totFree, 0)} TB`;
+
+  document.getElementById('v-alarms').textContent = fmt(totAlm);
+  const alarmSub = document.getElementById('v-alarm-sub');
+  if (alarmSub) {
+    alarmSub.innerHTML = `Kritik: <span style="color:var(--danger)">${totAlm}</span> &nbsp;·&nbsp; ` +
+                         `Uyari: <span style="color:var(--warn)">${totWarn}</span>` +
+                         (totAlm + totWarn > 0 ? ` &nbsp;<span style="color:var(--accent2);font-size:10px">→ detay</span>` : '');
+  }
+
+  // Kritik vurgu: alarm varsa kart öne çıkar (pulse + parlak),
+  // hiç alarm yoksa sakin yeşil ima
+  const alarmCard = document.querySelector('.stat-card.red');
+  if (alarmCard) {
+    alarmCard.classList.remove('sp-alert-active', 'sp-alert-calm');
+    if (totAlm > 0) {
+      alarmCard.classList.add('sp-alert-active');
+    } else if (totWarn === 0) {
+      alarmCard.classList.add('sp-alert-calm');
+    }
+  }
+
+  document.getElementById('hdr-stat').textContent =
+    `${totCabs} kabinet · ${pb.toFixed(1)} PB · ${fmt(totHosts)} host`;
+
+  // Spinner'lari kaldir
+  ['sp-host','sp-cab','sp-cap','sp-alarm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
+
+  // Debug
+  LOG.push('');
+  LOG.push('═══════ GENEL TOPLAM ═══════');
+  LOG.push(`Hosts     : ${totHosts}  (HW: ${STAT.hwHosts}  ·  PMAX: ${STAT.pmHosts})`);
+  LOG.push(`Cabinet   : ${totCabs}  (HW: ${STAT.hwCabs}  ·  PMAX: ${STAT.pmCabs})`);
+  LOG.push(`Kapasite  : ${totCap.toFixed(2)} TB  =  ${pb.toFixed(2)} PB`);
+  LOG.push(`Used      : ${totUsed.toFixed(2)} TB`);
+  LOG.push(`Free      : ${totFree.toFixed(2)} TB`);
+  LOG.push(`Kritik    : ${totAlm}  (esik %65+)`);
+  LOG.push(`Uyari     : ${totWarn}  (%50-65)`);
+  document.getElementById('dbg-out').textContent = LOG.join('\n');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   MAIN
+   ────────────────────────────────────────────────────────────── */
+async function main() {
+  const ldMsg = document.getElementById('ld-msg');
+  const ldBar = document.getElementById('ld-bar');
+  const ldStep = (msg, pct) => {
+    if (ldMsg) ldMsg.textContent = msg;
+    if (ldBar) ldBar.style.width = pct + '%';
+  };
+
+  ldStep('Huawei OceanStor verisi...', 10);
+  // Huawei
+  try {
+    const rows = parseCSV(await fetchCSVText('./Hw/Dorado_Dashboard.csv'));
+    LOG.push(`[HW]   ${rows.length} satir | kolonlar: ${Object.keys(rows[0]||{}).join(', ')}`);
+    processHuawei(rows);
+  } catch (e) {
+    LOG.push(`[HW HATA] ${e.message}`);
+  }
+
+  ldStep('Dell PowerMax verisi...', 35);
+  // PowerMax
+  try {
+    const rows = parseCSV(await fetchCSVText('./Pmax/PmaxPoolDash.csv'));
+    LOG.push(`[PMAX] ${rows.length} satir | kolonlar: ${Object.keys(rows[0]||{}).join(', ')}`);
+    processPowerMax(rows);
+  } catch (e) {
+    LOG.push(`[PMAX HATA] ${e.message}`);
+  }
+
+  ldStep('Pure FlashArray verisi...', 60);
+  // Pure FlashArray
+  try {
+    const rows = parseCSV(await fetchCSVText('./Pure/Pure_Dashboard.csv'));
+    LOG.push(`[PURE] ${rows.length} satir | kolonlar: ${Object.keys(rows[0]||{}).join(', ')}`);
+    processPure(rows);
+  } catch (e) {
+    LOG.push(`[PURE HATA] ${e.message}`);
+  }
+
+  ldStep('Dashboard hazırlanıyor...', 90);
+  render();
+  loadLayerStats();
+  // Hide loading overlay
+  setTimeout(() => {
+    const ov = document.getElementById('app-loading');
+    if (ov) { ov.classList.add('hidden'); setTimeout(() => ov.remove(), 400); }
+  }, 300);
+}
+
+// SAN / NAS / S3 ozet bandi
+async function loadLayerStats() {
+  const fetchCsv = async (path) => {
+    try {
+      const text = await fetchCSVText(path);
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) return [];
+      const hdrs = lines[0].split(',').map(h => h.replace(/^"|"$/g,'').trim());
+      return lines.slice(1).map(line => {
+        // Basit CSV parser (tırnaklı virgül destekli)
+        const vals = []; let cur=''; let inQ=false;
+        for (const c of line) {
+          if (c==='"') inQ=!inQ;
+          else if (c===',' && !inQ) { vals.push(cur); cur=''; }
+          else cur+=c;
+        }
+        vals.push(cur);
+        const o={}; hdrs.forEach((h,i)=>o[h]=(vals[i]||'').trim());
+        return o;
+      });
+    } catch { return []; }
+  };
+  const toN = v => parseFloat(String(v||'').replace(/,/g,'')) || 0;
+
+  // SAN: Huawei + PowerMax + Pure FA host'lari
+  const [hwHosts, pmaxHosts, pureHosts] = await Promise.all([
+    fetchCsv('./Hw/Dorado_Host.csv'),
+    fetchCsv('./Pmax/PmaxPoolHost.csv'),
+    fetchCsv('./Pure/Pure_Host.csv'),
+  ]);
+  const pmaxUnique = new Set();
+  pmaxHosts.forEach(r => { if (r['Host Name']) pmaxUnique.add(`${r['Array ID']}::${r['Host Name'].toLowerCase()}`); });
+  const sanTotal = hwHosts.length + pmaxUnique.size + pureHosts.length;
+  const sanProvTB = [...hwHosts, ...pureHosts].reduce((s,r)=>s+toN(r['Provisioned (TB)']), 0);
+
+  document.getElementById('layer-san-val').textContent = sanTotal.toLocaleString('tr-TR');
+  document.getElementById('layer-san-sub').innerHTML = `<strong>HW:</strong> ${hwHosts.length} &nbsp;<strong>PMAX:</strong> ${pmaxUnique.size} &nbsp;<strong>Pure FA:</strong> ${pureHosts.length}`;
+  document.getElementById('layer-san-foot').innerHTML = `Toplam <strong>${sanTotal} host</strong> · Provisioned <strong>${sanProvTB.toFixed(1)} TB</strong>`;
+  document.getElementById('layer-san-bar').style.width = Math.min(sanTotal/10, 100) + '%';
+
+  // NAS: NetApp volumes
+  const naVols = await fetchCsv('./NetApp/NetApp_Volume.csv');
+  const naSize = naVols.reduce((s,r)=>s+toN(r['Size (TB)']), 0);
+  const naSvms = new Set(naVols.map(r => r['SVM']).filter(s => s)).size;
+
+  document.getElementById('layer-nas-val').textContent = naVols.length.toLocaleString('tr-TR');
+  document.getElementById('layer-nas-sub').innerHTML = `<strong>NetApp Volumes</strong>`;
+  document.getElementById('layer-nas-foot').innerHTML = `<strong>${naVols.length}</strong> volume · <strong>${naSvms}</strong> SVM · <strong>${naSize.toFixed(1)} TB</strong>`;
+  document.getElementById('layer-nas-bar').style.width = Math.min(naVols.length/2, 100) + '%';
+
+  // S3: ECS buckets + Pure FB buckets
+  const [ecsBuckets, fbBuckets] = await Promise.all([
+    fetchCsv('./Ecs/ECS_Buckets.csv'),
+    fetchCsv('./Pure/FB_Buckets.csv'),
+  ]);
+  const ecsSize = ecsBuckets.reduce((s,r)=>s+toN(r['Size (GiB)']), 0) / 1024;
+  const fbSize  = fbBuckets.reduce((s,r)=>s+toN(r['Virtual (TB)']), 0);
+  const s3Total = ecsBuckets.length + fbBuckets.length;
+
+  document.getElementById('layer-s3-val').textContent = s3Total.toLocaleString('tr-TR');
+  document.getElementById('layer-s3-sub').innerHTML = `<strong>ECS:</strong> ${ecsBuckets.length} bucket · <strong>FB:</strong> ${fbBuckets.length} bucket`;
+  document.getElementById('layer-s3-foot').innerHTML = `Toplam <strong>${s3Total} bucket</strong> · ECS <strong>${ecsSize.toFixed(1)} TiB</strong> · FB <strong>${fbSize.toFixed(1)} TB</strong>`;
+  document.getElementById('layer-s3-bar').style.width = Math.min(s3Total/3, 100) + '%';
+}
+
+function openAlarmModal() {
+  const list = STAT.alarmList;
+  const body = document.getElementById('alarm-list-body');
+  if (list.length === 0) {
+    body.innerHTML = '<div style="text-align:center;color:var(--accent3);padding:30px;font-size:14px">&#10003; Alarm yok — tüm kabinetler normal</div>';
+  } else {
+    const sorted = [...list].sort((a,b) => b.pct - a.pct);
+    body.innerHTML = sorted.map(a => {
+      const col = a.level === 'critical' ? 'var(--danger)' : 'var(--warn)';
+      const lbl = a.level === 'critical' ? 'KRİTİK' : 'UYARI';
+      const bar = Math.min(a.pct, 100);
+      return `<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${col};padding:12px 14px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div>
+            <span style="font-size:9px;letter-spacing:1.5px;padding:2px 7px;border:1px solid ${col};color:${col}">${lbl}</span>
+            <span style="margin-left:10px;color:var(--text-bright);font-weight:500">${a.kabinet}</span>
+            <span style="margin-left:8px;font-size:10px;color:var(--text-dim)">[${a.vendor}]</span>
+          </div>
+          <div style="color:${col};font-family:'Syne',sans-serif;font-size:18px;font-weight:800">${a.pct.toFixed(1)}%</div>
+        </div>
+        <div style="background:var(--grid);height:6px;overflow:hidden;">
+          <div style="width:${bar}%;height:100%;background:${col};transition:width .4s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text-dim)">
+          <span>Toplam: ${a.total.toFixed(1)} TB</span>
+          <span>Free: ${a.free.toFixed(1)} TB</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  const modal = document.getElementById('alarm-modal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAlarmModal() {
+  document.getElementById('alarm-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAlarmModal(); });
+
+/* ════════════════════════════════════════════════════════════
+   CHANGE LOG — dün vs bugün CSV karşılaştırması
+════════════════════════════════════════════════════════════ */
+async function loadChangeLog() {
+  const el = document.getElementById('change-log-list');
+  const dateEl = document.getElementById('cl-date-range');
+
+  const today = new Date();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  const fmt = d => d.toISOString().slice(0, 10).replace(/-/g, '');
+  const todayStr = fmt(today), yestStr = fmt(yesterday);
+
+  dateEl.textContent = `${yestStr} → ${todayStr}`;
+
+  const pairs = [
+    { today: `./Hw/_history/Dorado_Dashboard_${todayStr}.csv`,
+      yest:  `./Hw/_history/Dorado_Dashboard_${yestStr}.csv`,
+      label: 'Huawei', key: 'Kabinet', valCol: 'Used (TB)' },
+    { today: `./Pmax/_history/PmaxPoolDash_${todayStr}.csv`,
+      yest:  `./Pmax/_history/PmaxPoolDash_${yestStr}.csv`,
+      label: 'PowerMax', key: 'Array ID', valCol: 'Used (TB)' },
+    { today: `./Hw/_history/Dorado_Host_${todayStr}.csv`,
+      yest:  `./Hw/_history/Dorado_Host_${yestStr}.csv`,
+      label: 'HW Host', key: 'Host Name', valCol: '' },
+    { today: `./Pmax/_history/PmaxPoolHost_${todayStr}.csv`,
+      yest:  `./Pmax/_history/PmaxPoolHost_${yestStr}.csv`,
+      label: 'PMAX Host', key: 'Host Name', valCol: '' },
+    { today: `./Pure/_history/FB_Buckets_${todayStr}.csv`,
+      yest:  `./Pure/_history/FB_Buckets_${yestStr}.csv`,
+      label: 'FB Bucket', key: 'Bucket', valCol: 'Virtual (TB)' },
+    { today: `./Ecs/_history/ECS_Buckets_${todayStr}.csv`,
+      yest:  `./Ecs/_history/ECS_Buckets_${yestStr}.csv`,
+      label: 'ECS Bucket', key: 'Bucket', valCol: 'Size (GiB)' },
+    { today: `./San/_history/SAN_Director_Dashboard_${todayStr}.csv`,
+      yest:  `./San/_history/SAN_Director_Dashboard_${yestStr}.csv`,
+      label: 'SAN', key: 'SwitchName', valCol: 'OnlinePorts' },
+  ];
+
+  const fetchCsv = async u => {
+    try {
+      const txt = await fetchCSVText(u);
+      const _t = await fetchCSVText(u); return parseCSV(_t);
+    } catch { return []; }
+  };
+
+  // Tüm CSV çiftlerini paralel çek
+  const allPairs = pairs.flatMap(p => [fetchCsv(p.today), fetchCsv(p.yest)]);
+  const allResults = await Promise.all(allPairs);
+
+  const changes = [];
+  let dataFound = false;
+
+  pairs.forEach((p, i) => {
+    const todayRows    = allResults[i * 2];
+    const yesterdayRows = allResults[i * 2 + 1];
+    if (todayRows.length === 0 && yesterdayRows.length === 0) return;
+    dataFound = true;
+
+    const todayMap = {}, yesterdayMap = {};
+    todayRows.forEach(r => { if (r[p.key]) todayMap[r[p.key]] = r; });
+    yesterdayRows.forEach(r => { if (r[p.key]) yesterdayMap[r[p.key]] = r; });
+
+    const allKeys = new Set([...Object.keys(todayMap), ...Object.keys(yesterdayMap)]);
+    for (const key of allKeys) {
+      if (!key || /^(TOPLAM|GENEL|===|---)/.test(key)) continue;
+      const t = todayMap[key], y = yesterdayMap[key];
+      if (t && !y) {
+        changes.push({ type:'yeni',    label:p.label, name:key, detail:'' });
+      } else if (!t && y) {
+        changes.push({ type:'silindi', label:p.label, name:key, detail:'' });
+      } else if (t && y && p.valCol) {
+        const tv = parseFloat(String(t[p.valCol]||'0').replace(',','.')) || 0;
+        const yv = parseFloat(String(y[p.valCol]||'0').replace(',','.')) || 0;
+        const delta = tv - yv;
+        if (Math.abs(delta) > 0.05) {
+          const sign = delta > 0 ? '▲' : '▼';
+          changes.push({ type: delta > 0 ? 'artti':'azaldi',
+            label:p.label, name:key,
+            detail:`${sign} ${Math.abs(delta).toFixed(2)} (${p.valCol})` });
+        }
+      }
+    }
+  });
+
+  if (!dataFound) {
+    el.innerHTML = spEmptyState({
+      type: 'no-data',
+      title: 'Henüz karşılaştırma yok',
+      message: 'İki gün üst üste tarama yapıldığında, gece boyunca olan değişiklikler (yeni/silinen host, kapasite artışı) burada listelenecek.'
+    });
+    return;
+  }
+  if (changes.length === 0) {
+    el.innerHTML = spEmptyState({type:'all-good',title:'Sakin bir geceydi',message:'Son taramadan bu yana kapasite veya envanter değişikliği olmadı.',compact:true});
+    return;
+  }
+
+  const typeColor = { yeni:'var(--accent3)', silindi:'var(--danger)', artti:'var(--warn)', azaldi:'var(--accent2)' };
+  const typeLabel = { yeni:'YENİ', silindi:'SİLİNDİ', artti:'ARTTI', azaldi:'AZALDI' };
+
+  el.innerHTML = changes.slice(0, 25).map(c => `
+    <div style="display:flex;align-items:baseline;gap:8px;padding:5px 14px;border-bottom:1px solid rgba(30,45,68,.4)">
+      <span style="font-size:8px;padding:1px 5px;border:1px solid ${typeColor[c.type]}25;color:${typeColor[c.type]};min-width:48px;text-align:center;flex-shrink:0">${typeLabel[c.type]}</span>
+      <span style="font-size:9px;color:var(--text-dim);min-width:52px;flex-shrink:0">${esc(c.label)}</span>
+      <span style="font-size:11px;color:var(--text-bright);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>
+      <span style="font-size:10px;color:var(--text-dim);flex-shrink:0">${esc(c.detail)}</span>
+    </div>`).join('') +
+    (changes.length > 25 ? `<div style="text-align:center;padding:8px;font-size:10px;color:var(--text-dim)">... ve ${changes.length-25} değişiklik daha</div>` : '');
+}
+
+/* ════════════════════════════════════════════════════════════
+   GARANTİ DURUMU — ASSET_INVENTORY (Kontrat Takip) verisinden
+════════════════════════════════════════════════════════════ */
+function loadWarranty() {
+  const el = document.getElementById('warranty-list');
+  try {
+    if (typeof ASSET_INVENTORY === 'undefined' || !ASSET_INVENTORY.length) {
+      el.innerHTML = spEmptyState({type:'no-data',title:'Kontrat verisi yok',message:'asset-inventory.js yüklenmemiş. Kontrat takip için management.html → Kontrat Takip sekmesine gidin.',compact:true});
+      return;
+    }
+
+    const now = new Date();
+    const items = ASSET_INVENTORY
+      .filter(r => r.contractEnd && r.contractEnd.trim())
+      .map(r => {
+        const d = new Date(r.contractEnd);
+        const days = Math.round((d - now) / 86400000);
+        return { ...r, days, d };
+      })
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 12);
+
+    if (items.length === 0) {
+      el.innerHTML = spEmptyState({type:'no-data',title:'Kontrat bitiş tarihi yok',compact:true});
+      return;
+    }
+
+    el.innerHTML = items.map(r => {
+      const color = r.days < 0 ? 'var(--danger)' : r.days < 90 ? 'var(--warn)' : r.days < 180 ? 'var(--accent)' : 'var(--accent3)';
+      const dayStr = r.days < 0 ? `${Math.abs(r.days)} gün önce doldu` : r.days === 0 ? 'BUGÜN' : `${r.days} gün kaldı`;
+      const icon = r.days < 0 ? '✗' : r.days < 90 ? '⚠' : '✓';
+      const statusLbl = r.days < 0 ? 'SÜRESİ DOLDU' : r.days < 180 ? 'KRİTİK' : r.days < 365 ? 'UYARI' : 'SAKİN';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 14px;border-bottom:1px solid rgba(30,45,68,.4)">
+        <span style="color:${color};font-size:12px;flex-shrink:0">${icon}</span>
+        <div style="flex:1;overflow:hidden">
+          <div style="font-size:11px;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.productName||'')} <span class="sp-dim-sm">${esc(r.assetId||'')}</span></div>
+          <div style="font-size:10px;color:var(--text-dim)">${esc(r.contractEnd)} · ${esc(r.category||'')}</div>
+        </div>
+        <span style="font-size:9px;color:${color};flex-shrink:0;text-align:right;border:1px solid ${color};padding:1px 5px">${statusLbl}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:11px">Veri okunamadı</div>';
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   KABİNET DURUMU — %70+ doluluk (STAT.alarmList üzerinden)
+════════════════════════════════════════════════════════════ */
+function loadCabinetStatus() {
+  const el = document.getElementById('cabinet-status-list');
+  const criticalCabs = STAT.alarmList.filter(a => a.pct >= 70).sort((a, b) => b.pct - a.pct);
+  if (criticalCabs.length === 0) {
+    el.innerHTML = spEmptyState({type:'all-good',title:'%70 üzeri kabinet yok',message:'Tüm kabinetler %70 doluluk altında.',compact:true});
+    return;
+  }
+  el.innerHTML = criticalCabs.map(a => {
+    const col = a.pct >= 85 ? 'var(--danger)' : a.pct >= 80 ? 'var(--warn)' : 'var(--accent)';
+    const lbl = a.pct >= 85 ? 'KRİTİK' : a.pct >= 80 ? 'UYARI' : 'İZLEM';
+    const bar = Math.min(a.pct, 100);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 14px;border-bottom:1px solid rgba(30,45,68,.4)">
+      <div style="flex:1;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.kabinet)} <span class="sp-dim-sm">[${a.vendor}]</span></span>
+          <span style="font-size:12px;color:${col};font-family:'Syne',sans-serif;font-weight:800;flex-shrink:0;margin-left:8px">${a.pct.toFixed(1)}%</span>
+        </div>
+        <div style="background:var(--grid);height:4px;overflow:hidden">
+          <div style="width:${bar}%;height:100%;background:${col};transition:width .4s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:var(--text-dim)">
+          <span>Top: ${a.total.toFixed(1)} TB</span>
+          <span>Free: ${a.free.toFixed(1)} TB</span>
+          <span style="color:${col};letter-spacing:1px">${lbl}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════════════════════════
+   GKD TAB SWITCHER — Garanti/Kabinet Durumu circle toggle
+════════════════════════════════════════════════════════════ */
+function switchGkdTab(tab) {
+  const showWarranty = tab === 'warranty';
+  document.getElementById('gkd-panel-warranty').style.display = showWarranty ? 'block' : 'none';
+  document.getElementById('gkd-panel-cabinet').style.display = showWarranty ? 'none' : 'block';
+  document.getElementById('gkd-dot-warranty').style.background = showWarranty ? 'var(--accent2)' : 'transparent';
+  document.getElementById('gkd-dot-warranty').style.borderColor = showWarranty ? 'var(--accent2)' : 'var(--border)';
+  document.getElementById('gkd-dot-warranty').style.opacity = showWarranty ? '1' : '.5';
+  document.getElementById('gkd-dot-cabinet').style.background = showWarranty ? 'transparent' : 'var(--danger)';
+  document.getElementById('gkd-dot-cabinet').style.borderColor = showWarranty ? 'var(--border)' : 'var(--danger)';
+  document.getElementById('gkd-dot-cabinet').style.opacity = showWarranty ? '.5' : '1';
+  document.getElementById('gkd-title').textContent = showWarranty ? 'Garanti Durumu' : 'Kabinet Durumu';
+  document.getElementById('gkd-link').textContent = showWarranty ? 'Kontrat Takip →' : '%70+ Doluluk';
+  document.getElementById('gkd-link').href = showWarranty ? './management.html' : '#';
+}
+
+main();
+loadChangeLog();
+loadWarranty();
+loadCabinetStatus();
+
+/* Veri tazeliği rozeti — tüm vendor dashboard'larının en eskisi */
+renderFreshnessBadge('data-fresh-badge', [
+  './Hw/Dorado_Dashboard.csv', './Pmax/PmaxPoolDash.csv',
+  './Pure/Pure_Dashboard.csv', './Pure/FB_Dashboard.csv',
+  './NetApp/NetApp_Dashboard.csv', './Ecs/ECS_Dashboard.csv',
+  './San/SAN_Director_Dashboard.csv'
+], true);  // en eski - genel sağlık göstergesi
+
+</script>
+</body>
+</html>
+

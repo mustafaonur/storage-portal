@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<link rel="stylesheet" href="./storage-styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zone Builder · Storage Portal</title>
+<script src="./storage-utils.js"></script>
+<style>
+:root {
+  --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
+  --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
+  --danger:#e84b4b; --warn:#e8844b; --purple:#c084fc;
+  --fab-a:#4be8a0;   /* Fabric A — yeşil */
+  --fab-b:#4b9fe8;   /* Fabric B — mavi */
+  --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.22) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+.shell{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:24px;}
+.back-link{display:inline-block;margin-bottom:14px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;}
+.back-link:hover{color:var(--accent2);}
+
+/* HEADER */
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-icon{width:42px;height:42px;border:2px solid var(--warn);display:grid;place-items:center;animation:pb 3s ease-in-out infinite;}
+@keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(232,132,75,.4);}50%{box-shadow:0 0 0 6px rgba(232,132,75,0);}}
+.brand-icon svg{width:22px;height:22px;stroke:var(--warn);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);line-height:1.8;}
+.live-dot{display:inline-block;width:6px;height:6px;background:var(--accent3);border-radius:50%;margin-right:6px;animation:blink 2s infinite;vertical-align:middle;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* PANEL */
+
+/* SEKME */
+.zb-tabs{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+.zb-tab{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:11px 22px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
+.zb-tab:hover{color:var(--text-bright);}
+.zb-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.zb-page{display:none;}
+.zb-page.active{display:block;}
+
+/* KANBAN */
+.kanban{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:14px;align-items:start;}
+.kb-col{background:var(--surface);border:1px solid var(--border);min-height:480px;display:flex;flex-direction:column;}
+.kb-col-hdr{padding:12px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+.kb-col-hdr .kb-step{width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--bg);font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;margin-right:8px;}
+.kb-col.col-host .kb-col-hdr{border-bottom-color:var(--accent3);}
+.kb-col.col-host .kb-step{background:var(--accent3);}
+.kb-col.col-san  .kb-col-hdr{border-bottom-color:var(--accent);}
+.kb-col.col-stor .kb-col-hdr{border-bottom-color:var(--purple);}
+.kb-col.col-stor .kb-step{background:var(--purple);}
+.kb-body{padding:12px;flex:1;overflow-y:auto;max-height:560px;}
+.kb-search{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 10px;outline:none;box-sizing:border-box;margin-bottom:10px;}
+.kb-search:focus{border-color:var(--accent2);}
+.kb-item{padding:9px 11px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:all .12s;font-size:11px;}
+.kb-item:hover{border-color:var(--accent2);background:var(--surface2);}
+.kb-item.sel{border-color:var(--accent3);border-left:3px solid var(--accent3);background:rgba(75,232,160,.06);}
+.kb-item.sel.san-a{border-left-color:var(--accent3);}
+.kb-item.sel.san-b{border-left-color:var(--accent2);}
+.kb-item.sel.stor{border-left-color:var(--purple);}
+.kb-item-title{color:var(--text-bright);font-weight:500;font-family:'JetBrains Mono',monospace;}
+.kb-item-sub{color:var(--text-dim);font-size:9px;margin-top:3px;letter-spacing:.5px;}
+.kb-fab-tag{display:inline-block;font-size:8px;padding:1px 6px;border:1px solid;border-radius:8px;margin-left:6px;vertical-align:middle;}
+.kb-fab-a{color:var(--accent3);border-color:rgba(75,232,160,.4);}
+.kb-fab-b{color:var(--accent2);border-color:rgba(75,159,232,.4);}
+.kb-empty{text-align:center;padding:40px 16px;color:var(--text-dim);font-size:11px;}
+.kb-sub-hdr{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin:14px 0 7px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.kb-sub-hdr:first-child{margin-top:0;}
+.kb-summary{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 16px;margin-top:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.kb-sum-item{font-size:11px;color:var(--text-dim);}
+.kb-sum-item b{color:var(--text-bright);font-family:'JetBrains Mono',monospace;}
+.kb-sum-item .miss{color:var(--warn);}
+.kb-gen-btn{margin-left:auto;background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
+.kb-gen-btn:hover:not(:disabled){background:var(--accent);color:var(--bg);}
+.kb-gen-btn:disabled{opacity:.4;cursor:not-allowed;border-color:var(--border);color:var(--text-dim);}
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:18px;}
+.panel-hdr{padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-bright);display:flex;justify-content:space-between;align-items:center;}
+.panel-body{padding:18px;}
+
+/* BUTTONS */
+.btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:7px 14px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:all .2s;white-space:nowrap;}
+.btn:hover{color:var(--text);border-color:var(--text-dim);}
+.btn.active,.btn.btn-a{border-color:var(--accent)!important;color:var(--accent)!important;}
+.btn.active:hover,.btn.btn-a:hover{background:var(--accent)!important;color:var(--bg)!important;}
+.btn.btn-b{border-color:var(--accent2)!important;color:var(--accent2)!important;}
+.btn.btn-b:hover{background:var(--accent2)!important;color:var(--bg)!important;}
+
+/* SEGMENTED */
+.seg-group{display:inline-flex;border:1px solid var(--border);overflow:hidden;}
+.seg-btn{background:transparent;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 18px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+.seg-btn:last-child{border-right:none;}
+.seg-btn:hover{color:var(--text);}
+.seg-btn.active{background:var(--accent);color:var(--bg);font-weight:700;}
+
+/* TYPE BAR */
+.type-bar{display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.type-group{display:flex;align-items:center;gap:10px;}
+.type-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+
+/* FORM */
+.form-row{margin-bottom:14px;}
+.form-row:last-child{margin-bottom:0;}
+.form-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;display:block;}
+.form-label .hint{color:var(--accent2);font-weight:normal;letter-spacing:.5px;text-transform:none;margin-left:8px;}
+.form-input,.form-select,.form-textarea{
+  width:100%;background:var(--grid);border:1px solid var(--border);
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;
+  padding:9px 12px;outline:none;transition:border-color .2s;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent2);}
+.form-textarea{min-height:130px;resize:vertical;line-height:1.7;}
+.form-select option{background:var(--surface2);}
+
+/* WWN LIST (colored) */
+.wwn-list{background:var(--grid);border:1px solid var(--border);padding:10px 12px;min-height:130px;max-height:280px;overflow-y:auto;font-size:11px;line-height:1.8;font-family:monospace;}
+.wwn-row{display:flex;align-items:center;gap:10px;padding:2px 0;}
+.wwn-text{flex:1;font-family:monospace;}
+.wwn-badge{font-size:9px;padding:2px 7px;border:1px solid;letter-spacing:1px;font-weight:600;white-space:nowrap;}
+.wwn-badge.fab-a{color:var(--fab-a);border-color:rgba(75,232,160,.5);background:rgba(75,232,160,.08);}
+.wwn-badge.fab-b{color:var(--fab-b);border-color:rgba(75,159,232,.5);background:rgba(75,159,232,.08);}
+.wwn-badge.unknown{color:var(--text-dim);border-color:var(--border);}
+.wwn-badge.invalid{color:var(--danger);border-color:rgba(232,75,75,.5);}
+.wwn-info{font-size:10px;color:var(--text-dim);margin-left:auto;}
+
+/* SUMMARY ROW */
+.sum-row{display:flex;gap:14px;align-items:center;padding:8px 14px;background:var(--surface2);border:1px solid var(--border);margin-bottom:14px;font-size:11px;}
+.sum-pill{padding:4px 10px;border:1px solid;font-size:10px;letter-spacing:1px;}
+.sum-pill.ok{color:var(--accent3);border-color:rgba(75,232,160,.4);}
+.sum-pill.warn{color:var(--warn);border-color:rgba(232,132,75,.4);}
+.sum-pill.fab-a{color:var(--fab-a);border-color:rgba(75,232,160,.4);}
+.sum-pill.fab-b{color:var(--fab-b);border-color:rgba(75,159,232,.4);}
+
+/* OUTPUT */
+.output-panel{display:flex;flex-direction:column;}
+.output-hdr{padding:10px 14px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-bright);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.output-hdr.fab-a{background:rgba(75,232,160,.06);border-left:3px solid var(--fab-a);}
+.output-hdr.fab-a span:first-child{color:var(--fab-a);}
+.output-hdr.fab-b{background:rgba(75,159,232,.06);border-left:3px solid var(--fab-b);}
+.output-hdr.fab-b span:first-child{color:var(--fab-b);}
+
+.output-pre{background:var(--grid);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:14px 16px;white-space:pre;overflow-x:auto;line-height:1.7;min-height:220px;max-height:480px;overflow-y:auto;}
+.output-pre .cmd-alicreate{color:var(--accent3);}
+.output-pre .cmd-zonecreate{color:var(--accent);}
+.output-pre .cmd-cfgadd{color:var(--purple);}
+.output-pre .cmd-comment{color:var(--text-dim);font-style:italic;}
+
+.output-empty{padding:30px;text-align:center;color:var(--text-dim);font-size:11px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:2000;background:var(--surface2);border:1px solid var(--accent3);border-left:3px solid var(--accent3);color:var(--accent3);font-family:'JetBrains Mono',monospace;font-size:11px;padding:12px 20px;letter-spacing:1px;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:none;}
+
+/* ALERT */
+.alert-info{
+  background:rgba(75,159,232,.06);border:1px solid rgba(75,159,232,.3);
+  color:var(--accent2);font-size:11px;padding:10px 14px;line-height:1.6;
+  margin-bottom:14px;
+}
+.alert-warn{
+  background:rgba(232,132,75,.06);border:1px solid rgba(232,132,75,.3);
+  color:var(--warn);font-size:11px;padding:10px 14px;line-height:1.6;
+  margin-bottom:14px;
+}
+
+.dash-footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);letter-spacing:1px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<a href="./index.html" class="back-link">&larr; Portala Don</a>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <div>
+      <div class="brand-title">Zone Builder</div>
+      <div class="brand-sub">Brocade Zone & Alias Generator</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div><span class="live-dot"></span>SAN ZONE TOOL</div>
+    <div id="clock">--:--:--</div>
+    <div id="data-info" style="color:var(--text-dim);font-size:10px"></div>
+  </div>
+</header>
+
+<!-- GLOBAL CONFIG -->
+<div class="panel" style="margin-bottom:14px">
+  <div class="panel-body" style="padding:12px 18px">
+    <div class="type-bar">
+      <div class="type-group">
+        <span class="type-label">Zone Tipi</span>
+        <div class="seg-group" id="zoneTypeSegGlobal">
+          <button class="seg-btn active" data-val="npiv">NPIV (8 Zone)</button>
+          <button class="seg-btn" data-val="2init">2 Init (2 Zone)</button>
+          <button class="seg-btn" data-val="4init">4 Init (1 Zone)</button>
+          <button class="seg-btn" data-val="normal">Normal (1:1)</button>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-left:auto">
+        Target: 8 Path (4 path per fabric)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SEKME BAR -->
+<div class="zb-tabs">
+  <button class="zb-tab active" data-zbtab="kanban" onclick="zbSwitch('kanban',this)">Kanban (Görsel Seçim)</button>
+  <button class="zb-tab" data-zbtab="klasik" onclick="zbSwitch('klasik',this)">Klasik Form</button>
+</div>
+
+<!-- ═══════ SEKME: KANBAN ═══════ -->
+<div class="zb-page active" id="zbpage-kanban">
+  <div class="kanban">
+
+    <!-- KOLON 1: HOST -->
+    <div class="kb-col col-host">
+      <div class="kb-col-hdr"><span><span class="kb-step">1</span>HOST SEÇ</span><span id="kb-host-cnt" style="font-size:9px;color:var(--text-dim)"></span></div>
+      <div class="kb-body">
+        <input class="kb-search" id="kb-host-search" placeholder="Host ara..." oninput="kbRenderHosts()" autocomplete="off">
+        <div id="kb-host-list"><div class="kb-empty">Yükleniyor...</div></div>
+      </div>
+    </div>
+
+    <!-- KOLON 2: SAN / FABRIC -->
+    <div class="kb-col col-san">
+      <div class="kb-col-hdr"><span><span class="kb-step">2</span>SAN · FABRIC A/B</span><span id="kb-san-cnt" style="font-size:9px;color:var(--text-dim)"></span></div>
+      <div class="kb-body">
+        <div id="kb-san-list"><div class="kb-empty">Önce host seçin →</div></div>
+      </div>
+    </div>
+
+    <!-- KOLON 3: STORAGE + PG -->
+    <div class="kb-col col-stor">
+      <div class="kb-col-hdr"><span><span class="kb-step">3</span>STORAGE + PG</span><span id="kb-stor-cnt" style="font-size:9px;color:var(--text-dim)"></span></div>
+      <div class="kb-body">
+        <input class="kb-search" id="kb-stor-search" placeholder="Kabinet ara..." oninput="kbRenderStorage()" autocomplete="off">
+        <div id="kb-stor-list"><div class="kb-empty">Yükleniyor...</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ÖZET + ÜRET -->
+  <div class="kb-summary">
+    <div class="kb-sum-item">Host: <b id="kb-s-host" class="miss">—</b></div>
+    <div class="kb-sum-item">Fabric: <b id="kb-s-fab" class="miss">—</b></div>
+    <div class="kb-sum-item">Storage: <b id="kb-s-stor" class="miss">—</b></div>
+    <div class="kb-sum-item">PG: <b id="kb-s-pg" class="miss">—</b></div>
+    <button class="kb-gen-btn" id="kb-gen" disabled onclick="kbGenerate()">Zone Komutlarını Üret →</button>
+  </div>
+
+  <!-- KANBAN ÇIKTI -->
+  <div id="kb-output" style="margin-top:18px;display:none">
+    <div class="panel">
+      <div class="panel-hdr"><span>Üretilen Zone Komutları</span><span id="kb-out-info" style="font-size:10px;color:var(--text-dim);font-weight:normal"></span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="panel output-panel">
+        <div class="panel-hdr" style="border-bottom-color:var(--accent3)"><span>Fabric A</span><button class="btn" onclick="kbCopy('A')">Kopyala</button></div>
+        <pre class="output-pre" id="kb-outA"><div class="output-empty">—</div></pre>
+      </div>
+      <div class="panel output-panel">
+        <div class="panel-hdr" style="border-bottom-color:var(--accent2)"><span>Fabric B</span><button class="btn" onclick="kbCopy('B')">Kopyala</button></div>
+        <pre class="output-pre" id="kb-outB"><div class="output-empty">—</div></pre>
+      </div>
+    </div>
+  </div>
+</div><!-- /zbpage-kanban -->
+
+<!-- ═══════ SEKME: KLASİK ═══════ -->
+<div class="zb-page" id="zbpage-klasik">
+
+<!-- ZONE TYPE & HOST TYPE -->
+<div class="panel">
+  <div class="panel-hdr">
+    <span>Zone Konfigurasyonu</span>
+    <span style="font-size:10px;color:var(--text-dim);font-weight:normal;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:none">Tipini ve host kaynagini sec</span>
+  </div>
+  <div class="panel-body">
+    <div class="type-bar">
+      <div class="type-group">
+        <span class="type-label">Zone Tipi</span>
+        <div class="seg-group" id="zoneTypeSeg">
+          <button class="seg-btn active" data-val="npiv">NPIV Zone</button>
+          <button class="seg-btn" data-val="normal">Normal Zone</button>
+          <button class="seg-btn" data-val="2init">2 Initiator</button>
+          <button class="seg-btn" data-val="4init">4 Initiator</button>
+        </div>
+      </div>
+      <div class="type-group">
+        <span class="type-label">Host Kaynagi</span>
+        <div class="seg-group" id="hostSrcSeg">
+          <button class="seg-btn active" data-val="new">Yeni Host</button>
+          <button class="seg-btn" data-val="existing">Mevcut Host</button>
+        </div>
+      </div>
+    </div>
+    <div class="type-info" id="zoneTypeInfo" style="margin-top:12px;padding:8px 12px;background:var(--surface2);border-radius:4px;font-size:11px;color:var(--text-dim);border-left:3px solid var(--accent)">
+      <b>NPIV Zone:</b> Her NPIV port için ayrı zone (8 path)<br>
+      <b>Normal Zone:</b> Tüm WWN'ler tek zone'da (8 path)<br>
+      <b>2 Initiator:</b> 2 initiator için ayrı zone'lar (8 path)<br>
+      <b>4 Initiator:</b> 4 initiator için tek zone (8 path)
+    </div>
+  </div>
+</div>
+
+<!-- HOST + STORAGE SIDE BY SIDE -->
+<div class="two-col">
+
+  <!-- HOST -->
+  <div class="panel">
+    <div class="panel-hdr">
+      <span>Host Bilgisi</span>
+      <span id="hostInfoMode" style="font-size:10px;color:var(--text-dim);font-weight:normal;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:none">Yeni Host</span>
+    </div>
+    <div class="panel-body">
+
+      <!-- NEW HOST -->
+      <div id="newHostBlock">
+        <div class="form-row">
+          <label class="form-label">Host Adı <span class="hint">orn: LSXPRDDB05</span></label>
+          <input class="form-input" id="hostName" placeholder="HOSTISMI" oninput="rebuild()">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Host WWN'leri <span class="hint">her satıra 1 WWN (16 hex veya kolonlu)</span></label>
+          <textarea class="form-textarea" id="wwnInput" placeholder="10:00:00:90:fa:..:..:01&#10;10:00:00:90:fa:..:..:02&#10;..." oninput="rebuild()"></textarea>
+        </div>
+      </div>
+
+      <!-- EXISTING HOST -->
+      <div id="existingHostBlock" style="display:none">
+        <div class="form-row">
+          <label class="form-label">Mevcut Host <span class="hint">SAN'da bulunan online host'lar</span></label>
+          <select class="form-select" id="existingHostSel" onchange="loadExistingHost()">
+            <option value="">— Host sec —</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Host Adı</label>
+          <input class="form-input" id="hostNameExisting" readonly style="background:var(--surface2);color:var(--text-dim)">
+        </div>
+        <div class="form-row">
+          <label class="form-label">WWN'ler <span class="hint">SAN'dan otomatik</span></label>
+          <div class="wwn-list" id="existingWwnList"><div style="color:var(--text-dim);font-size:11px">Host seciniz...</div></div>
+        </div>
+      </div>
+
+      <!-- WWN STATUS (only for new host) -->
+      <div id="wwnStatusArea"></div>
+
+    </div>
+  </div>
+
+  <!-- STORAGE -->
+  <div class="panel">
+    <div class="panel-hdr">
+      <span>Storage Hedefi</span>
+      <span style="font-size:10px;color:var(--text-dim);font-weight:normal;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:none">Kabinet ve Port Group</span>
+    </div>
+    <div class="panel-body">
+      <div class="form-row">
+        <label class="form-label">Kabinet</label>
+        <select class="form-select" id="cabinetSel" onchange="onCabinetChange()">
+          <option value="">— Kabinet sec —</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Port Group <span class="hint" id="pgHint"></span></label>
+        <select class="form-select" id="pgSel" onchange="onPgChange()">
+          <option value="">— Once kabinet sec —</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Storage Alias Prefix <span class="hint">PG WWN'lerine verilen alias prefix'i</span></label>
+        <input class="form-input" id="storageAlias" placeholder="HW007_PG_Win_A (otomatik)" oninput="rebuild()">
+      </div>
+      <div id="pgPreview" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OUTPUT -->
+<div class="panel">
+  <div class="panel-hdr">
+    <span>Komut Cikti</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn" onclick="copyAll()">&#9112; Tum Komutlari Kopyala</button>
+    </div>
+  </div>
+</div>
+
+<div class="two-col">
+
+  <!-- FABRIC A OUTPUT -->
+  <div class="panel output-panel">
+    <div class="output-hdr fab-a">
+      <span>FABRIC A</span>
+      <button class="btn btn-a" onclick="copyOutput('A')" style="padding:5px 12px">&#9112; Kopyala</button>
+    </div>
+    <pre class="output-pre" id="outA"><div class="output-empty">Host adı ve WWN giriniz...</div></pre>
+  </div>
+
+  <!-- FABRIC B OUTPUT -->
+  <div class="panel output-panel">
+    <div class="output-hdr fab-b">
+      <span>FABRIC B</span>
+      <button class="btn btn-b" onclick="copyOutput('B')" style="padding:5px 12px">&#9112; Kopyala</button>
+    </div>
+    <pre class="output-pre" id="outB"><div class="output-empty">Host adı ve WWN giriniz...</div></pre>
+  </div>
+
+</div>
+
+</div><!-- /zbpage-klasik -->
+
+<div class="toast" id="toast"></div>
+
+<div class="dash-footer">
+  <span>BROCADE ZONE BUILDER · NPIV & NORMAL</span>
+  <span>Storage Portal v2.0</span>
+</div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════════════════ */
+const STATE = {
+  zoneType: 'npiv',      // 'npiv' | 'normal'
+  hostSrc:  'new',       // 'new' | 'existing'
+  cabinets: [],          // [{key, kabinet, vendor, location}]
+  portGroups: {},        // key -> [{pg, alias, wwns:[..]}]
+  fabricHosts: [],       // [{wwn, switch, fabric, alias}]
+  switchFabric: {},      // switchName -> 'A' | 'B'
+  switchCfg: {},         // switchName -> activeCfg adi
+  portAlias: {},         // switch port wwn -> { alias, switch, fabric, slot, port }
+  fabWwnMap: {},         // herhangi wwn -> [{switch, fabric, alias, slot, port}] (nsshow)
+  allHosts: [],          // hostwwnfinder dan birlestirilmis liste
+};
+
+/* ════════════════════════════════════════════════════════════
+   DATA LOAD
+════════════════════════════════════════════════════════════ */
+
+const BASE = '.';   // CSV'lerin yerine gore degisebilir, FTP ise '/data'
+
+const CSV_FILES = {
+  sanDash:    `${BASE}/San/SAN_Director_Dashboard.csv`,
+  sanPorts:   `${BASE}/San/SAN_Director_Ports.csv`,
+  fabHosts:   `${BASE}/San/SAN_Fabric_Hosts.csv`,
+  hwHosts:    `${BASE}/Hw/Dorado_Host.csv`,
+  pmaxHosts:  `${BASE}/Pmax/PmaxPoolHost.csv`,
+  pureHosts:  `${BASE}/Pure/Pure_Host.csv`,
+  hwPg:       `${BASE}/Hw/Dorado_PortGroup.csv`,
+  pmaxPg:     `${BASE}/Pmax/PmaxPortGroup.csv`,
+  hwDash:     `${BASE}/Hw/Dorado_Dashboard.csv`,
+  pmaxDash:   `${BASE}/Pmax/PmaxPoolDash.csv`,
+};
+
+/** Safe fetch wrapper — no conflict with storage-utils.js fetchCsv */
+function fetchCsvSafe(url) {
+  return fetchCSVText(url).then(t => parseCSV(t)).catch(() => []);
+}
+
+async function loadAllData() {
+  const [sanDash, sanPorts, fabHosts, hwHosts, pmaxHosts, pureHosts, hwPg, pmaxPg, hwDash, pmaxDash] =
+    await Promise.all(Object.values(CSV_FILES).map(fetchCsvSafe));
+
+  // Switch -> Fabric (A/B) map + ActiveCfg map
+  const swFab = {};
+  const swCfg = {};
+  sanDash.forEach(r => {
+    if (r.SwitchName && r.Fabric) {
+      swFab[r.SwitchName.toUpperCase()] = r.Fabric.toUpperCase();
+      if (r.ActiveCfg) swCfg[r.SwitchName.toUpperCase()] = r.ActiveCfg.trim();
+    }
+  });
+  STATE.switchFabric = swFab;
+  STATE.switchCfg    = swCfg;
+
+  // Port alias map: switch port WWN'leri (SAN_Director_Ports.csv)
+  const portAliasMap = {};
+  sanPorts.forEach(r => {
+    const w = cleanWwn(r.PortWWN);
+    if (!w) return;
+    const sw = (r.SwitchName || '').toUpperCase();
+    portAliasMap[w] = {
+      alias:   r.Alias || '',
+      switch:  sw,
+      fabric:  swFab[sw] || (r.Fabric || '').toUpperCase() || '?',
+      slot:    r.PortIndex || '',
+      port:    '',
+      speed:   r.Speed || '',
+      role:    r.Role || '',
+    };
+  });
+
+  // fabricHosts'tan da doldur (nsshow'dan gelen tüm WWN'ler — storage portları dahil)
+  const fabWwnMap = {};  // wwn -> [{switch, fabric, alias, slot, port}]
+  fabHosts.forEach(r => {
+    const w = cleanWwn(r.PortWWN || r.WWN || '');
+    if (!w) return;
+    const sw = (r.SwitchName || '').toUpperCase();
+    if (!fabWwnMap[w]) fabWwnMap[w] = [];
+    fabWwnMap[w].push({
+      switch:  sw,
+      fabric:  swFab[sw] || (r.Fabric || '').toUpperCase() || '?',
+      alias:   r.Alias || '',
+      slot:    r.Slot  || '',
+      port:    r.Port  || '',
+      speed:   r.Speed || '',
+    });
+  });
+  STATE.fabWwnMap = fabWwnMap;
+  STATE.portAlias = portAliasMap;
+
+  // Fabric hosts: WWN -> {switch, fabric, alias}
+  STATE.fabricHosts = fabHosts.map(r => {
+    const sw = (r.SwitchName || '').toUpperCase();
+    return {
+      wwn:     cleanWwn(r.PortWWN),
+      switch:  sw,
+      fabric:  swFab[sw] || (r.Fabric || '').toUpperCase() || '?',
+      alias:   r.Alias || '',
+      lokasyon:r.Lokasyon || '',
+    };
+  }).filter(h => h.wwn);
+
+  // Hosts (mevcut host secimi icin) — Dorado + PMAX + Pure
+  const merged = {};
+  hwHosts.forEach(r => {
+    const name = (r['Host Name'] || '').trim();
+    if (!name) return;
+    if (!merged[name]) merged[name] = { name, vendor:'Huawei', kabinet:r['Kabinet']||'', os:r['OS']||'', wwns:[] };
+    (r['Host WWN'] || '').split('|').map(s=>s.trim()).filter(s=>s).forEach(w => {
+      const clean = cleanWwn(w);
+      if (clean && !merged[name].wwns.includes(clean)) merged[name].wwns.push(clean);
+    });
+  });
+  pmaxHosts.forEach(r => {
+    const name = (r['Host Name'] || '').trim();
+    if (!name) return;
+    if (!merged[name]) merged[name] = { name, vendor:'PMAX', kabinet:r['Array ID']||'', os:r['OS']||'', wwns:[] };
+    (r['Host WWN'] || '').split('|').map(s=>s.trim()).filter(s=>s).forEach(w => {
+      const clean = cleanWwn(w);
+      if (clean && !merged[name].wwns.includes(clean)) merged[name].wwns.push(clean);
+    });
+  });
+  pureHosts.forEach(r => {
+    const name = (r['Host Name'] || '').trim();
+    if (!name) return;
+    const proto = (r['Protocol'] || 'FC').trim();
+    if (proto === 'iSCSI') return;
+    if (!merged[name]) merged[name] = { name, vendor:'Pure FA', kabinet:r['Kabinet']||'', os:r['OS']||'Linux', wwns:[] };
+    (r['Host WWN'] || '').split('|').map(s=>s.trim()).filter(s=>s).forEach(w => {
+      const clean = cleanWwn(w);
+      if (clean && !merged[name].wwns.includes(clean)) merged[name].wwns.push(clean);
+    });
+  });
+  STATE.allHosts = Object.values(merged).sort((a,b) => a.name.localeCompare(b.name));
+
+  // Existing host dropdown
+  const sel = document.getElementById('existingHostSel');
+  sel.innerHTML = '<option value="">— Host sec —</option>' +
+    STATE.allHosts.map(h => `<option value="${esc(h.name)}">${esc(h.name)} [${esc(h.vendor)} · ${esc(h.kabinet)}]</option>`).join('');
+
+  // Port Groups: kabinet -> [{pg, alias, wwns}]
+  const pgMap = {};
+  const cabSet = new Set();
+
+  function processPg(arr, vendor) {
+    arr.forEach(r => {
+      const cab = (r.Kabinet || '').trim();
+      const pg  = (r.PortGroup || '').trim();
+      if (!cab || !pg) return;
+      const key = `${vendor}::${cab}`;
+      cabSet.add(JSON.stringify({key, cab, vendor, loc:r.Lokasyon||''}));
+      if (!pgMap[key]) pgMap[key] = {};
+      if (!pgMap[key][pg]) pgMap[key][pg] = { pg, alias:r.Alias||`${cab}_${pg}`, wwns:[] };
+      const w = cleanWwn(r.PortWWN);
+      if (w && !pgMap[key][pg].wwns.includes(w)) pgMap[key][pg].wwns.push(w);
+    });
+  }
+  processPg(hwPg, 'HW');
+  processPg(pmaxPg, 'PMAX');
+
+  // Kabinet dropdown
+  STATE.cabinets = [...cabSet].map(s => JSON.parse(s)).sort((a,b) => a.cab.localeCompare(b.cab));
+  STATE.portGroups = {};
+  Object.entries(pgMap).forEach(([k, v]) => {
+    STATE.portGroups[k] = Object.values(v).sort((a,b) => a.pg.localeCompare(b.pg));
+  });
+
+  // Eger PG yoksa Dashboard'dan kabinet listesini cek
+  if (STATE.cabinets.length === 0) {
+    hwDash.forEach(r => {
+      const cab = (r.Kabinet || '').trim();
+      if (!cab || cab.startsWith('TOPLAM') || cab.startsWith('GENEL')) return;
+      STATE.cabinets.push({ key:`HW::${cab}`, cab, vendor:'HW', loc:r.Lokasyon||'' });
+    });
+    pmaxDash.forEach(r => {
+      const cab = (r.Kabinet || '').trim();
+      if (!cab || cab.startsWith('TOPLAM') || cab.startsWith('GENEL')) return;
+      STATE.cabinets.push({ key:`PMAX::${cab}`, cab, vendor:'PMAX', loc:r.Lokasyon||'' });
+    });
+  }
+
+  const cabSel = document.getElementById('cabinetSel');
+  cabSel.innerHTML = '<option value="">— Kabinet sec —</option>' +
+    STATE.cabinets.map(c => `<option value="${esc(c.key)}">${esc(c.cab)} [${c.vendor}${c.loc?' · '+esc(c.loc):''}]</option>`).join('');
+
+  document.getElementById('data-info').textContent =
+    `${STATE.cabinets.length} kabinet · ${STATE.allHosts.length} host · ${STATE.fabricHosts.length} fabric WWN`;
+
+  kbInit();
+}
+
+/* ════════════════════════════════════════════════════════════
+   FABRIC DETECT
+════════════════════════════════════════════════════════════ */
+function detectFabric(wwn) {
+  const w = cleanWwn(wwn);
+  if (!w) return { fabric: null, switch: null, alias: null };
+
+  // 1. Check portAlias (from SAN_Director_Ports.csv)
+  if (STATE.portAlias[w]) {
+    const p = STATE.portAlias[w];
+    if (p.fabric && p.fabric !== '?') return p;
+  }
+
+  // 2. Check fabWwnMap (from SAN_Fabric_Hosts.csv)
+  if (STATE.fabWwnMap[w] && STATE.fabWwnMap[w].length > 0) {
+    const m = STATE.fabWwnMap[w][0];
+    if (m.fabric && m.fabric !== '?') return { fabric: m.fabric, switch: m.switch, alias: m.alias };
+  }
+
+  // 3. Check fabricHosts list
+  const hit = STATE.fabricHosts.find(h => h.wwn === w);
+  if (hit && hit.fabric && hit.fabric !== '?') return hit;
+
+  return { fabric: null, switch: null, alias: null };
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI
+════════════════════════════════════════════════════════════ */
+
+// Global Sync for Zone Type
+function syncZoneType(val) {
+  STATE.zoneType = val;
+  document.querySelectorAll('.seg-group[id*="zoneTypeSeg"] .seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+  const notes = {
+    npiv: "<b>NPIV:</b> Her HBA portu için ayrı zone (8 path).",
+    "2init": "<b>2 Initiator:</b> Her HBA için ayrı zone (8 path).",
+    "4init": "<b>4 Initiator:</b> Tüm HBA'lar tek zone'da (8 path).",
+    normal: "<b>Normal:</b> Standart 1:1 eşleme."
+  };
+  const infoEl = document.getElementById('zoneTypeInfo');
+  if (infoEl) infoEl.innerHTML = notes[val] || "";
+  
+  rebuild();
+  if (typeof kbUpdateSummary === 'function') kbUpdateSummary();
+}
+
+document.addEventListener('click', e => {
+  if (e.target.matches('.seg-btn') && e.target.closest('[id*="zoneTypeSeg"]')) {
+    syncZoneType(e.target.dataset.val);
+  }
+});
+document.getElementById('hostSrcSeg').addEventListener('click', e => {
+  if (e.target.matches('.seg-btn')) {
+    document.querySelectorAll('#hostSrcSeg .seg-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    STATE.hostSrc = e.target.dataset.val;
+    document.getElementById('newHostBlock').style.display      = STATE.hostSrc === 'new' ? '' : 'none';
+    document.getElementById('existingHostBlock').style.display = STATE.hostSrc === 'existing' ? '' : 'none';
+    document.getElementById('hostInfoMode').textContent        = STATE.hostSrc === 'new' ? 'Yeni Host' : 'Mevcut Host';
+    rebuild();
+  }
+});
+
+function loadExistingHost() {
+  const sel = document.getElementById('existingHostSel');
+  const name = sel.value;
+  if (!name) {
+    document.getElementById('hostNameExisting').value = '';
+    document.getElementById('existingWwnList').innerHTML = '<div style="color:var(--text-dim);font-size:11px">Host seciniz...</div>';
+    rebuild(); return;
+  }
+  const h = STATE.allHosts.find(x => x.name === name);
+  if (!h) return;
+  document.getElementById('hostNameExisting').value = h.name;
+  renderWwnList('existingWwnList', h.wwns);
+  rebuild();
+}
+
+function renderWwnList(targetId, wwns) {
+  const el = document.getElementById(targetId);
+  if (!wwns || wwns.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-size:11px">WWN bulunamadi</div>';
+    return;
+  }
+  el.innerHTML = wwns.map(w => {
+    const fd = detectFabric(w);
+    let badge, info;
+    if (fd.fabric === 'A') {
+      badge = '<span class="wwn-badge fab-a">FAB A</span>';
+      info  = `<span class="wwn-info">${esc(fd.switch||'')}${fd.alias?' · '+esc(fd.alias.substring(0,30)):''}</span>`;
+    } else if (fd.fabric === 'B') {
+      badge = '<span class="wwn-badge fab-b">FAB B</span>';
+      info  = `<span class="wwn-info">${esc(fd.switch||'')}${fd.alias?' · '+esc(fd.alias.substring(0,30)):''}</span>`;
+    } else {
+      badge = '<span class="wwn-badge unknown">OFFLINE</span>';
+      info  = '<span class="wwn-info">SAN\'da gorulmedi</span>';
+    }
+    return `<div class="wwn-row"><span class="wwn-text">${esc(w)}</span>${badge}${info}</div>`;
+  }).join('');
+}
+
+function onPgChange() {
+  const cabKey = document.getElementById('cabinetSel').value;
+  const pgName = document.getElementById('pgSel').value;
+  if (cabKey && pgName) {
+    const list = STATE.portGroups[cabKey] || [];
+    const pg = list.find(p => p.pg === pgName);
+    if (pg && pg.alias) {
+      document.getElementById('storageAlias').value = pg.alias;
+    }
+  }
+  rebuild();
+}
+
+function onCabinetChange() {
+  const key = document.getElementById('cabinetSel').value;
+  const pgSel = document.getElementById('pgSel');
+  const list = STATE.portGroups[key] || [];
+
+  if (!key) {
+    pgSel.innerHTML = '<option value="">— Once kabinet sec —</option>';
+    document.getElementById('pgPreview').innerHTML = '';
+    rebuild(); return;
+  }
+  pgSel.innerHTML = '<option value="">— PG sec —</option>' +
+    list.map(p => `<option value="${esc(p.pg)}">${esc(p.pg)} (${p.wwns.length} WWN)</option>`).join('');
+
+  document.getElementById('pgHint').textContent = `${list.length} PG bulundu`;
+
+  const cab = STATE.cabinets.find(c => c.key === key);
+  if (cab) document.getElementById('storageAlias').value = cab.cab + '_PG';
+  rebuild();
+}
+
+function refreshPgPreview() {
+  const cabKey = document.getElementById('cabinetSel').value;
+  const pgName = document.getElementById('pgSel').value;
+  const target = document.getElementById('pgPreview');
+  if (!cabKey || !pgName) { target.innerHTML = ''; return; }
+  const list = STATE.portGroups[cabKey] || [];
+  const pg = list.find(p => p.pg === pgName);
+  if (!pg) { target.innerHTML = ''; return; }
+
+  const fabA = []; const fabB = []; const unknown = [];
+  pg.wwns.forEach(w => {
+    let pi = STATE.portAlias[w];
+    if (!pi && STATE.fabWwnMap[w] && STATE.fabWwnMap[w].length > 0) {
+      STATE.fabWwnMap[w].forEach(fm => {
+        const info = {
+          wwn, alias:fm.alias||'', switch:fm.switch||'', fabric:fm.fabric||'?',
+          slot:fm.slot||'', port:fm.port||'', speed:fm.speed||'',
+        };
+        if (info.fabric === 'A') fabA.push(info);
+        else if (info.fabric === 'B') fabB.push(info);
+        else unknown.push(info);
+      });
+      return;
+    }
+    const fd = pi ? { fabric:pi.fabric, switch:pi.switch } : detectFabric(w);
+    const info = {
+      wwn, alias:pi?.alias||'', switch:pi?.switch||fd.switch||'', fabric:pi?.fabric||fd.fabric||'?',
+      slot:pi?.slot||'', port:pi?.port||'', speed:pi?.speed||'',
+    };
+    if (info.fabric === 'A') fabA.push(info);
+    else if (info.fabric === 'B') fabB.push(info);
+    else unknown.push(info);
+  });
+
+  const renderPort = (info) => {
+    const fc = info.fabric === 'A' ? 'fab-a' : info.fabric === 'B' ? 'fab-b' : 'unknown';
+    const fl = info.fabric === 'A' ? 'FAB A' : info.fabric === 'B' ? 'FAB B' : '?';
+    const dir = info.switch&&info.slot&&info.port ? `${info.switch} / slot${info.slot} port${info.port}` : info.switch||'—';
+    const sp = info.speed&&info.speed!=='-' ? `<span style="font-size:9px;color:var(--text-dim);margin-left:6px">${info.speed}</span>` : '';
+    const ah = info.alias ? `<span style="color:var(--accent);font-size:10px;margin-left:8px">${esc(info.alias)}</span>` : '';
+    return `<div class="wwn-row" style="padding:5px 0;border-bottom:1px solid rgba(30,45,68,.4)">
+      <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px">
+        <span class="wwn-badge ${fc}">${fl}</span><span class="wwn-text" style="font-size:10px">${esc(w)}</span>${ah}
+      </div><div style="font-size:9px;color:var(--text-dim);margin-top:3px;margin-left:2px">${esc(dir)}${sp}</div></div></div>`;
+  };
+
+  const sec = [];
+  if (fabA.length) sec.push(`<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--fab-a);margin:8px 0 4px;padding-bottom:3px;border-bottom:1px solid rgba(75,232,160,.2)">Fabric A — ${fabA.length} port</div>${fabA.map(renderPort).join('')}`);
+  if (fabB.length) sec.push(`<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--fab-b);margin:8px 0 4px;padding-bottom:3px;border-bottom:1px solid rgba(75,159,232,.2)">Fabric B — ${fabB.length} port</div>${fabB.map(renderPort).join('')}`);
+  if (unknown.length) sec.push(`<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin:8px 0 4px">Bilinmeyen Fabric — ${unknown.length} port</div>${unknown.map(renderPort).join('')}`);
+
+  target.innerHTML = `<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;display:flex;justify-content:space-between"><span>PG Portları</span><span style="color:var(--text)">${pg.wwns.length} port · <span style="color:var(--fab-a)">A: ${fabA.length}</span> <span style="color:var(--fab-b)">B: ${fabB.length}</span></span></div>
+    <div style="background:var(--grid);border:1px solid var(--border);padding:8px 10px;max-height:240px;overflow-y:auto">${sec.length ? sec.join('') : '<div style="color:var(--text-dim);font-size:11px">Port bulunamadı</div>'}</div>`;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ZONE BUILD — ORTAK MANTIK
+════════════════════════════════════════════════════════════ */
+
+function getCurrentHostData() {
+  if (STATE.hostSrc === 'existing') {
+    const name = document.getElementById('hostNameExisting').value.trim();
+    if (!name) return null;
+    const h = STATE.allHosts.find(x => x.name === name);
+    if (!h) return null;
+    return { name, wwns:h.wwns };
+  }
+  const name = document.getElementById('hostName').value.trim();
+  const rawWwns = document.getElementById('wwnInput').value
+    .split(/[\n,;]+/).map(s => s.trim()).filter(s => s);
+  const wwns = rawWwns.map(cleanWwn).filter(w => w);
+  return { name, wwns };
+}
+
+function rebuild() {
+  refreshPgPreview();
+
+  const host = getCurrentHostData();
+  const cabKey = document.getElementById('cabinetSel').value;
+  const pgName = document.getElementById('pgSel').value;
+  const storPrefix = document.getElementById('storageAlias').value.trim();
+
+  const outA = document.getElementById('outA');
+  const outB = document.getElementById('outB');
+
+  if (STATE.hostSrc === 'new' && host && host.wwns.length > 0) {
+    renderWwnStatus(host.wwns);
+  } else {
+    document.getElementById('wwnStatusArea').innerHTML = '';
+  }
+
+  if (!host || !host.name) {
+    outA.innerHTML = '<div class="output-empty">Host adı giriniz...</div>';
+    outB.innerHTML = '<div class="output-empty">Host adı giriniz...</div>';
+    return;
+  }
+  if (host.wwns.length === 0) {
+    outA.innerHTML = '<div class="output-empty">Host WWN\'i giriniz...</div>';
+    outB.innerHTML = '<div class="output-empty">Host WWN\'i giriniz...</div>';
+    return;
+  }
+  if (!cabKey || !pgName) {
+    outA.innerHTML = '<div class="output-empty">Kabinet ve Port Group seciniz...</div>';
+    outB.innerHTML = '<div class="output-empty">Kabinet ve Port Group seciniz...</div>';
+    return;
+  }
+
+  const pgList = STATE.portGroups[cabKey] || [];
+  const pg = pgList.find(p => p.pg === pgName);
+  if (!pg || pg.wwns.length === 0) {
+    outA.innerHTML = '<div class="output-empty">PG WWN\'leri bulunamadi (PG bos olabilir)</div>';
+    outB.innerHTML = '<div class="output-empty">PG WWN\'leri bulunamadi (PG bos olabilir)</div>';
+    return;
+  }
+
+  const cab = STATE.cabinets.find(c => c.key === cabKey);
+  const cabName = cab ? cab.cab : 'CAB';
+
+  let result;
+  if (STATE.zoneType === 'npiv') {
+    result = buildNPIV(host, pg, cabName, storPrefix);
+  } else if (STATE.zoneType === '2init') {
+    result = build2Initiator(host, pg, cabName, storPrefix);
+  } else if (STATE.zoneType === '4init') {
+    result = build4Initiator(host, pg, cabName, storPrefix);
+  } else {
+    result = buildNormal(host, pg, cabName, storPrefix);
+  }
+
+  outA.innerHTML = result.A || '<div class="output-empty">FAB A icin uygun WWN yok</div>';
+  outB.innerHTML = result.B || '<div class="output-empty">FAB B icin uygun WWN yok</div>';
+}
+
+function renderWwnStatus(wwns) {
+  const target = document.getElementById('wwnStatusArea');
+  let a = 0, b = 0, u = 0;
+  const rows = wwns.map(w => {
+    const fd = detectFabric(w);
+    let badge, info;
+    if (fd.fabric === 'A')      { a++; badge = '<span class="wwn-badge fab-a">FAB A</span>'; info = `<span class="wwn-info">${esc(fd.switch||'')}</span>`; }
+    else if (fd.fabric === 'B') { b++; badge = '<span class="wwn-badge fab-b">FAB B</span>'; info = `<span class="wwn-info">${esc(fd.switch||'')}</span>`; }
+    else                         { u++; badge = '<span class="wwn-badge unknown">OFFLINE</span>'; info = '<span class="wwn-info">SAN\'da gorulmedi</span>'; }
+    return `<div class="wwn-row"><span class="wwn-text">${esc(w)}</span>${badge}${info}</div>`;
+  }).join('');
+
+  target.innerHTML = `<div class="sum-row">
+    <span style="color:var(--text-dim)">Tespit:</span>
+    <span class="sum-pill fab-a">FAB A: ${a}</span>
+    <span class="sum-pill fab-b">FAB B: ${b}</span>
+    ${u > 0 ? `<span class="sum-pill warn">Offline: ${u}</span>` : ''}
+    <span style="margin-left:auto;color:var(--text-dim);font-size:10px">${wwns.length} WWN</span>
+  </div><div class="wwn-list">${rows}</div>`;
+}
+
+/**
+ * Fabric'e ait WWN'lerden hangi switch'in ActiveCfg adını döndür.
+ */
+function getCfgName(wwns, fab) {
+  const cfgCounts = {};
+  wwns.forEach(w => {
+    const fd = detectFabric(w);
+    if (fd.fabric !== fab) return;
+    const sw = fd.switch;
+    if (!sw) return;
+    const cfg = STATE.switchCfg[sw] || '';
+    if (cfg) cfgCounts[cfg] = (cfgCounts[cfg] || 0) + 1;
+  });
+  let best = ''; let bestN = 0;
+  Object.entries(cfgCounts).forEach(([k, v]) => { if (v > bestN) { best = k; bestN = v; } });
+  return best || 'CFG_NAME';
+}
+
+/* ════════════════════════════════════════════════════════════
+   NPIV ZONE BUILD: 8 port × 2 WWN = 16 WWN; 2 WWN/port aynı fabric
+   Her port = 1 host alias + 1 storage alias → 1 zone
+════════════════════════════════════════════════════════════ */
+function buildNPIV(host, pg, cabName, storPrefix) {
+  // 2'şerli grupla portları grupla
+  const ports = [];
+  for (let i = 0; i + 1 < host.wwns.length; i += 2) {
+    ports.push([host.wwns[i], host.wwns[i+1]]);
+  }
+  if (host.wwns.length % 2 === 1) {
+    ports.push([host.wwns[host.wwns.length - 1]]);
+  }
+
+  return {
+    A: buildNpivFabric('A', host, ports, pg.wwns, cabName, storPrefix),
+    B: buildNpivFabric('B', host, ports, pg.wwns, cabName, storPrefix),
+  };
+}
+
+function buildNpivFabric(fab, host, ports, pgWwns, cabName, storPrefix) {
+  if (!pgWwns || pgWwns.length === 0) return '';
+
+  // Bu fabric'e ait portları bul
+  const fabPorts = [];
+  const anyDetected = host.wwns.some(w => detectFabric(w).fabric !== null);
+
+  ports.forEach((wwnPair, idx) => {
+    const hasInFab = wwnPair.some(w => detectFabric(w).fabric === fab);
+    const isUnknown = wwnPair.every(w => detectFabric(w).fabric === null);
+    
+    // Eğer login bilgisi varsa ona göre, yoksa (offline/yeni host) sıralı dağıt
+    if (hasInFab || (!anyDetected && ((idx % 2 === 0 && fab === 'A') || (idx % 2 === 1 && fab === 'B')))) {
+      fabPorts.push({ idx: idx + 1, wwns: wwnPair });
+    }
+  });
+  if (fabPorts.length === 0) return '';
+
+  let fabPgWwns = pgWwns.filter(w => detectFabric(w).fabric === fab);
+  if (fabPgWwns.length === 0) fabPgWwns = pgWwns; // Fallback to all if specific fabric ports not found
+
+  const allHostWwns = ports.flat();
+  const cfgName = getCfgName(allHostWwns, fab);
+  const prefix = storPrefix || (cabName + '_PG');
+  const lines = [];
+  const a = (s) => lines.push(s);
+
+  a(`<span class="cmd-comment"># ============================================================</span>`);
+  a(`<span class="cmd-comment"># FABRIC ${fab} — ${esc(host.name)} → ${esc(cabName)} / ${esc(prefix)} (NPIV)</span>`);
+  a(`<span class="cmd-comment"># Host port: ${fabPorts.length} · Storage WWN: ${fabPgWwns.length}</span>`);
+  a(`<span class="cmd-comment"># ============================================================</span>`);
+  a('');
+
+  // Host alias — her port için 1 alias (2 WWN)
+  a(`<span class="cmd-comment"># Host alias'lari</span>`);
+  fabPorts.forEach(p => {
+    const wwnStr = p.wwns.filter(w => w).join('; ');
+    a(`<span class="cmd-alicreate">alicreate</span> "${host.name}_NPIV_P${p.idx}", "${wwnStr}"`);
+  });
+  a('');
+
+  // Storage alias — her PG WWN için 1 alias
+  a(`<span class="cmd-comment"># Storage alias'lari</span>`);
+  const storAliases = fabPgWwns.map((w, i) => {
+    const an = `${prefix}_${i + 1}`;
+    a(`<span class="cmd-alicreate">alicreate</span> "${an}", "${w}"`);
+    return an;
+  });
+  a('');
+
+  // Zone'lar: her port → 1 zone (storage alias sırayla döner)
+  a(`<span class="cmd-comment"># Zone'lar — her port 1 zone</span>`);
+  const zoneNames = [];
+  fabPorts.forEach((p, i) => {
+    const storAlias = storAliases[i % storAliases.length];
+    const zoneName = `${host.name}_NPIV_${p.idx}_${prefix}`;
+    zoneNames.push(zoneName);
+    a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${host.name}_NPIV_P${p.idx}; ${storAlias}"`);
+  });
+  a('');
+
+  // CFG add
+  const cfgNote = cfgName === 'CFG_NAME'
+    ? `<span class="cmd-comment"># Aktif CFG bulunamadi — cfgshow ile kontrol et</span>\n`
+    : `<span class="cmd-comment"># Aktif CFG: ${esc(cfgName)}</span>\n`;
+  a(cfgNote + `<span class="cmd-cfgadd">cfgadd</span> "${cfgName}", "${zoneNames.join('; ')}"`);
+  a('');
+  a(`<span class="cmd-comment"># cfgsave</span>`);
+  a(`<span class="cmd-comment"># cfgenable "${cfgName}"</span>`);
+
+  return lines.join('\n');
+}
+
+/* ════════════════════════════════════════════════════════════
+   NORMAL ZONE BUILD: 1 host WWN + 1 storage WWN per zone
+   Host WWN'leri fabric'e göre ayrılır, storage WWN'leri sırayla eşlenir
+════════════════════════════════════════════════════════════ */
+function buildNormal(host, pg, cabName, storPrefix) {
+  let hostFabA = host.wwns.filter(w => detectFabric(w).fabric === 'A');
+  let hostFabB = host.wwns.filter(w => detectFabric(w).fabric === 'B');
+
+  // Fallback for unknown/offline hosts
+  if (hostFabA.length === 0 && hostFabB.length === 0 && host.wwns.length > 0) {
+    hostFabA = host.wwns.filter((_, i) => i % 2 === 0);
+    hostFabB = host.wwns.filter((_, i) => i % 2 === 1);
+  }
+
+  const split = hostFabA.length > 1 || hostFabB.length > 1;
+
+  return {
+    A: buildMultiInitFabric('A', host, hostFabA, pg.wwns, cabName, storPrefix, split),
+    B: buildMultiInitFabric('B', host, hostFabB, pg.wwns, cabName, storPrefix, split),
+  };
+}
+
+function buildNormalFabric(fab, host, hostWwns, pgWwns, cabName, storPrefix) {
+  if (hostWwns.length === 0 || pgWwns.length === 0) return '';
+
+  const cfgName = getCfgName(hostWwns, fab);
+  const prefix = storPrefix || (cabName + '_PG');
+  const lines = [];
+  const a = (s) => lines.push(s);
+
+  a(`<span class="cmd-comment"># ============================================================</span>`);
+  a(`<span class="cmd-comment"># FABRIC ${fab} — ${esc(host.name)} → ${esc(cabName)} (NORMAL)</span>`);
+  a(`<span class="cmd-comment"># Host WWN: ${hostWwns.length} · Storage WWN: ${pgWwns.length}</span>`);
+  a(`<span class="cmd-comment"># Zone sayisi: ${Math.max(hostWwns.length, pgWwns.length)}</span>`);
+  a(`<span class="cmd-comment"># ============================================================</span>`);
+  a('');
+
+  // Host alias — her WWN için 1 alias
+  a(`<span class="cmd-comment"># Host alias'lari</span>`);
+  const hostAliases = hostWwns.map((w, i) => {
+    const an = `${host.name}_P${i + 1}`;
+    a(`<span class="cmd-alicreate">alicreate</span> "${an}", "${w}"`);
+    return an;
+  });
+  a('');
+
+  // Storage alias — her PG WWN için 1 alias
+  a(`<span class="cmd-comment"># Storage alias'lari</span>`);
+  const storAliases = pgWwns.map((w, i) => {
+    const an = `${prefix}_${i + 1}`;
+    a(`<span class="cmd-alicreate">alicreate</span> "${an}", "${w}"`);
+    return an;
+  });
+  a('');
+
+  // Zone'lar: 1 host alias + 1 storage alias per zone, sırayla eşle
+  // Host[0] + Stor[0], Host[1] + Stor[1], Host[2] + Stor[0], ... (cycle)
+  a(`<span class="cmd-comment"># Zone'lar — her zone 1 host + 1 storage</span>`);
+  const zoneNames = [];
+  hostAliases.forEach((ha, i) => {
+    const sa = storAliases[i % storAliases.length];
+    const zoneName = `${host.name}_${cabName}_PG_${i + 1}`;
+    zoneNames.push(zoneName);
+    a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${ha}; ${sa}"`);
+  });
+  a('');
+
+  const cfgNote = cfgName === 'CFG_NAME'
+    ? `<span class="cmd-comment"># Aktif CFG bulunamadi — cfgshow ile kontrol et</span>\n`
+    : `<span class="cmd-comment"># Aktif CFG: ${esc(cfgName)}</span>\n`;
+  a(cfgNote + `<span class="cmd-cfgadd">cfgadd</span> "${cfgName}", "${zoneNames.join('; ')}"`);
+  a('');
+  a(`<span class="cmd-comment"># cfgsave</span>`);
+  a(`<span class="cmd-comment"># cfgenable "${cfgName}"</span>`);
+
+  return lines.join('\n');
+}
+
+function build2Initiator(host, pg, cabName, storPrefix) {
+  let hostFabA = host.wwns.filter(w => detectFabric(w).fabric === 'A');
+  let hostFabB = host.wwns.filter(w => detectFabric(w).fabric === 'B');
+
+  if (hostFabA.length === 0 && hostFabB.length === 0 && host.wwns.length > 0) {
+    hostFabA = host.wwns.filter((_, i) => i % 2 === 0);
+    hostFabB = host.wwns.filter((_, i) => i % 2 === 1);
+  }
+
+  return {
+    A: buildMultiInitFabric('A', host, hostFabA, pg.wwns, cabName, storPrefix, true),
+    B: buildMultiInitFabric('B', host, hostFabB, pg.wwns, cabName, storPrefix, true),
+  };
+}
+
+function build4Initiator(host, pg, cabName, storPrefix) {
+  let hostFabA = host.wwns.filter(w => detectFabric(w).fabric === 'A');
+  let hostFabB = host.wwns.filter(w => detectFabric(w).fabric === 'B');
+
+  if (hostFabA.length === 0 && hostFabB.length === 0 && host.wwns.length > 0) {
+    hostFabA = host.wwns.filter((_, i) => i % 2 === 0);
+    hostFabB = host.wwns.filter((_, i) => i % 2 === 1);
+  }
+
+  return {
+    A: buildMultiInitFabric('A', host, hostFabA, pg.wwns, cabName, storPrefix, false),
+    B: buildMultiInitFabric('B', host, hostFabB, pg.wwns, cabName, storPrefix, false),
+  };
+}
+
+function buildMultiInitFabric(fab, host, hostWwns, pgWwns, cabName, storPrefix, splitZones) {
+  if (!hostWwns || hostWwns.length === 0 || !pgWwns || pgWwns.length === 0) return '';
+
+  let fabPgWwns = pgWwns.filter(w => detectFabric(w).fabric === fab);
+  if (fabPgWwns.length === 0) fabPgWwns = pgWwns; // Fallback to all if specific fabric ports not found
+
+  const cfgName = getCfgName(hostWwns, fab);
+  const prefix = storPrefix || (cabName + '_PG');
+  const lines = [];
+  const a = (s) => lines.push(s);
+
+  a(`<span class="cmd-comment"># ============================================================</span>`);
+  a(`<span class="cmd-comment"># FABRIC ${fab} — ${esc(host.name)} → ${esc(cabName)} (${hostWwns.length} Init)</span>`);
+  a(`<span class="cmd-comment"># Targeting 4 paths per fabric (Total 8)</span>`);
+  a(`<span class="cmd-comment"># ============================================================</span>`);
+  a('');
+
+  const hostAliases = hostWwns.map((w, i) => {
+    const an = `${host.name}_${String(i + 1).padStart(2, '0')}`;
+    a(`<span class="cmd-alicreate">alicreate</span> "${an}", "${w}"`);
+    return an;
+  });
+
+  // Storage alias — her PG WWN için 1 alias
+  a(`<span class="cmd-comment"># Storage alias'lari</span>`);
+  const storAliases = fabPgWwns.map((w, i) => {
+    const an = `${prefix}_${i + 1}`;
+    a(`<span class="cmd-alicreate">alicreate</span> "${an}", "${w}"`);
+    return an;
+  });
+  a('');
+
+  const zoneNames = [];
+  // 4 path per fabric logic:
+  // 1 host port -> 4 storage ports
+  // 2 host ports -> 2 storage ports per zone
+  // 4 host ports -> 1 storage port per zone
+  const targetsPerZone = Math.max(1, Math.floor(4 / hostWwns.length));
+
+  if (splitZones) {
+    // Separate zone per initiator (matches YNPRDCLN04 sample)
+    hostAliases.forEach((ha, i) => {
+      const zoneName = `${ha}_${prefix}`;
+      zoneNames.push(zoneName);
+      const startIdx = (i * targetsPerZone) % storAliases.length;
+      const myTargets = [];
+      for (let j = 0; j < targetsPerZone; j++) {
+        myTargets.push(storAliases[(startIdx + j) % storAliases.length]);
+      }
+      a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${ha}; ${myTargets.join('; ')}"`);
+    });
+  } else {
+    // Single zone for all initiators (matches ALOPRDKFK10 sample)
+    const zoneName = `${host.name}_${prefix}`;
+    zoneNames.push(zoneName);
+    // Limit targets to maintain 4 paths per fabric (e.g., 2 initiators * 2 targets = 4 paths)
+    const targetLimit = hostWwns.length > 0 ? Math.max(1, Math.floor(4 / hostWwns.length)) * hostWwns.length : 4;
+    const myTargets = storAliases.slice(0, Math.min(storAliases.length, targetLimit));
+    a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${hostAliases.join('; ')}; ${myTargets.join('; ')}"`);
+  }
+  a('');
+
+  const cfgNote = cfgName === 'CFG_NAME' ? `# Aktif CFG bulunamadı` : `# Aktif CFG: ${cfgName}`;
+  a(`<span class="cmd-comment">${cfgNote}</span>`);
+  a(`<span class="cmd-cfgadd">cfgadd</span> "${cfgName}", "${zoneNames.join('; ')}"`);
+  return lines.join('\n');
+}
+
+/* ════════════════════════════════════════════════════════════
+   COPY
+════════════════════════════════════════════════════════════ */
+
+function copyOutput(fab) {
+  const el = document.getElementById('out' + fab);
+  const text = el.innerText || el.textContent;
+  if (!text || text.includes('giriniz') || text.includes('seciniz') || text.includes('uygun WWN yok')) {
+    showToast('Komut yok'); return;
+  }
+  copyText(text, `Fabric ${fab} kopyalandi`);
+}
+
+function copyAll() {
+  const a = document.getElementById('outA').innerText || '';
+  const b = document.getElementById('outB').innerText || '';
+  if ((!a || a.includes('giriniz')) && (!b || b.includes('giriniz'))) {
+    showToast('Komut yok'); return;
+  }
+  const text = `### FABRIC A ###\n${a}\n\n### FABRIC B ###\n${b}`;
+  copyText(text, 'Tum komutlar kopyalandi');
+}
+
+function copyText(text, msg) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => showToast(msg));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast(msg); } catch {}
+    document.body.removeChild(ta);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   KANBAN — Görsel zone seçimi
+════════════════════════════════════════════════════════════ */
+const KB = { host:null, cabKey:null, pg:null, _fabA:[], _fabB:[] };
+
+function zbSwitch(name, btn){
+  document.querySelectorAll('.zb-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.zb-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('zbpage-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+function kbInit(){
+  kbRenderHosts();
+  kbRenderStorage();
+  kbRenderSan();
+  kbUpdateSummary();
+}
+
+// ── KOLON 1: HOST ──
+function kbRenderHosts(){
+  const box=document.getElementById('kb-host-list');
+  const q=(document.getElementById('kb-host-search')?.value||'').toLowerCase();
+  if(!box) return;
+  let hosts=STATE.allHosts||[];
+  if(q) hosts=hosts.filter(h=>h.name.toLowerCase().includes(q)||(h.kabinet||'').toLowerCase().includes(q)||(h.vendor||'').toLowerCase().includes(q));
+  document.getElementById('kb-host-cnt').textContent=`${hosts.length} host`;
+  if(hosts.length===0){ box.innerHTML='<div class="kb-empty">Eşleşen host yok</div>'; return; }
+  box.innerHTML=hosts.slice(0,200).map(h=>{
+    const sel=KB.host&&KB.host.name===h.name?'sel':'';
+    return `<div class="kb-item ${sel}" onclick="kbPickHost('${esc(h.name).replace(/'/g,"\\'")}')">
+      <div class="kb-item-title">${esc(h.name)}</div>
+      <div class="kb-item-sub">${esc(h.vendor)} · ${esc(h.kabinet||'—')} · ${h.wwns.length} WWN</div>
+    </div>`;
+  }).join('') + (hosts.length>200?`<div class="kb-empty">+${hosts.length-200} daha — aramayı daraltın</div>`:'');
+}
+
+function kbPickHost(name){
+  KB.host=(STATE.allHosts||[]).find(h=>h.name===name)||null;
+  kbRenderHosts(); kbRenderSan(); kbUpdateSummary();
+}
+
+// ── KOLON 2: SAN / FABRIC ──
+function kbRenderSan(){
+  const box=document.getElementById('kb-san-list');
+  if(!box) return;
+  if(!KB.host){ box.innerHTML='<div class="kb-empty">← Önce host seçin</div>'; document.getElementById('kb-san-cnt').textContent=''; return; }
+
+  const fabA=[], fabB=[], yok=[];
+  (KB.host.wwns||[]).forEach(w=>{
+    const hits=STATE.fabWwnMap[w]||[];
+    if(hits.length===0){ yok.push({wwn:w}); return; }
+    hits.forEach(h=>{
+      const rec={wwn:w, switch:h.switch, fabric:h.fabric, alias:h.alias};
+      if(h.fabric==='A') fabA.push(rec);
+      else if(h.fabric==='B') fabB.push(rec);
+      else yok.push(rec);
+    });
+  });
+  document.getElementById('kb-san-cnt').textContent=`A:${fabA.length} B:${fabB.length}`;
+
+  const itemHtml=(r,fc)=>`<div class="kb-item sel san-${fc}">
+    <div class="kb-item-title">${esc(r.wwn)}</div>
+    <div class="kb-item-sub">${esc(r.switch||'?')} ${r.alias?'· '+esc(r.alias):''}<span class="kb-fab-tag kb-fab-${fc}">FAB ${fc.toUpperCase()}</span></div>
+  </div>`;
+
+  let html='';
+  html+=`<div class="kb-sub-hdr">Fabric A — ${fabA.length} yol</div>`;
+  html+= fabA.length? fabA.map(r=>itemHtml(r,'a')).join('') : '<div class="kb-empty" style="padding:14px">Fabric A yolu yok</div>';
+  html+=`<div class="kb-sub-hdr">Fabric B — ${fabB.length} yol</div>`;
+  html+= fabB.length? fabB.map(r=>itemHtml(r,'b')).join('') : '<div class="kb-empty" style="padding:14px">Fabric B yolu yok</div>';
+  if(yok.length){
+    html+=`<div class="kb-sub-hdr" style="color:var(--warn)">Fabric'te görünmeyen — ${yok.length}</div>`;
+    html+= yok.map(r=>`<div class="kb-item" style="border-left:3px solid var(--warn);cursor:default">
+      <div class="kb-item-title">${esc(r.wwn)}</div>
+      <div class="kb-item-sub" style="color:var(--warn)">Bu WWN hiçbir switch'te login değil</div></div>`).join('');
+  }
+  box.innerHTML=html;
+  KB._fabA=fabA; KB._fabB=fabB;
+}
+
+// ── KOLON 3: STORAGE + PG ──
+function kbRenderStorage(){
+  const box=document.getElementById('kb-stor-list');
+  const q=(document.getElementById('kb-stor-search')?.value||'').toLowerCase();
+  if(!box) return;
+  let cabs=STATE.cabinets||[];
+  if(q) cabs=cabs.filter(c=>c.cab.toLowerCase().includes(q)||(c.vendor||'').toLowerCase().includes(q));
+  document.getElementById('kb-stor-cnt').textContent=`${cabs.length} kabinet`;
+  if(cabs.length===0){ box.innerHTML='<div class="kb-empty">Eşleşen kabinet yok</div>'; return; }
+
+  box.innerHTML=cabs.map(c=>{
+    const isSelCab=KB.cabKey===c.key;
+    const pgs=STATE.portGroups[c.key]||[];
+    let html=`<div class="kb-item ${isSelCab&&!KB.pg?'sel stor':''}" onclick="kbPickCab('${esc(c.key).replace(/'/g,"\\'")}')">
+      <div class="kb-item-title">${esc(c.cab)}</div>
+      <div class="kb-item-sub">${esc(c.vendor)}${c.loc?' · '+esc(c.loc):''} · ${pgs.length} PG</div>
+    </div>`;
+    if(isSelCab){
+      if(pgs.length===0){
+        html+=`<div class="kb-empty" style="padding:10px 8px">Bu kabinette PG yok</div>`;
+      } else {
+        html+=pgs.map(p=>{
+          const ps=KB.pg&&KB.pg.pg===p.pg&&KB.cabKey===c.key?'sel stor':'';
+          return `<div class="kb-item ${ps}" style="margin-left:14px" onclick="event.stopPropagation();kbPickPg('${esc(c.key).replace(/'/g,"\\'")}','${esc(p.pg).replace(/'/g,"\\'")}')">
+            <div class="kb-item-title">&rsaquo; ${esc(p.pg)}</div>
+            <div class="kb-item-sub">${esc(p.alias||'alias yok')} · ${(p.wwns||[]).length} WWN</div>
+          </div>`;
+        }).join('');
+      }
+    }
+    return html;
+  }).join('');
+}
+
+function kbPickCab(key){
+  if(KB.cabKey!==key){ KB.cabKey=key; KB.pg=null; }
+  kbRenderStorage(); kbUpdateSummary();
+}
+function kbPickPg(key,pgName){
+  KB.cabKey=key;
+  const list=STATE.portGroups[key]||[];
+  KB.pg=list.find(p=>p.pg===pgName)||null;
+  kbRenderStorage(); kbUpdateSummary();
+}
+
+// ── ÖZET ──
+function kbUpdateSummary(){
+  const set=(id,val,ok)=>{
+    const e=document.getElementById(id); if(!e) return;
+    e.textContent=val||'—';
+    e.className = ok ? '' : 'miss';
+  };
+  set('kb-s-host', KB.host?KB.host.name:'', !!KB.host);
+  const fabOk = KB.host && ((KB._fabA&&KB._fabA.length)||(KB._fabB&&KB._fabB.length));
+  let fabTxt='—';
+  if(KB.host){
+    const a=(KB._fabA||[]).length, b=(KB._fabB||[]).length;
+    fabTxt = (a?`A(${a})`:'')+(a&&b?' ':'')+(b?`B(${b})`:'') || 'yol yok';
+  }
+  set('kb-s-fab', fabTxt, fabOk);
+  const cab=KB.cabKey?(STATE.cabinets.find(c=>c.key===KB.cabKey)):null;
+  set('kb-s-stor', cab?cab.cab:'', !!cab);
+  set('kb-s-pg', KB.pg?KB.pg.pg:'', !!KB.pg);
+
+  const ready = KB.host && fabOk && cab && KB.pg;
+  const btn=document.getElementById('kb-gen');
+  if(btn) btn.disabled=!ready;
+}
+
+// ── ZONE ÜRET (Kanban) — NPIV/NORMAL seçimine saygı duyar ──
+function kbGenerate() {
+  if (!KB.host || !KB.cabKey || !KB.pg) { showToast('Eksik seçim'); return; }
+  const cab = STATE.cabinets.find(c => c.key === KB.cabKey);
+  const hostWwns = KB.host.wwns || [];
+  const pgWwns = KB.pg.wwns || [];
+  const storPrefix = KB.pg.alias || `${cab.cab}_${KB.pg.pg}`;
+  const hostObj = { name: KB.host.name, wwns: hostWwns };
+  const cabName = cab.cab;
+
+  let result;
+  if (STATE.zoneType === 'npiv') {
+    result = buildNPIV(hostObj, KB.pg, cabName, storPrefix);
+  } else if (STATE.zoneType === '2init') {
+    result = build2Initiator(hostObj, KB.pg, cabName, storPrefix);
+  } else if (STATE.zoneType === '4init') {
+    result = build4Initiator(hostObj, KB.pg, cabName, storPrefix);
+  } else {
+    result = buildNormal(hostObj, KB.pg, cabName, storPrefix);
+  }
+
+  const outA = result.A;
+  const outB = result.B;
+
+  document.getElementById('kb-output').style.display='block';
+  document.getElementById('kb-outA').innerHTML = outA || '<div class="output-empty">Fabric A için yol yok</div>';
+  document.getElementById('kb-outB').innerHTML = outB || '<div class="output-empty">Fabric B için yol yok</div>';
+  document.getElementById('kb-out-info').textContent =
+    `${KB.host.name} → ${cabName} / ${KB.pg.pg} [${STATE.zoneType.toUpperCase()}]`;
+  document.getElementById('kb-output').scrollIntoView({behavior:'smooth',block:'nearest'});
+  showToast('Zone komutları üretildi');
+}
+
+function kbCopy(fab){
+  const el=document.getElementById('kb-out'+fab);
+  const txt=(el.innerText||'').trim();
+  if(!txt||txt==='—'){ showToast('Kopyalanacak içerik yok'); return; }
+  navigator.clipboard.writeText(txt).then(
+    ()=>showToast(`Fabric ${fab} kopyalandı`),
+    ()=>showToast('Kopyalama başarısız')
+  );
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+(function(){
+  function tick(){
+    const n = new Date();
+    document.getElementById('clock').textContent = n.toLocaleTimeString('tr-TR');
+  }
+  tick(); setInterval(tick,1000);
+})();
+
+/* INIT */
+loadAllData();
+</script>
+</body>
+</html>

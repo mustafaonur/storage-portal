@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<link rel="stylesheet" href="./storage-styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Host WWN Finder · Storage Portal</title>
+<script src="./storage-utils.js"></script>
+<style>
+  :root {
+    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
+    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
+    --danger:#e84b4b; --warn:#e8844b;
+    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image: linear-gradient(rgba(30,45,68,.3) 1px,transparent 1px), linear-gradient(90deg,rgba(30,45,68,.3) 1px,transparent 1px);
+    background-size:40px 40px; pointer-events:none; z-index:0;
+  }
+
+  /* SHELL */
+  .shell { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:24px; }
+  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
+  .back-link:hover { color:var(--accent2); }
+
+  /* HEADER */
+  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:center; gap:14px; }
+  .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
+  @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
+  .brand-icon svg { width:22px; height:22px; stroke:var(--accent); fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+  .brand-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text-bright); letter-spacing:-.5px; }
+  .brand-sub { font-size:10px; color:var(--text-dim); letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
+  .header-meta { text-align:right; font-size:11px; color:var(--text-dim); line-height:1.8; }
+  .live-dot { display:inline-block; width:6px; height:6px; background:var(--accent3); border-radius:50%; margin-right:6px; animation:blink 2s ease-in-out infinite; vertical-align:middle; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* STATUS BAR */
+  .status-bar {
+    display:flex; align-items:center; gap:14px;
+    padding:12px 18px; background:var(--surface);
+    border:1px solid var(--border); margin-bottom:24px;
+    position:relative; overflow:hidden;
+  }
+  .status-bar::before {
+    content:''; position:absolute; top:0; left:0;
+    width:3px; height:100%; background:var(--accent2); transition:background .2s;
+  }
+  .status-bar.ok::before    { background:var(--accent3); }
+  .status-bar.error::before { background:var(--danger); }
+  .status-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--text-dim); flex-shrink:0;
+    transition:background .3s, box-shadow .3s;
+  }
+  .status-dot.loading { background:var(--accent2); animation:pulse 1.2s ease infinite; box-shadow:0 0 8px var(--accent2); }
+  .status-dot.ok      { background:var(--accent3); box-shadow:0 0 8px var(--accent3); }
+  .status-dot.error   { background:var(--danger);  box-shadow:0 0 8px var(--danger); }
+  @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
+  .status-text { flex:1; font-size:11px; letter-spacing:1px; color:var(--text-dim); }
+  .status-text.ok    { color:var(--accent3); }
+  .status-text.error { color:var(--danger); }
+
+  /* SEARCH */
+  .search-panel {
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:24px;
+    margin-bottom:20px;
+    position:relative;
+    overflow:hidden;
+  }
+  .search-panel::before {
+    content:''; position:absolute; top:0; left:0;
+    width:3px; height:100%; background:var(--accent);
+  }
+  .search-label {
+    font-size:10px; letter-spacing:3px;
+    color:var(--text-dim); text-transform:uppercase;
+    display:block; margin-bottom:12px;
+  }
+  .search-input {
+    width:100%; background:var(--bg); border:1px solid var(--border);
+    color:var(--accent3); font-family:'JetBrains Mono',monospace;
+    font-size:15px; padding:14px 18px; outline:none;
+    transition:all .25s; letter-spacing:.5px;
+  }
+  .search-input::placeholder { color:var(--text-dim); letter-spacing:1px; font-size:13px; }
+  .search-input:focus { border-color:var(--accent2); box-shadow:0 0 0 3px rgba(75,159,232,.1); }
+  .search-hint {
+    font-size:10px; color:var(--text-dim);
+    margin-top:10px; letter-spacing:.5px;
+  }
+  .search-hint code {
+    background:var(--grid); border:1px solid var(--border);
+    padding:1px 6px; color:var(--accent2);
+    font-size:10px;
+  }
+
+  /* STATS */
+  .stats-bar {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:14px; font-size:10px; letter-spacing:2px;
+    color:var(--text-dim); text-transform:uppercase;
+  }
+  .count-badge {
+    background:rgba(75,159,232,.12); border:1px solid rgba(75,159,232,.3);
+    color:var(--accent2); padding:3px 10px; font-size:11px;
+    font-weight:500; font-family:'JetBrains Mono',monospace; letter-spacing:1px;
+  }
+
+  /* TABLE */
+  .table-wrap {
+    background:var(--surface); border:1px solid var(--border); overflow:hidden;
+  }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead th {
+    background:var(--surface2); border-bottom:1px solid var(--border);
+    padding:12px 16px; text-align:left; font-size:10px;
+    letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); font-weight:500;
+  }
+  tbody tr {
+    border-bottom:1px solid rgba(30,45,68,.6); transition:background .15s;
+  }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:var(--surface2); }
+  tbody td { padding:11px 16px; color:var(--text); }
+  tbody td.col-host { color:var(--text-bright); font-weight:500; }
+  tbody td.col-wwn  { font-family:monospace; color:var(--accent3); font-size:11px; }
+  tbody td.col-vendor { font-size:10px; color:var(--text-dim); }
+
+  .tag-os { display:inline-block; padding:2px 7px; font-size:10px; border-radius:2px; font-weight:500; }
+  .tag-vmware  { background:rgba(75,159,232,.2); color:#4b9fe8; }
+  .tag-linux   { background:rgba(75,232,160,.2); color:#4be8a0; }
+  .tag-aix     { background:rgba(232,184,75,.2); color:#e8b84b; }
+  .tag-windows { background:rgba(232,122,75,.2); color:#e87a4b; }
+  .tag-unknown { background:rgba(90,112,144,.2); color:var(--text-dim); }
+
+  .vendor-tag {
+    display:inline-block; padding:2px 7px; font-size:10px;
+    border-radius:2px; font-weight:500;
+    background:var(--grid); border:1px solid var(--border);
+    color:var(--text-dim); letter-spacing:1px; text-transform:uppercase;
+  }
+  .vendor-tag.huawei { color:var(--accent3); border-color:rgba(75,232,160,.3); }
+  .vendor-tag.pmax   { color:var(--accent2); border-color:rgba(75,159,232,.3); }
+
+  mark {
+    background:rgba(232,184,75,.25); color:var(--accent);
+    padding:0 2px; border-radius:2px;
+  }
+
+  /* CENTER STATE */
+  .center-state { text-align:center; padding:60px 20px; color:var(--text-dim); }
+  .center-state .icon { font-size:32px; margin-bottom:14px; opacity:.6; }
+  .center-state p { font-size:12px; line-height:2; letter-spacing:.5px; }
+  .center-state strong { color:var(--accent2); }
+
+  /* FOOTER */
+  .dash-footer {
+    margin-top:40px; padding-top:16px;
+    border-top:1px solid var(--border);
+    display:flex; justify-content:space-between;
+    font-size:10px; color:var(--text-dim); letter-spacing:1px;
+  }
+
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <a href="./index.html" class="back-link">&larr; Portala Don</a>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="M21 21l-4.35-4.35"/>
+          <path d="M7 11h8M11 7v8"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">Host WWN Finder</div>
+        <div class="brand-sub">Host - WWN Lookup Tool</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div><span class="live-dot"></span>SAN TOOL</div>
+      <div id="clock">--:--:--</div>
+      <div id="header-count" style="color:var(--text);">-</div>
+    </div>
+  </header>
+
+  <!-- STATUS -->
+  <div class="status-bar" id="statusBar">
+    <div class="status-dot loading" id="statusDot"></div>
+    <span class="status-text" id="statusText">CSV'ler yukleniyor...</span>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-panel">
+    <label class="search-label" for="searchBox">WWN veya Host Ara</label>
+    <input type="text" id="searchBox" class="search-input"
+           placeholder="WWN (10:00:70:b7:e4:20:f5:06 veya 100070b7e420f506) yada host adi..."
+           autocomplete="off" spellcheck="false" disabled>
+    <div class="search-hint">
+      WWN'i iki sekilde de girebilirsin: kolon ile <code>10:00:70:b7:e4:20:f5:06</code>
+      veya sadece hex <code>100070b7e420f506</code>.
+      Tam veya kismi WWN/host adi calisir.
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <span id="statsLabel">-- kayit</span>
+    <span class="count-badge" id="countBadge">0</span>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Vendor</th>
+          <th>Kabinet</th>
+          <th>Host Name</th>
+          <th>OS</th>
+          <th>WWN</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="5">
+          <div class="center-state">
+            <div class="icon">&#9203;</div>
+            <p>Veri yukleniyor...</p>
+          </div>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dash-footer">
+    <span>WWN FINDER · UNIFIED HOST/WWN LOOKUP</span>
+    <span>STORAGE PORTAL v2.0</span>
+  </div>
+</div>
+
+<script>
+const CSV_HUAWEI = './Hw/Dorado_Host.csv';
+const CSV_PMAX   = './Pmax/PmaxPoolHost.csv';
+const CSV_PURE   = './Pure/Pure_Host.csv';
+
+let allRecords = [];  // her satir: {vendor, cabinet, host, os, wwnRaw, wwnClean}
+
+/* CLOCK */
+(function(){
+  function tick(){
+    document.getElementById('clock').textContent =
+      new Date().toLocaleDateString('tr-TR') + ' · ' + new Date().toLocaleTimeString('tr-TR');
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+/* ──────────────────────────────────────────────────────────────
+   CSV PARSER
+   ────────────────────────────────────────────────────────────── */
+
+
+/* ──────────────────────────────────────────────────────────────
+   STATUS
+   ────────────────────────────────────────────────────────────── */
+function setStatus(state, msg) {
+  const bar = document.getElementById('statusBar');
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  bar.className = 'status-bar ' + (state === 'ok' ? 'ok' : state === 'error' ? 'error' : '');
+  dot.className = 'status-dot ' + state;
+  txt.className = 'status-text ' + (state === 'error' ? 'error' : state === 'ok' ? 'ok' : '');
+  txt.textContent = msg;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   LOAD
+   ────────────────────────────────────────────────────────────── */
+async function loadData() {
+  setStatus('loading', 'CSV\'ler yukleniyor...');
+
+  // Hata olsa bile diğeri yüklensin
+  const results = await Promise.allSettled([
+    fetchCSVText(CSV_HUAWEI),
+    fetchCSVText(CSV_PMAX),
+    fetchCSVText(CSV_PURE),
+  ]);
+
+  const errors = [];
+  let hwCount = 0, pmCount = 0, puCount = 0, hwWwn = 0, pmWwn = 0, puWwn = 0;
+
+  // Huawei
+  if (results[0].status === 'fulfilled') {
+    const rows = parseCSV(results[0].value);
+    rows.forEach(r => {
+      const host = (r['Host Name'] || '').trim();
+      const cabinet = (r['Kabinet'] || '').trim();
+      if (!host) return;
+      hwCount++;
+      const wwns = expandWwns(r['Host WWN'] || '');
+      if (wwns.length === 0) {
+        allRecords.push({
+          vendor: 'Huawei', cabinet, host,
+          os: (r['OS'] || 'Unknown').trim(),
+          location: (r['Lokasyon'] || '').trim(),
+          wwnRaw: '',
+          wwnClean: '',
+        });
+      } else {
+        wwns.forEach(w => {
+          hwWwn++;
+          allRecords.push({
+            vendor: 'Huawei', cabinet, host,
+            os: (r['OS'] || 'Unknown').trim(),
+            location: (r['Lokasyon'] || '').trim(),
+            wwnRaw: w,
+            wwnClean: w,
+          });
+        });
+      }
+    });
+  } else {
+    errors.push(`Huawei CSV: ${results[0].reason}`);
+  }
+
+      // PowerMax
+  if (results[1].status === 'fulfilled') {
+    const rows = parseCSV(results[1].value);
+    const seen = new Set();
+    rows.forEach(r => {
+      const host = (r['Host Name'] || '').trim();
+      const cabinet = (r['Array ID'] || '').trim();
+      if (!host) return;
+      const key = `${cabinet}::${host.toLowerCase()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      pmCount++;
+      const wwns = expandWwns(r['Host WWN'] || '');
+      if (wwns.length === 0) {
+        allRecords.push({
+          vendor: 'PowerMax', cabinet, host,
+          os: (r['OS'] || 'Unknown').trim(),
+          location: (r['Lokasyon'] || '').trim(),
+          wwnRaw: '',
+          wwnClean: '',
+        });
+      } else {
+        wwns.forEach(w => {
+          pmWwn++;
+          allRecords.push({
+            vendor: 'PowerMax', cabinet, host,
+            os: (r['OS'] || 'Unknown').trim(),
+            location: (r['Lokasyon'] || '').trim(),
+            wwnRaw: w,
+            wwnClean: w,
+          });
+        });
+      }
+    });
+  } else {
+    errors.push(`PowerMax CSV: ${results[1].reason}`);
+  }
+
+  // Pure FlashArray
+  if (results[2].status === 'fulfilled') {
+    const rows = parseCSV(results[2].value);
+    rows.forEach(r => {
+      const host = (r['Host Name'] || '').trim();
+      const cabinet = (r['Kabinet'] || '').trim();
+      if (!host) return;
+      puCount++;
+      const proto = (r['Protocol'] || 'FC').trim();
+      const rawWwn = r['Host WWN'] || '';
+      // iSCSI ise IQN — expandWwns çalışmaz, pipe-split yeterli
+      const wwns = proto === 'iSCSI'
+        ? rawWwn.split('|').map(s => s.trim()).filter(s => s)
+        : expandWwns(rawWwn);
+      if (wwns.length === 0) {
+        allRecords.push({
+          vendor: 'Pure FA', cabinet, host,
+          os: (r['OS'] || 'Linux').trim(),
+          location: (r['Lokasyon'] || '').trim(),
+          wwnRaw: '', wwnClean: '',
+        });
+      } else {
+        wwns.forEach(w => {
+          puWwn++;
+          allRecords.push({
+            vendor: 'Pure FA', cabinet, host,
+            os: (r['OS'] || 'Linux').trim(),
+            location: (r['Lokasyon'] || '').trim(),
+            wwnRaw: w,
+            wwnClean: proto === 'iSCSI' ? w : cleanWwn(w),
+          });
+        });
+      }
+    });
+  } else {
+    errors.push(`Pure FA CSV: ${results[2].reason}`);
+  }
+
+  if (errors.length === results.length) {
+    setStatus('error', `Hicbir CSV yuklenemedi: ${errors.join(' · ')}`);
+    document.getElementById('tableBody').innerHTML =
+      '<tr><td colspan="5"><div class="center-state"><div class="icon">!</div>' +
+      '<p>CSV dosyalarina ulasilamadi. Dorado_Host.csv, PmaxPoolHost.csv ve Pure_Host.csv yollarini kontrol et.</p>' +
+      '</div></td></tr>';
+    return;
+  }
+
+  const total = allRecords.length;
+  const uniqueHosts = new Set(allRecords.map(r => r.vendor + '::' + r.cabinet + '::' + r.host.toLowerCase())).size;
+  setStatus('ok', `${total} kayit · ${uniqueHosts} unique host · HW:${hwCount} PMAX:${pmCount} Pure:${puCount}`);
+  document.getElementById('header-count').textContent = `${uniqueHosts} host · ${hwWwn + pmWwn + puWwn} WWN/IQN`;
+
+  document.getElementById('searchBox').disabled = false;
+  document.getElementById('searchBox').focus();
+  showPrompt();
+}
+
+/* WWN normalize: kolon, tire, bosluk hepsini at, lowercase */
+
+
+/* Pipe-ayrilmis WWN string'inden gecerli WWN'leri cikart.
+   Birlesik 32-hex de desteklenir: "aabbccdd11223344aabbccdd55667788" -> 2 WWN */
+function expandWwns(raw) {
+  const result = [];
+  (raw || '').split('|').forEach(chunk => {
+    const hex = chunk.trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+    if (!hex) return;
+    for (let i = 0; i + 16 <= hex.length; i += 16) {
+      result.push(hex.substring(i, i + 16));
+    }
+  });
+  return result;
+}
+
+function showPrompt() {
+  document.getElementById('tableBody').innerHTML =
+    '<tr><td colspan="5"><div class="center-state">' +
+    '<div class="icon">&#9906;</div>' +
+    '<p>Aramaya <strong>WWN</strong> veya <strong>host adi</strong> yazarak basla.</p>' +
+    '</div></td></tr>';
+  updateStats(0);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   SEARCH
+   ────────────────────────────────────────────────────────────── */
+document.getElementById('searchBox').addEventListener('input', doSearch);
+
+function doSearch() {
+  const raw = document.getElementById('searchBox').value.trim();
+  if (!raw) { showPrompt(); return; }
+
+  const lowerQuery = raw.toLowerCase();
+  // Saf hex sorgu (kolon, bosluk, tire vb. hepsini at)
+  const hexQuery = lowerQuery.replace(/[^0-9a-f]/g, '');
+  // Eger en az 2 hex karakter varsa WWN aramasi da yap
+  const isHexQuery = hexQuery.length >= 2;
+
+  const results = [];
+  for (const rec of allRecords) {
+    let hit = false;
+
+    // HOST ADI / CABINET / LOCATION — her zaman kontrol et
+    if (rec.host.toLowerCase().includes(lowerQuery) ||
+        rec.cabinet.toLowerCase().includes(lowerQuery) ||
+        (rec.location && rec.location.toLowerCase().includes(lowerQuery))) {
+      hit = true;
+    }
+    // WWN — her zaman kontrol et (hem hex-hem kolonlu formatta)
+    else if (isHexQuery && rec.wwnClean) {
+      // wwnClean hem kolonlu (Pure) hem hex-raw (Huawei/PowerMax) olabilir
+      const wwnHex = rec.wwnClean.replace(/[^0-9a-f]/g, '');
+      if (wwnHex.includes(hexQuery)) {
+        hit = true;
+      }
+    }
+
+    if (hit) results.push(rec);
+  }
+
+  renderResults(results, raw, hexQuery, lowerQuery, isHexQuery);
+}
+
+function renderResults(results, queryRaw, queryClean, queryLower, isHexQuery) {
+  updateStats(results.length);
+
+  if (results.length === 0) {
+    document.getElementById('tableBody').innerHTML =
+      '<tr><td colspan="5"><div class="center-state">' +
+      '<div class="icon">&#9906;</div>' +
+      '<p><strong>' + escapeHtml(queryRaw) + '</strong> ile eslesen kayit yok.</p>' +
+      '</div></td></tr>';
+    return;
+  }
+
+  // Sirala: WWN match'leri once, sonra host adi
+  results.sort((a, b) => {
+    const aWwnHex = a.wwnClean ? a.wwnClean.replace(/[^0-9a-f]/g, '') : '';
+    const bWwnHex = b.wwnClean ? b.wwnClean.replace(/[^0-9a-f]/g, '') : '';
+    const aw = (aWwnHex && isHexQuery && aWwnHex.includes(queryClean)) ? 0 : 1;
+    const bw = (bWwnHex && isHexQuery && bWwnHex.includes(queryClean)) ? 0 : 1;
+    if (aw !== bw) return aw - bw;
+    return a.host.localeCompare(b.host);
+  });
+
+  const tbody = results.map(r => {
+    const venderCls = r.vendor === 'Huawei' ? 'huawei' : 'pmax';
+    const osCls = osTagClass(r.os);
+    // WWN'i okunabilir formatta goster (kolonlu)
+    const wwnDisplay = r.wwnRaw ? formatWwnDisplay(r.wwnRaw) : '<span style="color:var(--text-dim)">— WWN yok —</span>';
+    return `<tr>
+      <td><span class="vendor-tag ${venderCls}">${r.vendor}</span></td>
+      <td>${escapeHtml(r.cabinet)}</td>
+      <td class="col-host">${highlight(r.host, queryLower)}</td>
+      <td><span class="tag-os ${osCls}">${escapeHtml(r.os)}</span></td>
+      <td class="col-wwn">${r.wwnRaw ? highlightWwn(wwnDisplay, queryClean, isHexQuery) : wwnDisplay}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tableBody').innerHTML = tbody;
+}
+
+function formatWwnDisplay(raw) {
+  if (raw.startsWith('iqn:')) return escapeHtml(raw.substring(4));
+  const clean = cleanWwn(raw);
+  if (clean.length === 16 && /^[0-9a-f]+$/.test(clean)) {
+    return clean.match(/.{1,2}/g).join(':');
+  }
+  return escapeHtml(raw);
+}
+
+function osTagClass(os) {
+  const map = { 'Linux':'linux','Windows':'windows','VMware ESX':'vmware','AIX':'aix' };
+  return 'tag-' + (map[os] || 'unknown');
+}
+
+function highlight(text, q) {
+  if (!q) return escapeHtml(text);
+  const esc = escapeHtml(text);
+  const lower = esc.toLowerCase();
+  const qLower = q.toLowerCase();
+  let result = '', idx = 0;
+  while (idx < esc.length) {
+    const found = lower.indexOf(qLower, idx);
+    if (found === -1) { result += esc.slice(idx); break; }
+    result += esc.slice(idx, found);
+    result += '<mark>' + esc.slice(found, found + qLower.length) + '</mark>';
+    idx = found + qLower.length;
+  }
+  return result;
+}
+
+function highlightWwn(displayHtml, queryClean, isHex) {
+  // displayHtml zaten escaped + ":" karakterlerini icerir
+  // queryClean ise saf hex, kullanicinin sorgusunun normalize halidir
+  if (!isHex || !queryClean) return displayHtml;
+  // displayHtml'in clean halini cikar (sadece hex'ler)
+  const cleanFromDisplay = displayHtml.replace(/[^0-9a-f]/gi, '').toLowerCase();
+  if (!cleanFromDisplay.includes(queryClean)) return displayHtml;
+  // Display'deki her hex karakteri pozisyon olarak isaretle, query'nin durdugu yerleri sar
+  let hexIdx = 0;
+  let out = '';
+  let highlighting = false;
+  const start = cleanFromDisplay.indexOf(queryClean);
+  const end = start + queryClean.length;
+  for (let i = 0; i < displayHtml.length; i++) {
+    const c = displayHtml[i];
+    if (/[0-9a-fA-F]/.test(c)) {
+      if (hexIdx === start) { out += '<mark>'; highlighting = true; }
+      if (hexIdx === end) { out += '</mark>'; highlighting = false; }
+      out += c;
+      hexIdx++;
+    } else {
+      out += c;
+    }
+  }
+  if (highlighting) out += '</mark>';
+  return out;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function updateStats(count) {
+  document.getElementById('statsLabel').textContent = count.toLocaleString('tr-TR') + ' kayit';
+  document.getElementById('countBadge').textContent = count.toLocaleString('tr-TR');
+}
+
+loadData();
+</script>
+</body>
+</html>

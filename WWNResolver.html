@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<link rel="stylesheet" href="./storage-styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WWN Resolver · Storage Portal</title>
+<style>
+  :root {
+    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
+    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
+    --danger:#e84b4b; --warn:#e8844b;
+    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image: linear-gradient(rgba(30,45,68,.3) 1px,transparent 1px), linear-gradient(90deg,rgba(30,45,68,.3) 1px,transparent 1px);
+    background-size:40px 40px; pointer-events:none; z-index:0;
+  }
+
+  /* SHELL */
+  .shell { position:relative; z-index:1; max-width:900px; margin:0 auto; padding:24px; }
+  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
+  .back-link:hover { color:var(--accent2); }
+
+  /* HEADER */
+  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:center; gap:14px; }
+  .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
+  @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
+  .brand-icon svg { width:22px; height:22px; stroke:var(--accent); fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+  .brand-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text-bright); letter-spacing:-.5px; }
+  .brand-sub { font-size:10px; color:var(--text-dim); letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
+  .header-meta { text-align:right; font-size:11px; color:var(--text-dim); line-height:1.8; }
+  .live-dot { display:inline-block; width:6px; height:6px; background:var(--accent3); border-radius:50%; margin-right:6px; animation:blink 2s ease-in-out infinite; vertical-align:middle; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* SEARCH PANEL */
+  .panel {
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:28px;
+    position:relative;
+    overflow:hidden;
+    margin-bottom:20px;
+  }
+  .panel::before {
+    content:''; position:absolute; top:0; left:0;
+    width:3px; height:100%;
+    background:var(--accent);
+  }
+
+  .search-label {
+    font-size:10px;
+    letter-spacing:3px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    display:block;
+    margin-bottom:12px;
+  }
+  .wwn-input {
+    width:100%;
+    background:var(--bg);
+    border:1px solid var(--border);
+    color:var(--accent3);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    padding:16px 18px;
+    outline:none;
+    transition:all .25s;
+    letter-spacing:.5px;
+  }
+  .wwn-input::placeholder { color:var(--text-dim); letter-spacing:1px; }
+  .wwn-input:focus {
+    border-color:var(--accent2);
+    box-shadow:0 0 0 3px rgba(75,159,232,.1);
+  }
+
+  /* RESULT */
+  .result-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:0;
+    position:relative;
+    overflow:hidden;
+    display:none;
+    animation:fadeIn .35s ease both;
+  }
+  .result-card.show { display:block; }
+  .result-card::before {
+    content:''; position:absolute; top:0; left:0;
+    width:3px; height:100%;
+    background:var(--accent3);
+    transition:background .2s;
+  }
+  .result-card.vendor-emc::before     { background:var(--accent2); }
+  .result-card.vendor-hitachi::before { background:var(--warn); }
+  .result-card.vendor-huawei::before  { background:var(--accent3); }
+  .result-card.vendor-pure::before    { background:var(--accent); }
+  .result-card.vendor-unknown::before { background:var(--text-dim); }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  .result-header {
+    padding:14px 22px;
+    background:var(--surface2);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .result-label {
+    font-size:10px;
+    letter-spacing:2px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+  .vendor-badge {
+    font-size:10px;
+    padding:3px 10px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    font-weight:500;
+    border:1px solid;
+  }
+  .vendor-badge.vendor-emc     { background:rgba(75,159,232,.12); color:var(--accent2); border-color:rgba(75,159,232,.3); }
+  .vendor-badge.vendor-hitachi { background:rgba(232,132,75,.12); color:var(--warn);    border-color:rgba(232,132,75,.3); }
+  .vendor-badge.vendor-huawei  { background:rgba(75,232,160,.12); color:var(--accent3); border-color:rgba(75,232,160,.3); }
+  .vendor-badge.vendor-pure    { background:rgba(232,184,75,.12); color:var(--accent);  border-color:rgba(232,184,75,.3); }
+  .vendor-badge.vendor-unknown { background:rgba(90,112,144,.12); color:var(--text-dim); border-color:rgba(90,112,144,.3); }
+
+  .result-body { padding:24px 22px; }
+  .result-value {
+    font-family:'Syne',sans-serif;
+    font-size:30px;
+    font-weight:700;
+    color:var(--text-bright);
+    letter-spacing:-.5px;
+    line-height:1.1;
+    margin-bottom:14px;
+    word-break:break-all;
+  }
+
+  .result-details {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    gap:10px;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .detail-item {
+    background:var(--grid);
+    border:1px solid var(--border);
+    padding:10px 12px;
+  }
+  .detail-label {
+    font-size:9px;
+    letter-spacing:1.5px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .detail-value {
+    font-size:12px;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    word-break:break-all;
+  }
+
+  /* PLACEHOLDER */
+  .placeholder-state {
+    padding:40px 20px;
+    text-align:center;
+    color:var(--text-dim);
+    font-size:12px;
+    letter-spacing:.5px;
+    line-height:2;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-left:3px solid var(--text-dim);
+  }
+  .placeholder-state .icon {
+    font-size:24px;
+    margin-bottom:12px;
+    opacity:.5;
+  }
+
+  /* HELP / VENDORS LIST */
+  .vendors-section {
+    margin-top:32px;
+  }
+  .section-title {
+    font-family:'Syne',sans-serif;
+    font-size:13px; font-weight:700;
+    color:var(--accent);
+    letter-spacing:2px; text-transform:uppercase;
+    margin-bottom:14px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--border);
+  }
+  .vendors-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+    gap:12px;
+  }
+  .vendor-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:14px 16px;
+    position:relative;
+  }
+  .vendor-card::before {
+    content:''; position:absolute; top:0; left:0;
+    width:3px; height:100%;
+  }
+  .vendor-card.v-emc::before     { background:var(--accent2); }
+  .vendor-card.v-hitachi::before { background:var(--warn); }
+  .vendor-card.v-huawei::before  { background:var(--accent3); }
+  .vendor-card.v-pure::before    { background:var(--accent); }
+  .vendor-name {
+    font-family:'Syne',sans-serif;
+    font-size:13px; font-weight:700;
+    color:var(--text-bright);
+    margin-bottom:4px;
+    letter-spacing:.5px;
+  }
+  .vendor-prefix {
+    font-size:10px;
+    color:var(--text-dim);
+    letter-spacing:1px;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  /* FOOTER */
+  .dash-footer {
+    margin-top:40px;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+    display:flex; justify-content:space-between;
+    font-size:10px; color:var(--text-dim);
+    letter-spacing:1px;
+  }
+
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <a href="./index.html" class="back-link">&larr; Portala Don</a>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">WWN Resolver</div>
+        <div class="brand-sub">FC Port &amp; Cabinet Lookup</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div><span class="live-dot"></span>SAN TOOL</div>
+      <div id="clock">--:--:--</div>
+      <div style="color:var(--text);">WWN / naa Pattern Match</div>
+    </div>
+  </header>
+
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <label class="search-label" for="wwnBox">WWN / naa ID Girin</label>
+    <input type="text" id="wwnBox" class="wwn-input"
+           placeholder="orn: naa.6ccbce3100016dfe..." autocomplete="off" spellcheck="false">
+  </div>
+
+  <!-- RESULT -->
+  <div id="resultCard" class="result-card">
+    <div class="result-header">
+      <span class="result-label">Tespit Edilen Kabinet</span>
+      <span id="vendorBadge" class="vendor-badge vendor-unknown">UNKNOWN</span>
+    </div>
+    <div class="result-body">
+      <div id="cabinetResult" class="result-value">-</div>
+      <div class="result-details" id="resultDetails"></div>
+    </div>
+  </div>
+
+  <div id="placeholder" class="placeholder-state">
+    <div class="icon">&#9906;</div>
+    <p>Cozumlemek icin bir <strong style="color:var(--accent2)">WWN</strong> veya <strong style="color:var(--accent2)">naa</strong> ID yapistirin.</p>
+  </div>
+
+  <!-- VENDORS REFERENCE -->
+  <div class="vendors-section">
+    <div class="section-title">Desteklenen Vendor'lar</div>
+    <div class="vendors-grid">
+      <div class="vendor-card v-emc">
+        <div class="vendor-name">EMC VMAX</div>
+        <div class="vendor-prefix">prefix: 6000097...</div>
+      </div>
+      <div class="vendor-card v-hitachi">
+        <div class="vendor-name">Hitachi</div>
+        <div class="vendor-prefix">prefix: 60060e8...</div>
+      </div>
+      <div class="vendor-card v-huawei">
+        <div class="vendor-name">Huawei</div>
+        <div class="vendor-prefix">prefix: 6cc / 6a8 / 660 / 694 / 6ac / 6b4</div>
+      </div>
+      <div class="vendor-card v-pure">
+        <div class="vendor-name">Pure Storage</div>
+        <div class="vendor-prefix">prefix: 624a937...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-footer">
+    <span>WWN RESOLVER · SAN INFRASTRUCTURE TOOL</span>
+    <span>STORAGE PORTAL v2.0</span>
+  </div>
+</div>
+
+<script src="./storage-utils.js"></script>
+<script>
+/* CLOCK */
+(function(){
+  function tick(){
+    var now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleDateString('tr-TR') + ' · ' + now.toLocaleTimeString('tr-TR');
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+const wwnBox        = document.getElementById('wwnBox');
+const resultCard    = document.getElementById('resultCard');
+const cabinetResult = document.getElementById('cabinetResult');
+const vendorBadge   = document.getElementById('vendorBadge');
+const resultDetails = document.getElementById('resultDetails');
+const placeholder   = document.getElementById('placeholder');
+
+/* ──────────────────────────────────────────────────────────────
+   PATTERN MAPPING  (orijinal mantik korundu)
+   ────────────────────────────────────────────────────────────── */
+const patterns = {
+  pure: {
+    "E7": "PURE_008",
+    "AB": "PURE_07B",
+    "32": "PURE_005",
+    "0D": "PURE_082",
+    "DE": "PURE_519"
+  },
+  huawei: {
+    "6ccbce3100016dfe": "HW007",
+    "6a8d4e01005dd4a5": "HW001",
+    "6a8d4e01005dd4d8": "HW005",
+    "660109e100f9a44d": "HW005_DE39",
+    "6ccbce3100016e35": "HW005_AT37",
+    "6ccbce3100016e08": "Huawei 001_Sol5",
+    "694a4f9100d319c4": "Huawei 001_P81",
+    "6ac992910092395b": "Huawei 005_Q11",
+    "6b48901100d6279a": "Huawei 002",
+    "6b48901100d62795": "Huawei 004"
+  },
+  hitachi: {
+    "60060e800882c700": "Hitachi 134",
+    "60060e80089cc600": "Hitachi 479"
+  }
+};
+
+/* ──────────────────────────────────────────────────────────────
+   RESOLVE
+   ────────────────────────────────────────────────────────────── */
+wwnBox.addEventListener('input', function() {
+  let raw = this.value.trim().toLowerCase();
+  let clean = raw.replace('naa.', '');
+
+  if (clean.length < 8) { hideResult(); return; }
+
+  let foundCabinet = "";
+  let vendor = "";
+  let vendorKey = "unknown";
+  let details = {};
+
+  // 1. EMC/VMAX
+  if (clean.startsWith('6000097')) {
+    vendor = "EMC VMAX";
+    vendorKey = "emc";
+    foundCabinet = clean.substring(16, 19);
+    details = {
+      'Prefix': clean.substring(0, 7),
+      'Seri (pos 17-19)': clean.substring(16, 19),
+      'Tip': 'Standart EMC WWN'
+    };
+  }
+  // 2. HITACHI
+  else if (clean.startsWith('60060e8')) {
+    vendor = "HITACHI";
+    vendorKey = "hitachi";
+    let prefix = clean.substring(0, 16);
+    foundCabinet = patterns.hitachi[prefix] || "Hitachi Unknown (" + prefix.substring(12) + ")";
+    details = {
+      'Prefix (16ch)': prefix,
+      'Seri ID': prefix.substring(12),
+      'Eslesti mi': patterns.hitachi[prefix] ? 'EVET' : 'HAYIR (DB ye ekleyin)'
+    };
+  }
+  // 3. HUAWEI
+  else if (clean.startsWith('6cc') || clean.startsWith('6a8') || clean.startsWith('660') ||
+           clean.startsWith('694') || clean.startsWith('6ac') || clean.startsWith('6b4')) {
+    vendor = "HUAWEI";
+    vendorKey = "huawei";
+    let prefix = clean.substring(0, 16);
+    foundCabinet = patterns.huawei[prefix] || "Huawei Unknown";
+    details = {
+      'Prefix (16ch)': prefix,
+      'Eslesti mi': patterns.huawei[prefix] ? 'EVET' : 'HAYIR (DB ye ekleyin)'
+    };
+  }
+  // 4. PURE
+  else {
+    vendor = "PURE STORAGE";
+    vendorKey = "pure";
+    let prefix = clean.substring(0, 2).toUpperCase();
+
+    if (clean.startsWith('624a9370')) {
+      let pureId = clean.substring(8, 10).toUpperCase();
+      foundCabinet = patterns.pure[pureId] || "Pure ID: " + pureId;
+      details = {
+        'Format': '624a9370 (standart)',
+        'Pure ID (pos 9-10)': pureId,
+        'Eslesti mi': patterns.pure[pureId] ? 'EVET' : 'HAYIR (DB ye ekleyin)'
+      };
+    } else {
+      foundCabinet = patterns.pure[prefix] || "Pure Unknown (" + prefix + ")";
+      details = {
+        'Prefix (2ch)': prefix,
+        'Format': 'Kisa Pure formati',
+        'Eslesti mi': patterns.pure[prefix] ? 'EVET' : 'HAYIR'
+      };
+    }
+
+    // Vendor belirsizse vendor unknown'a kaydir
+    if (!foundCabinet.startsWith('PURE') && !patterns.pure[prefix] && !clean.startsWith('624a')) {
+      vendor = "UNKNOWN";
+      vendorKey = "unknown";
+    }
+  }
+
+  if (foundCabinet) {
+    showResult(foundCabinet, vendor, vendorKey, details);
+  } else {
+    hideResult();
+  }
+});
+
+function showResult(cab, ven, venKey, details) {
+  cabinetResult.textContent = cab;
+  vendorBadge.textContent = ven;
+  vendorBadge.className = 'vendor-badge vendor-' + venKey;
+  resultCard.className = 'result-card show vendor-' + venKey;
+
+  // Details panel
+  let html = '';
+  for (const k in details) {
+    html += '<div class="detail-item">' +
+              '<div class="detail-label">' + escapeHtml(k) + '</div>' +
+              '<div class="detail-value">' + escapeHtml(details[k]) + '</div>' +
+            '</div>';
+  }
+  resultDetails.innerHTML = html;
+
+  placeholder.style.display = 'none';
+}
+
+function hideResult() {
+  resultCard.className = 'result-card';
+  placeholder.style.display = 'block';
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>

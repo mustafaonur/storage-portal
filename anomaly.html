@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anomali Dedektörü · Storage Portal</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<style>
+:root{
+  --bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d44;
+  --accent:#e8b84b;--accent2:#4b9fe8;--accent3:#4be8a0;
+  --danger:#e84b4b;--warn:#e8844b;--purple:#c084fc;
+  --text:#c8d8f0;--text-dim:#5a7090;--text-bright:#e8f2ff;--grid:#0f1928;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:20px;}
+.back-link{display:inline-block;margin-bottom:12px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;}
+.back-link:hover{color:var(--accent2);}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-icon{width:40px;height:40px;border:2px solid var(--warn);display:grid;place-items:center;}
+.brand-icon svg{width:20px;height:20px;stroke:var(--warn);fill:none;stroke-width:1.5;stroke-linecap:round;}
+.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;}
+.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);}
+
+.toolbar{display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);padding:14px 16px;}
+.toolbar label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:4px;}
+.toolbar select,.toolbar input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 10px;outline:none;}
+.toolbar select:focus,.toolbar input:focus{border-color:var(--warn);}
+.btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 14px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
+.btn:hover{border-color:var(--warn);color:var(--warn);}
+.btn.primary{border-color:var(--warn);color:var(--warn);}
+.btn.primary:hover{background:var(--warn);color:var(--bg);}
+
+.sigma-info{font-size:10px;color:var(--text-dim);background:var(--grid);border:1px solid var(--border);border-left:3px solid var(--accent2);padding:10px 14px;margin-bottom:18px;line-height:1.6;}
+.sigma-info b{color:var(--text-bright);}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat{background:var(--surface);border:1px solid var(--border);padding:14px 16px;}
+.stat.anom{border-left:3px solid var(--danger);}
+.stat.watch{border-left:3px solid var(--warn);}
+.stat.ok{border-left:3px solid var(--accent3);}
+.stat.data{border-left:3px solid var(--accent2);}
+.stat-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--text-bright);}
+.stat-sub{font-size:9px;color:var(--text-dim);margin-top:3px;}
+
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:18px;}
+.panel-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-bright);display:flex;justify-content:space-between;align-items:center;}
+
+.anom-card{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--danger);padding:16px 18px;margin:12px;}
+.anom-card.watch{border-left-color:var(--warn);}
+.anom-card-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.anom-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--text-bright);}
+.anom-vendor{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:3px;}
+.anom-tag{font-size:9px;padding:3px 10px;border:1px solid;letter-spacing:1px;white-space:nowrap;}
+.anom-tag.crit{color:var(--danger);border-color:var(--danger);background:rgba(232,75,75,.08);}
+.anom-tag.warn{color:var(--warn);border-color:var(--warn);background:rgba(232,132,75,.08);}
+.anom-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:12px;}
+.anom-metric{}
+.anom-metric .am-lbl{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.anom-metric .am-val{font-size:15px;color:var(--text-bright);font-weight:600;}
+.anom-metric .am-val.bad{color:var(--danger);}
+.anom-metric .am-val.up{color:var(--warn);}
+.anom-reason{font-size:11px;color:var(--text-dim);background:var(--grid);border:1px solid var(--border);padding:9px 12px;line-height:1.5;}
+.anom-reason b{color:var(--warn);}
+.spark{display:flex;align-items:flex-end;gap:2px;height:34px;margin-top:6px;}
+.spark-bar{flex:1;background:var(--accent2);opacity:.4;min-height:2px;border-radius:1px;}
+.spark-bar.last{background:var(--danger);opacity:1;}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:340px;text-align:center;color:var(--text-dim);padding:40px;}
+.empty svg{width:46px;height:46px;stroke:var(--text-dim);fill:none;stroke-width:1.3;opacity:.5;margin-bottom:16px;}
+.empty .e-ttl{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text-bright);}
+.empty .e-msg{font-size:12px;margin-top:6px;max-width:420px;line-height:1.6;}
+.empty.good svg{stroke:var(--accent3);}
+.empty.good .e-ttl{color:var(--accent3);}
+
+.loadbar{height:3px;background:var(--surface2);overflow:hidden;margin-bottom:18px;display:none;}
+.loadbar.show{display:block;}
+.loadbar i{display:block;height:100%;background:var(--warn);width:0;transition:width .2s;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<a href="./index.html" class="back-link">← Portala Dön</a>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 20h20L12 2z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>
+    </div>
+    <div>
+      <div class="brand-title">Anomali Dedektörü</div>
+      <div class="brand-sub">3-Sigma Kapasite Sapma Tespiti</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div><span style="color:var(--warn)">●</span> ANOMALY</div>
+    <div id="data-info" style="margin-top:4px"></div>
+  </div>
+</header>
+
+<div class="sigma-info">
+  <b>Nasıl çalışır:</b> Her kabinet için son <b>7 günlük</b> günlük değişim verisinden ortalama (μ) ve standart sapma (σ) hesaplanır.
+  Bugünkü değişim, <b>ortalama + (eşik × σ)</b> sınırını aşıyorsa anomali sayılır. Snapshot patlaması, yanlış provisioning veya beklenmedik büyümeyi erken yakalar.
+</div>
+
+<div class="toolbar">
+  <div>
+    <label>Vendor</label>
+    <select id="f-vendor" onchange="runDetection()">
+      <option value="all">Tüm Vendor'lar</option>
+      <option value="huawei">Huawei</option>
+      <option value="pmax">PowerMax</option>
+      <option value="purefa">Pure FA</option>
+      <option value="purefb">Pure FB</option>
+      <option value="netapp">NetApp</option>
+      <option value="ecs">ECS</option>
+    </select>
+  </div>
+  <div>
+    <label>Metrik</label>
+    <select id="f-metric" onchange="runDetection()">
+      <option value="used">Kullanılan Kapasite</option>
+      <option value="pct">Doluluk %</option>
+    </select>
+  </div>
+  <div>
+    <label>Sigma Eşiği (σ)</label>
+    <select id="f-sigma" onchange="runDetection()">
+      <option value="3" selected>3σ (klasik, az alarm)</option>
+      <option value="2">2σ (orta hassasiyet)</option>
+      <option value="2.5">2.5σ</option>
+    </select>
+  </div>
+  <div style="align-self:flex-end">
+    <button class="btn primary" onclick="reloadAll()">↻ Yeniden Tara</button>
+  </div>
+  <div style="align-self:flex-end;margin-left:auto">
+    <button class="btn" onclick="exportAnomCSV()">⭳ CSV Aktar</button>
+  </div>
+</div>
+
+<div class="loadbar" id="loadbar"><i id="loadbar-i"></i></div>
+
+<div class="stats-row" id="stats-row" style="display:none">
+  <div class="stat anom"><div class="stat-lbl">Anomali</div><div class="stat-val" id="s-anom">0</div><div class="stat-sub">eşik aşan kabinet</div></div>
+  <div class="stat watch"><div class="stat-lbl">İzlenecek</div><div class="stat-val" id="s-watch">0</div><div class="stat-sub">eşiğe yakın</div></div>
+  <div class="stat ok"><div class="stat-lbl">Normal</div><div class="stat-val" id="s-ok">0</div><div class="stat-sub">beklenen aralıkta</div></div>
+  <div class="stat data"><div class="stat-lbl">Analiz Edilen</div><div class="stat-val" id="s-total">0</div><div class="stat-sub">yeterli veri olan kabinet</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-hdr"><span>Tespit Edilen Anomaliler</span><span id="anom-info" style="font-size:10px;color:var(--text-dim);font-weight:normal"></span></div>
+  <div id="anom-list">
+    <div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div class="e-ttl">Yükleniyor...</div>
+      <div class="e-msg">_history/ klasöründen son 30 günlük veri okunuyor.</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="toast sp-hidden" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--warn);color:var(--text-bright);padding:10px 20px;font-size:12px;z-index:99"></div>
+
+<script>
+const BASE='.';
+// Vendor → history path + kabinet kolonu + metrik kolonları
+const VC = {
+  huawei: { lbl:'Huawei',  hist:`${BASE}/Hw/_history/Dorado_Dashboard_{D}.csv`,   cabCol:'Kabinet',  used:'Used (TB)', pct:'Doluluk (%)', unit:'TB' },
+  pmax:   { lbl:'PowerMax',hist:`${BASE}/Pmax/_history/PmaxPoolDash_{D}.csv`,      cabCol:'Array ID', used:'Used (TB)', pct:'Doluluk (%)', unit:'TB' },
+  purefa: { lbl:'Pure FA', hist:`${BASE}/Pure/_history/Pure_Dashboard_{D}.csv`,    cabCol:'Kabinet',  used:'Used (TB)', pct:'Doluluk (%)', unit:'TB' },
+  purefb: { lbl:'Pure FB', hist:`${BASE}/Pure/_history/FB_Dashboard_{D}.csv`,      cabCol:'Kabinet',  used:'Used (TB)', pct:'Doluluk (%)', unit:'TB' },
+  netapp: { lbl:'NetApp',  hist:`${BASE}/NetApp/_history/NetApp_Dashboard_{D}.csv`,cabCol:'Kabinet',  used:'Used (TB)', pct:'Doluluk (%)', unit:'TB' },
+  ecs:    { lbl:'ECS',     hist:`${BASE}/Ecs/_history/ECS_Dashboard_{D}.csv`,      cabCol:null,        used:'Used (GiB)',pct:'Doluluk (%)', unit:'GiB' },
+};
+const SKIP = r => ['===','---'].includes(r.Lokasyon) || /^(TOPLAM|GENEL)/i.test(r.Kabinet||r['Array ID']||'');
+
+let CACHE = {};  // vendorId -> [{date, rows}]
+
+// esc, toN, parseCSV, toast, dateRangeBack → storage-utils.js (ortak)
+
+async function loadVendor(vid){
+  if(CACHE[vid]) return CACHE[vid];
+  const cfg=VC[vid];
+  const dates=dateRangeBack(30);
+  const out=[];
+  const lb=document.getElementById('loadbar'), lbi=document.getElementById('loadbar-i');
+  lb.classList.add('show');
+  let done=0;
+  const tasks=dates.map(d=>
+    fetchCSVText(cfg.hist.replace('{D}',d))
+      .then(txt=>{
+        done++; lbi.style.width=(done/dates.length*100)+'%';
+        const rows=parseCSV(txt).filter(r=>!SKIP(r));
+        if(rows.length) out.push({date:d,rows});
+      })
+  );
+  for(let i=0;i<tasks.length;i+=6){ await Promise.all(tasks.slice(i,i+6)); }
+  out.sort((a,b)=>a.date.localeCompare(b.date));
+  lb.classList.remove('show'); lbi.style.width='0';
+  CACHE[vid]=out;
+  return out;
+}
+
+// Bir kabinetin gün-gün değer serisini çıkar
+function buildSeries(snapshots, cabCol, valCol){
+  // cabName -> [{date, val}]
+  const series={};
+  snapshots.forEach(s=>{
+    s.rows.forEach(r=>{
+      const cab = cabCol ? (r[cabCol]||'').trim() : '_TOPLAM';
+      if(!cab) return;
+      const v=toN(r[valCol]);
+      if(!series[cab]) series[cab]=[];
+      series[cab].push({date:s.date, val:v});
+    });
+  });
+  return series;
+}
+
+// 3-sigma anomali analizi
+function analyze(series, sigmaThresh){
+  const results=[];
+  Object.entries(series).forEach(([cab,pts])=>{
+    if(pts.length<8) return;   // 7 gün ortalama + 1 bugün gerekli
+    pts.sort((a,b)=>a.date.localeCompare(b.date));
+    // Günlük değişimler (delta)
+    const deltas=[];
+    for(let i=1;i<pts.length;i++) deltas.push({date:pts[i].date, d:pts[i].val-pts[i-1].val});
+    if(deltas.length<7) return;
+    // Son delta = "bugün", öncesi 7 (veya daha fazla) = baseline
+    const today=deltas[deltas.length-1];
+    const baseline=deltas.slice(Math.max(0,deltas.length-8),deltas.length-1); // son 7 değişim (bugün hariç)
+    if(baseline.length<5) return;
+    const mean=baseline.reduce((s,x)=>s+x.d,0)/baseline.length;
+    const variance=baseline.reduce((s,x)=>s+Math.pow(x.d-mean,2),0)/baseline.length;
+    const std=Math.sqrt(variance);
+    const upper=mean + sigmaThresh*std;
+    const lower=mean - sigmaThresh*std;
+    // Anomali: bugünkü değişim üst sınırı aştı (büyüme anomalisi) ya da alt sınırın altında (ani düşüş)
+    let level='ok';
+    const absDevSigma = std>0 ? Math.abs((today.d-mean)/std) : (today.d!==mean?99:0);
+    if(today.d>upper || today.d<lower) level='anom';
+    else if(absDevSigma >= sigmaThresh*0.7) level='watch';
+    results.push({
+      cab, level,
+      todayDelta:today.d, mean, std, upper, lower,
+      sigmaDev:absDevSigma,
+      lastVal:pts[pts.length-1].val,
+      series:pts.slice(-10).map(p=>p.val),
+      deltaSeries:deltas.slice(-10).map(x=>x.d),
+      n:baseline.length
+    });
+  });
+  // Anomali > watch > ok, sapma büyüklüğüne göre sırala
+  const rank={anom:0,watch:1,ok:2};
+  results.sort((a,b)=> rank[a.level]-rank[b.level] || b.sigmaDev-a.sigmaDev);
+  return results;
+}
+
+let LAST_RESULTS=[];
+
+async function runDetection(){
+  const vSel=document.getElementById('f-vendor').value;
+  const metric=document.getElementById('f-metric').value;
+  const sigma=parseFloat(document.getElementById('f-sigma').value);
+  const vendors = vSel==='all' ? Object.keys(VC) : [vSel];
+
+  const listEl=document.getElementById('anom-list');
+  listEl.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div class="e-ttl">Analiz ediliyor...</div></div>';
+
+  let allResults=[];
+  let totalDays=0;
+  for(const vid of vendors){
+    const snaps=await loadVendor(vid);
+    totalDays+=snaps.length;
+    const cfg=VC[vid];
+    const valCol = metric==='used' ? cfg.used : cfg.pct;
+    const series=buildSeries(snaps, cfg.cabCol, valCol);
+    const res=analyze(series, sigma);
+    res.forEach(r=>{ r.vendor=cfg.lbl; r.vid=vid; r.unit = metric==='pct'?'%':cfg.unit; });
+    allResults=allResults.concat(res);
+  }
+
+  const rank={anom:0,watch:1,ok:2};
+  allResults.sort((a,b)=> rank[a.level]-rank[b.level] || b.sigmaDev-a.sigmaDev);
+  LAST_RESULTS=allResults;
+
+  document.getElementById('data-info').textContent=`${totalDays} snapshot · ${allResults.length} kabinet analiz edildi`;
+
+  const anom=allResults.filter(r=>r.level==='anom');
+  const watch=allResults.filter(r=>r.level==='watch');
+  const ok=allResults.filter(r=>r.level==='ok');
+
+  document.getElementById('stats-row').style.display='grid';
+  document.getElementById('s-anom').textContent=anom.length;
+  document.getElementById('s-watch').textContent=watch.length;
+  document.getElementById('s-ok').textContent=ok.length;
+  document.getElementById('s-total').textContent=allResults.length;
+
+  if(allResults.length===0){
+    listEl.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg><div class="e-ttl">Yeterli veri yok</div><div class="e-msg">Anomali tespiti için her kabinette en az 8 günlük _history snapshot gerekir. StorageReport.ps1 düzenli çalıştıkça veri birikecek.</div></div>';
+    document.getElementById('anom-info').textContent='';
+    return;
+  }
+
+  const shown=anom.concat(watch);
+  document.getElementById('anom-info').textContent=`${anom.length} anomali · ${watch.length} izlenecek · ${ok.length} normal`;
+
+  if(shown.length===0){
+    listEl.innerHTML='<div class="empty good"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9"/></svg><div class="e-ttl">Anomali yok</div><div class="e-msg">'+allResults.length+' kabinetin tümü beklenen büyüme aralığında. Son 7 günün istatistiksel sınırları içinde, sıra dışı sıçrama tespit edilmedi.</div></div>';
+    return;
+  }
+
+  listEl.innerHTML=shown.map(r=>{
+    const isCrit=r.level==='anom';
+    const dir = r.todayDelta>=0?'+':'';
+    const sparkMax=Math.max(...r.deltaSeries.map(Math.abs),0.001);
+    const spark=r.deltaSeries.map((d,i)=>{
+      const h=Math.max(2, Math.abs(d)/sparkMax*32);
+      const last=i===r.deltaSeries.length-1;
+      return `<div class="spark-bar ${last?'last':''}" style="height:${h}px" title="${d.toFixed(2)}"></div>`;
+    }).join('');
+    return `<div class="anom-card ${isCrit?'':'watch'}">
+      <div class="anom-card-hdr">
+        <div><div class="anom-name">${esc(r.cab)}</div><div class="anom-vendor">${esc(r.vendor)} · ${r.n} günlük baz</div></div>
+        <span class="anom-tag ${isCrit?'crit':'warn'}">${isCrit?'ANOMALİ':'İZLENECEK'}</span>
+      </div>
+      <div class="anom-grid">
+        <div class="anom-metric"><div class="am-lbl">Bugünkü Değişim</div><div class="am-val ${isCrit?'bad':'up'}">${dir}${r.todayDelta.toFixed(2)} ${esc(r.unit)}</div></div>
+        <div class="anom-metric"><div class="am-lbl">7-Gün Ortalama (μ)</div><div class="am-val">${(r.mean>=0?'+':'')}${r.mean.toFixed(2)} ${esc(r.unit)}</div></div>
+        <div class="anom-metric"><div class="am-lbl">Std Sapma (σ)</div><div class="am-val">${r.std.toFixed(2)}</div></div>
+        <div class="anom-metric"><div class="am-lbl">Sapma</div><div class="am-val ${isCrit?'bad':'up'}">${r.sigmaDev.toFixed(1)}σ</div></div>
+        <div class="anom-metric"><div class="am-lbl">Güncel Değer</div><div class="am-val">${r.lastVal.toFixed(1)} ${esc(r.unit)}</div></div>
+      </div>
+      <div class="spark">${spark}</div>
+      <div class="anom-reason" style="margin-top:10px">
+        Bugünkü değişim (<b>${dir}${r.todayDelta.toFixed(2)} ${esc(r.unit)}</b>) son 7 günün ortalamasının
+        <b>${r.sigmaDev.toFixed(1)}σ</b> ${r.todayDelta>r.mean?'üzerinde':'altında'}.
+        ${isCrit ? 'Olası sebep: snapshot patlaması, toplu provisioning veya beklenmedik veri yazımı. Kabineti incelemek önerilir.' : 'Eşiğe yaklaşıyor — bir sonraki taramada izlenmeli.'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function exportAnomCSV(){
+  if(LAST_RESULTS.length===0){ toast('Aktarılacak veri yok'); return; }
+  const rows=[['Kabinet','Vendor','Seviye','BugunDelta','Ortalama','StdSapma','SigmaSapma','GuncelDeger']];
+  LAST_RESULTS.forEach(r=>rows.push([
+    r.cab,r.vendor,r.level,r.todayDelta.toFixed(2),r.mean.toFixed(2),
+    r.std.toFixed(2),r.sigmaDev.toFixed(1),r.lastVal.toFixed(1)
+  ]));
+  const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='anomali_raporu.csv'; a.click();
+  toast(`${LAST_RESULTS.length} kayıt CSV'ye aktarıldı`);
+}
+
+function reloadAll(){ CACHE={}; runDetection(); }
+
+runDetection();
+</script>
+</body>
+</html>

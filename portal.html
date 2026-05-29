@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<link rel="stylesheet" href="./storage-styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Storage Portal · SPA</title>
+<style>
+/* ══════════════════════════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════════════════════════ */
+:root {
+  --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --surface3:#141f30;
+  --border:#1e2d44; --border2:#243550;
+  --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
+  --danger:#e84b4b; --warn:#e8844b; --purple:#c084fc;
+  --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff;
+  --sidebar-w: 240px;
+  --topbar-h: 52px;
+  --tabbar-h: 34px;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; display:flex; flex-direction:column; }
+
+/* ── TOPBAR ── */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 14px;
+  flex-shrink: 0;
+  z-index: 100;
+  position: relative;
+}
+.topbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: inherit; flex-shrink: 0;
+}
+.topbar-brand:hover { opacity:.85; }
+.topbar-icon {
+  width: 34px; height: 34px;
+  border: 2px solid var(--accent);
+  display: grid; place-items: center;
+  animation: pulse-border 3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-border {
+  0%,100% { box-shadow:0 0 0 0 rgba(232,184,75,.4); }
+  50%      { box-shadow:0 0 0 5px rgba(232,184,75,0); }
+}
+.topbar-icon svg { width:18px; height:18px; stroke:var(--accent); fill:none; stroke-width:1.5; stroke-linecap:round; }
+.topbar-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-bright); letter-spacing:-.3px; }
+.topbar-sub   { font-size:9px; color:var(--text-dim); letter-spacing:2.5px; text-transform:uppercase; }
+
+/* breadcrumb */
+.topbar-sep { color:var(--border2); font-size:18px; margin:0 4px; }
+.topbar-crumb { font-size:11px; color:var(--text-dim); }
+.topbar-crumb span { color: var(--text-bright); font-weight:600; }
+
+/* right cluster */
+.topbar-right {
+  margin-left: auto; display:flex; align-items:center; gap:12px;
+  font-size:11px; color:var(--text-dim);
+}
+.live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent3); margin-right:5px; animation:blink 2s ease-in-out infinite; vertical-align:middle; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+#top-clock { color:var(--text); }
+
+/* sidebar toggle btn (mobile) */
+.sidebar-toggle {
+  display:none; background:transparent; border:none; cursor:pointer;
+  color:var(--text-dim); padding:4px; flex-shrink:0;
+}
+.sidebar-toggle svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
+.sidebar-toggle:hover { color:var(--accent2); }
+
+/* ── SHELL (sidebar + iframe area) ── */
+/* Override storage-styles.css .shell which sets max-width/margin/padding */
+.shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;          /* critical: allows flex children to shrink */
+  overflow: hidden;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  flex: 0 0 var(--sidebar-w); /* flex: 0 0 = fixed width, but allows height shrinking */
+  min-height: 0;              /* critical for overflow scroll in flex container */
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: transform .25s ease;
+  z-index: 90;
+}
+/* Mobile overlay */
+@media(max-width:768px) {
+  .sidebar { position:fixed; top:var(--topbar-h); bottom:0; left:0; transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); box-shadow:8px 0 30px rgba(0,0,0,.6); }
+  .sidebar-toggle { display:block; }
+  .sidebar-backdrop { display:none; position:fixed; inset:0; top:var(--topbar-h); background:rgba(8,12,20,.7); z-index:89; }
+  .sidebar-backdrop.show { display:block; }
+}
+
+.nav-section { padding:10px 0 4px; }
+.nav-section-label {
+  font-size:8px; letter-spacing:2.5px; text-transform:uppercase;
+  color:var(--text-dim); padding:0 16px 6px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:9px;
+  padding:8px 16px;
+  font-size:11px; color:var(--text-dim);
+  cursor:pointer; text-decoration:none;
+  transition:background .12s, color .12s, border-color .12s;
+  border-left: 2px solid transparent;
+  position: relative; white-space:nowrap; overflow:hidden;
+  user-select:none;
+}
+.nav-item:hover { background:var(--surface2); color:var(--text); border-left-color:var(--border2); }
+.nav-item.active { background:var(--surface2); color:var(--text-bright); border-left-color:var(--accent2); }
+.nav-item.active .nav-icon { opacity:1; }
+.nav-icon { font-size:13px; flex-shrink:0; opacity:.6; }
+.nav-label { flex:1; overflow:hidden; text-overflow:ellipsis; }
+.nav-badge {
+  font-size:8px; padding:1px 5px;
+  background:rgba(75,159,232,.15);
+  color:var(--accent2); border-radius:2px; flex-shrink:0;
+}
+.nav-badge.warn { background:rgba(232,132,75,.15); color:var(--warn); }
+.nav-badge.new  { background:rgba(75,232,160,.15); color:var(--accent3); }
+
+/* separator */
+.nav-sep { height:1px; background:var(--border); margin:6px 0; }
+
+/* scroll */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); }
+::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
+
+/* ── CONTENT AREA ── */
+.content-area {
+  flex: 1;
+  min-height: 0;              /* critical: allows proper height in flex */
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Loading overlay for iframe transitions */
+.frame-loader {
+  position:absolute; inset:0;
+  background:var(--bg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:14px; z-index:10;
+  transition:opacity .3s;
+}
+.frame-loader.hidden { opacity:0; pointer-events:none; }
+.fl-spinner {
+  width:40px; height:40px;
+  border:3px solid var(--border);
+  border-top-color:var(--accent2);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.fl-label { font-size:11px; color:var(--text-dim); letter-spacing:2px; }
+.fl-page  { font-size:13px; color:var(--text-bright); font-weight:600; }
+
+/* The iframe */
+.spa-frame {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  border:none;
+  background:var(--bg);
+  opacity:1;
+  transition:opacity .15s;
+  z-index:1;
+}
+.spa-frame.loading { opacity:0; }
+
+/* Home screen (shown when no page selected) */
+.home-screen {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; pointer-events:none;
+  z-index:5;                     /* above iframe (1), below loader (10) */
+}
+.home-screen.hidden { display:none; }
+.home-logo { font-size:48px; opacity:.2; }
+.home-txt  { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-bright); opacity:.15; }
+.home-sub  { font-size:11px; color:var(--text-dim); opacity:.4; letter-spacing:3px; }
+
+/* Search bar in topbar */
+.topbar-search {
+  flex:1; max-width:300px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  display:flex; align-items:center; gap:8px;
+  padding:0 12px; height:32px;
+  cursor:pointer; transition:border-color .15s;
+}
+.topbar-search:hover { border-color:var(--accent2); }
+.topbar-search input {
+  background:transparent; border:none; outline:none;
+  font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);
+  width:100%; cursor:pointer;
+}
+.topbar-search input::placeholder { color:var(--text-dim); }
+.topbar-search-icon { color:var(--text-dim); font-size:13px; flex-shrink:0; }
+
+/* Quick-launch overlay */
+.ql-overlay {
+  display:none; position:fixed; inset:0; z-index:999;
+  background:rgba(8,12,20,.85);
+  align-items:flex-start; justify-content:center;
+  padding-top:80px;
+}
+.ql-overlay.open { display:flex; }
+.ql-box {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-top:3px solid var(--accent2);
+  width:100%; max-width:560px;
+  max-height:70vh; display:flex; flex-direction:column;
+  animation:qlSlide .18s ease-out;
+}
+@keyframes qlSlide { from{transform:translateY(-12px);opacity:0} to{transform:translateY(0);opacity:1} }
+.ql-input-wrap { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+.ql-input { flex:1; background:transparent; border:none; outline:none; font-family:'JetBrains Mono',monospace; font-size:14px; color:var(--text-bright); }
+.ql-hint { font-size:10px; color:var(--text-dim); padding:6px 16px 10px; }
+.ql-results { overflow-y:auto; flex:1; }
+.ql-item {
+  padding:10px 16px; display:flex; align-items:center; gap:12px;
+  cursor:pointer; transition:background .1s;
+  border-left:2px solid transparent;
+}
+.ql-item:hover, .ql-item.ql-active { background:var(--surface2); border-left-color:var(--accent2); }
+.ql-item-icon { font-size:16px; flex-shrink:0; }
+.ql-item-name { font-size:13px; color:var(--text-bright); font-weight:600; }
+.ql-item-desc { font-size:10px; color:var(--text-dim); margin-top:2px; }
+.ql-section-hdr { padding:6px 16px; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); background:var(--surface2); }
+.ql-empty { padding:30px 16px; text-align:center; color:var(--text-dim); font-size:11px; }
+
+/* Tab bar (recently opened) */
+.tab-bar {
+  display:none;               /* hidden by default; shown when tabs exist */
+  align-items:center; gap:0;
+  background:var(--surface2); border-bottom:1px solid var(--border);
+  overflow-x:auto; flex-shrink:0; height:var(--tabbar-h);
+}
+.tab-bar.visible { display:flex; }
+.tab-bar::-webkit-scrollbar { height:2px; }
+.tab-item {
+  display:flex; align-items:center; gap:6px;
+  padding:0 14px; height:var(--tabbar-h);
+  font-size:10px; color:var(--text-dim);
+  cursor:pointer; white-space:nowrap;
+  border-bottom:2px solid transparent;
+  transition:background .12s, color .12s;
+  user-select:none; flex-shrink:0;
+}
+.tab-item:hover { background:var(--surface); color:var(--text); }
+.tab-item.active { color:var(--text-bright); border-bottom-color:var(--accent2); background:var(--surface); }
+.tab-close {
+  font-size:11px; color:var(--text-dim); margin-left:4px;
+  width:14px; height:14px; display:grid; place-items:center;
+  border-radius:2px; transition:background .1s, color .1s;
+}
+.tab-close:hover { background:var(--danger); color:#fff; }
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Menüyü aç/kapat">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+
+  <a class="topbar-brand" href="./index.html">
+    <div class="topbar-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <div>
+      <div class="topbar-title">Storage Portal</div>
+      <div class="topbar-sub">Enterprise · Unified</div>
+    </div>
+  </a>
+
+  <span class="topbar-sep">/</span>
+  <div class="topbar-crumb" id="topbar-crumb"><span>Ana Sayfa</span></div>
+
+  <!-- Quick search -->
+  <div class="topbar-search" onclick="openQL()">
+    <span class="topbar-search-icon">⌕</span>
+    <input id="ql-trigger-input" placeholder="Hızlı aç... (Ctrl+K)" readonly>
+  </div>
+
+  <div class="topbar-right">
+    <span><span class="live-dot"></span>LIVE</span>
+    <span id="top-clock">--:--</span>
+  </div>
+</div>
+
+<!-- ── TAB BAR ── -->
+<div class="tab-bar" id="tab-bar">
+  <!-- tabs injected here -->
+</div>
+
+<!-- ── SHELL ── -->
+<div class="shell">
+
+  <!-- Sidebar backdrop (mobile) -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar" id="sidebar">
+
+    <div class="nav-section">
+      <div class="nav-section-label">Ana</div>
+      <a class="nav-item" data-page="index" data-label="Dashboard" data-icon="🏠" onclick="navigate('index','Dashboard',this)">
+        <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
+      </a>
+      <a class="nav-item" data-page="lake" data-label="Storage Lake" data-icon="🌊" onclick="navigate('lake','Storage Lake',this)">
+        <span class="nav-icon">🌊</span><span class="nav-label">Storage Lake</span><span class="nav-badge new">NEW</span>
+      </a>
+    </div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Block Storage</div>
+      <a class="nav-item" data-page="huawei" data-label="Huawei OceanStor" data-icon="🟡" onclick="navigate('huawei','Huawei OceanStor',this)">
+        <span class="nav-icon">🟡</span><span class="nav-label">Huawei OceanStor</span>
+      </a>
+      <a class="nav-item" data-page="pmax" data-label="PowerMax" data-icon="🔵" onclick="navigate('pmax','PowerMax',this)">
+        <span class="nav-icon">🔵</span><span class="nav-label">PowerMax</span>
+      </a>
+      <a class="nav-item" data-page="pure-fa" data-label="Pure FlashArray" data-icon="🟢" onclick="navigate('pure-fa','Pure FlashArray',this)">
+        <span class="nav-icon">🟢</span><span class="nav-label">Pure FlashArray</span>
+      </a>
+      <a class="nav-item" data-page="hitachi" data-label="Hitachi VSP" data-icon="⚪" onclick="navigate('hitachi','Hitachi VSP',this)">
+        <span class="nav-icon">⚪</span><span class="nav-label">Hitachi VSP</span>
+      </a>
+    </div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">File / NAS</div>
+      <a class="nav-item" data-page="netapp" data-label="NetApp ONTAP" data-icon="🟣" onclick="navigate('netapp','NetApp ONTAP',this)">
+        <span class="nav-icon">🟣</span><span class="nav-label">NetApp ONTAP</span>
+      </a>
+    </div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Object Storage</div>
+      <a class="nav-item" data-page="ecs" data-label="Dell ECS" data-icon="🔴" onclick="navigate('ecs','Dell ECS',this)">
+        <span class="nav-icon">🔴</span><span class="nav-label">Dell ECS</span>
+      </a>
+      <a class="nav-item" data-page="pure-fb" data-label="Pure FlashBlade" data-icon="🟩" onclick="navigate('pure-fb','Pure FlashBlade',this)">
+        <span class="nav-icon">🟩</span><span class="nav-label">Pure FlashBlade</span>
+      </a>
+    </div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">SAN</div>
+      <a class="nav-item" data-page="san" data-label="SAN Fabric" data-icon="🔶" onclick="navigate('san','SAN Fabric',this)">
+        <span class="nav-icon">🔶</span><span class="nav-label">SAN Fabric</span>
+      </a>
+      <a class="nav-item" data-page="topology" data-label="Topology / SAN Harita" data-icon="🗺" onclick="navigate('topology','Topology',this)">
+        <span class="nav-icon">🗺</span><span class="nav-label">Topology / SAN Harita</span><span class="nav-badge new">vis.js</span>
+      </a>
+      <a class="nav-item" data-page="zone-builder" data-label="Zone Builder" data-icon="⚡" onclick="navigate('zone-builder','Zone Builder',this)">
+        <span class="nav-icon">⚡</span><span class="nav-label">Zone Builder</span>
+      </a>
+      <a class="nav-item" data-page="WWNResolver" data-label="WWN Resolver" data-icon="🔍" onclick="navigate('WWNResolver','WWN Resolver',this)">
+        <span class="nav-icon">🔍</span><span class="nav-label">WWN Resolver</span>
+      </a>
+      <a class="nav-item" data-page="hostwwnfinder" data-label="Host WWN Finder" data-icon="🔎" onclick="navigate('hostwwnfinder','Host WWN Finder',this)">
+        <span class="nav-icon">🔎</span><span class="nav-label">Host WWN Finder</span>
+      </a>
+    </div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Analytics</div>
+      <a class="nav-item" data-page="trend" data-label="Trend Analizi" data-icon="📈" onclick="navigate('trend','Trend Analizi',this)">
+        <span class="nav-icon">📈</span><span class="nav-label">Trend Analizi</span>
+      </a>
+      <a class="nav-item" data-page="anomaly" data-label="Anomali Dedektörü" data-icon="🚨" onclick="navigate('anomaly','Anomali Dedektörü',this)">
+        <span class="nav-icon">🚨</span><span class="nav-label">Anomali Dedektörü</span>
+      </a>
+      <a class="nav-item" data-page="capacity-planner" data-label="Capacity Planner" data-icon="📊" onclick="navigate('capacity-planner','Capacity Planner',this)">
+        <span class="nav-icon">📊</span><span class="nav-label">Capacity Planner</span>
+      </a>
+      <a class="nav-item" data-page="impact" data-label="Impact Analysis" data-icon="💥" onclick="navigate('impact','Impact Analysis',this)">
+        <span class="nav-icon">💥</span><span class="nav-label">Impact Analysis</span>
+      </a>
+    </div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Tools</div>
+      <a class="nav-item" data-page="cabinet-finder-v2" data-label="Cabinet Finder v2" data-icon="🗄" onclick="navigate('cabinet-finder-v2','Cabinet Finder v2',this)">
+        <span class="nav-icon">🗄</span><span class="nav-label">Cabinet Finder v2</span>
+      </a>
+      <a class="nav-item" data-page="cabinet-finder" data-label="Cabinet Finder" data-icon="📦" onclick="navigate('cabinet-finder','Cabinet Finder',this)">
+        <span class="nav-icon">📦</span><span class="nav-label">Cabinet Finder</span>
+      </a>
+    </div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Management</div>
+      <a class="nav-item" data-page="management" data-label="Operations Center" data-icon="⚙️" onclick="navigate('management','Operations Center',this)">
+        <span class="nav-icon">⚙️</span><span class="nav-label">Operations Center</span>
+      </a>
+    </div>
+
+    <!-- Bottom padding -->
+    <div style="height:20px;flex-shrink:0;"></div>
+  </nav>
+
+  <!-- ── CONTENT ── -->
+  <div class="content-area" id="content-area">
+    <!-- Home / welcome screen -->
+    <div class="home-screen" id="home-screen">
+      <div class="home-logo">🗄</div>
+      <div class="home-txt">Storage Portal</div>
+      <div class="home-sub">Sol menüden bir modül seçin · Ctrl+K ile hızlı aç</div>
+    </div>
+
+    <!-- Frame loader -->
+    <div class="frame-loader hidden" id="frame-loader">
+      <div class="fl-spinner"></div>
+      <div class="fl-page" id="fl-page-name">—</div>
+      <div class="fl-label">YÜKLENİYOR</div>
+    </div>
+
+    <!-- Iframe (single, src swapped on navigate) -->
+    <iframe class="spa-frame loading" id="spa-frame" src="about:blank"
+      allow="same-origin"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation"></iframe>
+  </div>
+</div>
+
+<!-- ── QUICK LAUNCH OVERLAY ── -->
+<div class="ql-overlay" id="ql-overlay" onclick="if(event.target===this)closeQL()">
+  <div class="ql-box">
+    <div class="ql-input-wrap">
+      <span style="color:var(--text-dim);font-size:14px;">⌕</span>
+      <input class="ql-input" id="ql-input" placeholder="Modül ara..." oninput="qlFilter()" onkeydown="qlKey(event)" autocomplete="off">
+      <span style="font-size:10px;color:var(--text-dim)">ESC</span>
+    </div>
+    <div class="ql-hint">Sayfa adı veya kategori yaz · ↑↓ seç · Enter aç</div>
+    <div class="ql-results" id="ql-results"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE REGISTRY
+══════════════════════════════════════════════════════════ */
+const PAGES = [
+  { id:'index',           label:'Dashboard',          icon:'🏠', desc:'Ana sayfa · özet kartlar · alarm durumu',            cat:'Ana' },
+  { id:'lake',            label:'Storage Lake',        icon:'🌊', desc:'Göl metaforu · C-Level görsel kapasite',             cat:'Ana' },
+  { id:'huawei',          label:'Huawei OceanStor',    icon:'🟡', desc:'OceanStor / Dorado · pool, host, kapasite',          cat:'Block' },
+  { id:'pmax',            label:'PowerMax',            icon:'🔵', desc:'Dell EMC PMAX / VMAX · pool, LUN groups',            cat:'Block' },
+  { id:'pure-fa',         label:'Pure FlashArray',     icon:'🟢', desc:'All-Flash block · REST API · FC + iSCSI',            cat:'Block' },
+  { id:'hitachi',         label:'Hitachi VSP',         icon:'⚪', desc:'CCI / raidcom · PROD + DR · pool kapasiteleri',      cat:'Block' },
+  { id:'netapp',          label:'NetApp ONTAP',        icon:'🟣', desc:'NAS/SAN unified · aggregate · SVM · volume',        cat:'NAS' },
+  { id:'pure-fb',         label:'Pure FlashBlade',     icon:'🟩', desc:'Object + File · S3 buckets · NFS/SMB delta',        cat:'Object' },
+  { id:'ecs',             label:'Dell ECS',            icon:'🔴', desc:'Object storage · bucket · namespace · replikasyon', cat:'Object' },
+  { id:'san',             label:'SAN Fabric',          icon:'🔶', desc:'Brocade switch · zone · port · FC fabric',           cat:'SAN' },
+  { id:'topology',        label:'Topology / SAN Harita',icon:'🗺', desc:'Path arama · şema · vis.js SAN haritası',           cat:'SAN' },
+  { id:'zone-builder',    label:'Zone Builder',        icon:'⚡', desc:'NPIV / Normal zone · cfgadd generator',              cat:'SAN' },
+  { id:'WWNResolver',     label:'WWN Resolver',        icon:'🔍', desc:'FC port lookup · WWN → alias · switch',             cat:'SAN' },
+  { id:'hostwwnfinder',   label:'Host WWN Finder',     icon:'🔎', desc:'Host ↔ WWN · multi-vendor unified lookup',          cat:'SAN' },
+  { id:'trend',           label:'Trend Analizi',       icon:'📈', desc:'30 gün grafik · delta · tüm vendor · kabinet bazlı', cat:'Analytics' },
+  { id:'anomaly',         label:'Anomali Dedektörü',   icon:'🚨', desc:'3-Sigma kapasite sapma · erken uyarı',              cat:'Analytics' },
+  { id:'capacity-planner',label:'Capacity Planner',    icon:'📊', desc:'What-if senaryo · lineer projeksiyon · kritik ETA', cat:'Analytics' },
+  { id:'impact',          label:'Impact Analysis',     icon:'💥', desc:'Kabinet etki analizi · bağımlılık · change mgmt',   cat:'Analytics' },
+  { id:'cabinet-finder-v2',label:'Cabinet Finder v2',  icon:'🗄', desc:'SAN/NAS/S3 multi-layer search · boyut bilgisi',     cat:'Tools' },
+  { id:'cabinet-finder',  label:'Cabinet Finder',      icon:'📦', desc:'Inventory search · rack · kabinet bazlı',           cat:'Tools' },
+  { id:'management',      label:'Operations Center',   icon:'⚙️', desc:'Operasyon · görev takibi · mail gönder',            cat:'Mgmt' },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+const STATE = {
+  current: null,
+  tabs: [],       // [{ id, label, icon }]
+  maxTabs: 8,
+  loaded: {},     // cache: pageId → loaded src (avoids redundant reloads)
+};
+
+/* ═══════════════════════════════════════════════════════════
+   CLOCK
+══════════════════════════════════════════════════════════ */
+(function clock() {
+  function tick() {
+    const n = new Date();
+    document.getElementById('top-clock').textContent =
+      n.toLocaleDateString('tr-TR') + ' · ' + n.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════════════ */
+function navigate(pageId, label, navEl) {
+  const page = PAGES.find(p => p.id === pageId) || { id:pageId, label, icon:'📄', desc:'' };
+  label = label || page.label;
+
+  // If already on this page, skip full reload
+  if (STATE.current === pageId) {
+    // Just ensure sidebar active is set
+    _setActiveNav(pageId, navEl);
+    return;
+  }
+
+  // Update sidebar active state
+  _setActiveNav(pageId, navEl);
+
+  // Hide home screen
+  document.getElementById('home-screen').classList.add('hidden');
+
+  // Crumb
+  document.getElementById('topbar-crumb').innerHTML = `<span>${escLabel(label)}</span>`;
+
+  // Tab management
+  addTab(page);
+
+  // Load iframe
+  loadPage(pageId, label);
+
+  // Update hash
+  history.pushState({ pageId }, '', '#' + pageId);
+
+  // Close sidebar on mobile
+  closeSidebar();
+}
+
+function _setActiveNav(pageId, navEl) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  else {
+    const found = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+    if (found) found.classList.add('active');
+  }
+}
+
+function escLabel(s) {
+  // Use browser's built-in text→HTML escaping to avoid literal entity strings
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function goHome() {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('home-screen').classList.remove('hidden');
+  document.getElementById('frame-loader').classList.add('hidden');
+  const frame = document.getElementById('spa-frame');
+  frame.src = 'about:blank';
+  frame.classList.add('loading');
+  document.getElementById('topbar-crumb').innerHTML = '<span>Ana Sayfa</span>';
+  STATE.current = null;
+  // Don't clear tabs on goHome — user may want to navigate back
+  history.pushState({}, '', '#');
+  closeSidebar();
+}
+
+function loadPage(pageId, label) {
+  const loader = document.getElementById('frame-loader');
+  const frame  = document.getElementById('spa-frame');
+
+  STATE.current = pageId;
+
+  // Show loader
+  loader.classList.remove('hidden');
+  frame.classList.add('loading');
+  document.getElementById('fl-page-name').textContent = label;
+
+  const url = `./${pageId}.html`;
+  // Force reload by clearing the cache entry (user may want fresh data)
+  delete STATE.loaded[pageId];
+  frame.src = url;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   IFRAME EVENTS
+══════════════════════════════════════════════════════════ */
+document.getElementById('spa-frame').addEventListener('load', function() {
+  // If we're on about:blank (home state), do nothing
+  if (!STATE.current) {
+    this.classList.add('loading');
+    return;
+  }
+
+  const loader = document.getElementById('frame-loader');
+  loader.classList.add('hidden');
+  this.classList.remove('loading');
+
+  // Patch "← Portala Dön" links inside iframe to navigate portal
+  try {
+    const iDoc = this.contentDocument;
+    if (!iDoc) return;
+    iDoc.querySelectorAll('a[href="../"], a[href="./index.html"], a[href="../index.html"]').forEach(a => {
+      a.addEventListener('click', e => { e.preventDefault(); goHome(); });
+    });
+  } catch(e) { /* cross-origin guard */ }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════════════ */
+function addTab(page) {
+  const existing = STATE.tabs.find(t => t.id === page.id);
+  if (!existing) {
+    STATE.tabs.push({ id:page.id, label:page.label, icon:page.icon });
+    if (STATE.tabs.length > STATE.maxTabs) STATE.tabs.shift();
+  }
+  renderTabs(page.id);
+}
+
+function renderTabs(activeId) {
+  const bar = document.getElementById('tab-bar');
+  if (STATE.tabs.length === 0) {
+    bar.classList.remove('visible');
+    bar.innerHTML = '';
+    return;
+  }
+  bar.classList.add('visible');
+  bar.innerHTML = STATE.tabs.map(t => `
+    <div class="tab-item ${t.id === activeId ? 'active' : ''}" onclick="navigateTab('${t.id}')">
+      <span>${t.icon}</span>
+      <span>${escLabel(t.label)}</span>
+      <span class="tab-close" onclick="closeTab(event,'${t.id}')">×</span>
+    </div>`).join('');
+
+  // Scroll active tab into view
+  const activeTab = bar.querySelector('.tab-item.active');
+  if (activeTab) activeTab.scrollIntoView({ inline:'nearest', block:'nearest' });
+}
+
+function navigateTab(pageId) {
+  const page = PAGES.find(p => p.id === pageId);
+  if (page) navigate(pageId, page.label, null);
+}
+
+function closeTab(event, pageId) {
+  event.stopPropagation();
+  STATE.tabs = STATE.tabs.filter(t => t.id !== pageId);
+  if (STATE.current === pageId) {
+    if (STATE.tabs.length) {
+      const last = STATE.tabs[STATE.tabs.length-1];
+      navigateTab(last.id);
+    } else {
+      goHome();
+    }
+  } else {
+    renderTabs(STATE.current);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR TOGGLE (mobile)
+══════════════════════════════════════════════════════════ */
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  sb.classList.toggle('open');
+  bd.classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('show');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   QUICK LAUNCH
+══════════════════════════════════════════════════════════ */
+let qlIdx = -1;
+
+function openQL() {
+  document.getElementById('ql-overlay').classList.add('open');
+  document.getElementById('ql-input').value = '';
+  qlIdx = -1;
+  qlRender(PAGES);
+  setTimeout(() => document.getElementById('ql-input').focus(), 50);
+}
+
+function closeQL() {
+  document.getElementById('ql-overlay').classList.remove('open');
+}
+
+function qlFilter() {
+  const q = document.getElementById('ql-input').value.toLowerCase().trim();
+  const results = q
+    ? PAGES.filter(p => p.label.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q))
+    : PAGES;
+  qlIdx = -1;
+  qlRender(results);
+}
+
+function qlRender(pages) {
+  const box = document.getElementById('ql-results');
+  if (!pages.length) { box.innerHTML = '<div class="ql-empty">Sonuç bulunamadı</div>'; return; }
+
+  // Group by category
+  const cats = {};
+  pages.forEach(p => { if (!cats[p.cat]) cats[p.cat] = []; cats[p.cat].push(p); });
+
+  box.innerHTML = Object.entries(cats).map(([cat, items]) => `
+    <div class="ql-section-hdr">${escLabel(cat)}</div>
+    ${items.map(p => `
+      <div class="ql-item" data-page="${p.id}" onclick="qlSelect('${p.id}')">
+        <span class="ql-item-icon">${p.icon}</span>
+        <div><div class="ql-item-name">${escLabel(p.label)}</div><div class="ql-item-desc">${escLabel(p.desc)}</div></div>
+      </div>`).join('')}
+  `).join('');
+}
+
+function qlSelect(pageId) {
+  closeQL();
+  const page = PAGES.find(p => p.id === pageId);
+  if (page) navigate(pageId, page.label, null);
+}
+
+function qlKey(e) {
+  const items = document.querySelectorAll('.ql-item');
+  if (e.key === 'Escape') { closeQL(); return; }
+  if (e.key === 'ArrowDown') { qlIdx = Math.min(qlIdx+1, items.length-1); qlHighlight(items); e.preventDefault(); }
+  if (e.key === 'ArrowUp')   { qlIdx = Math.max(qlIdx-1, 0);              qlHighlight(items); e.preventDefault(); }
+  if (e.key === 'Enter') {
+    if (qlIdx >= 0 && items[qlIdx]) qlSelect(items[qlIdx].dataset.page);
+    else if (items[0]) qlSelect(items[0].dataset.page);
+  }
+}
+
+function qlHighlight(items) {
+  items.forEach((el, i) => el.classList.toggle('ql-active', i === qlIdx));
+  if (items[qlIdx]) items[qlIdx].scrollIntoView({ block:'nearest' });
+}
+
+/* Keyboard shortcut */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openQL(); }
+  if (e.key === 'Escape') closeQL();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   HASH ROUTING (deep link support)
+══════════════════════════════════════════════════════════ */
+function routeFromHash() {
+  const hash = location.hash.replace('#','').trim();
+  if (hash && hash !== '') {
+    const page = PAGES.find(p => p.id === hash);
+    if (page) navigate(page.id, page.label, null);
+  }
+}
+
+window.addEventListener('popstate', () => routeFromHash());
+window.addEventListener('DOMContentLoaded', () => routeFromHash());
+</script>
+</body>
+</html>

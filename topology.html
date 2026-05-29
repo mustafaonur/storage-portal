@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<link rel="stylesheet" href="./storage-styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topology · Storage Portal</title>
+<style>
+
+:root{
+
+  --bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d44;
+
+  --accent:#e8b84b;--accent2:#4b9fe8;--accent3:#4be8a0;
+
+  --danger:#e84b4b;--warn:#e8844b;--purple:#c084fc;
+
+  --text:#c8d8f0;--text-dim:#5a7090;--text-bright:#e8f2ff;--grid:#0f1928;
+
+  --c-host:#4be8a0;--c-hba:#4b9fe8;--c-sw:#e8b84b;--c-stor:#c084fc;
+
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+.shell{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:20px;}
+
+.back-link{display:inline-block;margin-bottom:12px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;cursor:pointer;}
+
+.back-link:hover{color:var(--accent2);}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);gap:16px;flex-wrap:wrap;}
+
+.brand{display:flex;align-items:center;gap:12px;}
+
+.brand-icon{width:40px;height:40px;border:2px solid var(--accent3);display:grid;place-items:center;flex-shrink:0;}
+
+.brand-icon svg{width:20px;height:20px;stroke:var(--accent3);fill:none;stroke-width:1.5;stroke-linecap:round;}
+
+.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);line-height:1.2;}
+
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+
+.header-info{text-align:right;font-size:11px;color:var(--text-dim);line-height:1.8;}
+
+.header-info .strong{color:var(--text-bright);}
+
+/* ARAMA */
+
+.search-row{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+
+.search-wrap{position:relative;flex:1;min-width:240px;max-width:480px;}
+
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:14px;padding:10px 40px 10px 14px;outline:none;transition:border-color .2s;height:40px;}
+
+.search-wrap input:focus{border-color:var(--accent);}
+
+.search-wrap input::placeholder{color:var(--text-dim);font-size:12px;}
+
+.search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:16px;pointer-events:none;}
+
+.clear-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:0 14px;cursor:pointer;height:40px;transition:all .2s;letter-spacing:1px;text-transform:uppercase;}
+
+.clear-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+.result-count{font-size:11px;color:var(--text-dim);}
+
+/* FİLTRE TOGGLE */
+
+.filter-toggle{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim);cursor:pointer;padding:8px 12px;border:1px solid var(--border);background:var(--surface);transition:all .15s;letter-spacing:1px;text-transform:uppercase;height:40px;user-select:none;}
+
+.filter-toggle:hover{border-color:var(--warn);color:var(--warn);}
+
+.filter-toggle.active{border-color:var(--warn);color:var(--warn);background:rgba(232,132,75,.08);}
+
+.filter-toggle .dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .15s;}
+
+.filter-toggle.active .dot{background:var(--warn);box-shadow:0 0 8px var(--warn);}
+
+/* SEKME */
+
+.tp-tabs{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border);background:var(--surface);padding:4px;border-radius:8px 8px 0 0;}
+
+.tp-tab{background:transparent;border:none;border-radius:6px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:12px 24px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;position:relative;overflow:hidden;}
+
+.tp-tab::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(75,232,160,.08),rgba(75,159,232,.08));opacity:0;transition:opacity .2s;}
+
+.tp-tab:hover{color:var(--text);background:rgba(255,255,255,.03);}
+
+.tp-tab:hover::before{opacity:1;}
+
+.tp-tab.active{color:var(--accent3);background:var(--surface2);box-shadow:0 -2px 8px rgba(75,232,160,.15),inset 0 1px 0 rgba(75,232,160,.2);}
+
+.tp-tab.active::before{opacity:0;}
+
+.tp-page{display:none;}
+
+.tp-page.active{display:block;}
+
+/* ŞEMA */
+
+.schema-wrap{background:var(--surface);border:1px solid var(--border);padding:0;overflow:hidden;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.3);}
+
+.schema-toolbar{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,var(--surface2),var(--surface));flex-wrap:wrap;}
+
+.schema-toolbar .st-info{font-size:10px;color:var(--text-dim);letter-spacing:1px;white-space:nowrap;}
+
+.schema-toolbar input[type="text"]{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:0 12px;height:36px;outline:none;width:240px;transition:all .2s;border-radius:4px;}
+
+.schema-toolbar input[type="text"]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,184,75,.1);}
+
+.sch-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;height:36px;padding:0 16px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;border-radius:4px;}
+
+.sch-btn:hover{border-color:var(--accent3);color:var(--accent3);background:rgba(75,232,160,.06);}
+
+.sch-btn.active{border-color:var(--accent3);color:var(--accent3);background:rgba(75,232,160,.1);}
+
+.sch-legend-group{display:flex;gap:14px;align-items:center;margin-left:auto;flex-wrap:wrap;}
+
+.sch-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);white-space:nowrap;}
+
+.sch-legend-item .ln{width:14px;height:2px;display:inline-block;}
+
+.schema-svg-box{width:100%;overflow:auto;background:radial-gradient(circle at 50% 40%, rgba(75,159,232,.03) 0%, transparent 60%);min-height:400px;}
+
+.schema-svg-box svg{display:block;width:100%;height:auto;min-width:780px;}
+
+.sch-zone-lan{fill:rgba(75,232,160,.04);stroke:rgba(75,232,160,.25);stroke-width:1.5;stroke-dasharray:6 4;}
+
+.sch-zone-fab{fill:rgba(232,184,75,.04);stroke:rgba(232,184,75,.25);stroke-width:1.5;stroke-dasharray:6 4;}
+
+.sch-zone-san{fill:rgba(192,132,252,.04);stroke:rgba(192,132,252,.25);stroke-width:1.5;stroke-dasharray:6 4;}
+
+.sch-zone-lbl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;font-weight:700;}
+
+.sch-link{stroke-width:1.4;opacity:.55;fill:none;}
+
+.sch-link.fab-a{stroke:var(--c-host);}
+
+.sch-link.fab-b{stroke:var(--accent2);}
+
+.sch-link.generic{stroke:var(--text-dim);opacity:.3;}
+
+.sch-link.dimmed{opacity:.12;}
+
+.sch-link.highlight{opacity:1;stroke-width:2.4;}
+
+.sch-node-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;fill:var(--text-bright);text-anchor:middle;}
+
+.sch-node-sub{font-family:'JetBrains Mono',monospace;font-size:8px;fill:var(--text-dim);text-anchor:middle;}
+
+.sch-icon-box{rx:4;stroke-width:1.5;}
+
+.sch-host-box{fill:rgba(75,232,160,.08);stroke:var(--c-host);}
+
+.sch-sw-box{fill:rgba(232,184,75,.10);stroke:var(--c-sw);}
+
+.sch-sw-box.selected{fill:rgba(232,184,75,.25);stroke-width:2.5;}
+
+.sch-stor-box{fill:rgba(192,132,252,.08);stroke:var(--c-stor);}
+
+.sch-stor-box.selected{fill:rgba(192,132,252,.25);stroke-width:2.5;}
+
+.sch-stor-box.dimmed{opacity:.25;}
+
+.sch-host-box.dimmed{opacity:.25;}
+
+.sch-node-g{cursor:default;transition:opacity .15s;}
+
+.sch-node-g.dimmed{opacity:.3;}
+
+.schema-empty{text-align:center;padding:80px 20px;color:var(--text-dim);}
+
+.legend{display:flex;gap:16px;margin-bottom:16px;font-size:10px;color:var(--text-dim);align-items:center;flex-wrap:wrap;background:var(--surface);padding:12px 16px;border-radius:6px;border:1px solid var(--border);}
+
+.leg{display:flex;align-items:center;gap:6px;}
+
+.leg-box{width:12px;height:12px;border:2px solid;}
+
+.leg-line{width:24px;height:2px;}
+
+/* CARDS */
+
+.results{display:flex;flex-direction:column;gap:14px;}
+
+.path-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent3);transition:all .3s;margin-bottom:12px;border-radius:6px;overflow:hidden;}
+
+.path-card.has-ghost{border-left-color:var(--warn);}
+
+.path-card.fully-ghost{border-left-color:var(--danger);}
+
+.path-card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(232,184,75,.15);}
+
+.path-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap;background:linear-gradient(90deg,var(--surface),var(--surface2));}
+
+.path-host-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);}
+
+.path-meta{font-size:10px;color:var(--text-dim);margin-top:4px;}
+
+.path-badges{display:flex;gap:6px;flex-wrap:wrap;}
+
+.badge{font-size:9px;padding:3px 9px;border:1px solid;letter-spacing:1px;text-transform:uppercase;border-radius:3px;}
+
+.badge-vendor{color:var(--accent);border-color:rgba(232,184,75,.4);background:rgba(232,184,75,.08);}
+
+.badge-warn{color:var(--warn);border-color:rgba(232,132,75,.5);background:rgba(232,132,75,.08);}
+
+.badge-err{color:var(--danger);border-color:rgba(232,75,75,.5);background:rgba(232,75,75,.08);}
+
+.badge-ok{color:var(--accent3);border-color:rgba(75,232,160,.4);background:rgba(75,232,160,.08);}
+
+.toggle-icon{color:var(--text-dim);font-size:12px;transition:transform .25s;display:inline-block;}
+
+.toggle-icon.open{transform:rotate(90deg);}
+
+.path-body{padding:16px;display:none;}
+
+.path-body.open{display:block;}
+
+/* TEKLİ PATH SATIRI */
+
+.path-row{display:flex;align-items:stretch;gap:0;padding:8px 0;border-bottom:1px dashed rgba(94,112,144,.15);overflow-x:auto;}
+
+.path-row:last-child{border-bottom:none;}
+
+.path-row.row-ghost-no-fabric{background:rgba(232,132,75,.04);}
+
+.path-row.row-ghost-no-storage{background:rgba(232,75,75,.04);}
+
+.path-row-inner{display:flex;align-items:center;min-width:max-content;flex:1;}
+
+.path-row-label{display:flex;align-items:center;font-size:9px;color:var(--text-dim);letter-spacing:1px;padding-right:14px;min-width:80px;border-right:1px solid var(--border);margin-right:14px;}
+
+.path-row-label .pn{color:var(--text-bright);font-weight:600;margin-right:4px;}
+
+/* NODE */
+
+.node{display:flex;flex-direction:column;align-items:center;position:relative;}
+
+.node-box{border:1px solid;padding:8px 14px;text-align:center;background:var(--surface2);position:relative;transition:all .2s;min-width:115px;border-radius:4px;}
+
+.node-box:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.3);}
+
+.node-box.n-host  {border-color:var(--c-host);}
+
+.node-box.n-hba   {border-color:var(--c-hba);}
+
+.node-box.n-sw    {border-color:var(--c-sw);}
+
+.node-box.n-stor  {border-color:var(--c-stor);}
+
+.node-box.n-err   {border-color:var(--danger);background:rgba(232,75,75,.06);}
+
+.node-box.n-warn  {border-color:var(--warn);background:rgba(232,132,75,.06);}
+
+.node-type{font-size:8px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+
+.n-host   .node-type{color:var(--c-host);}
+
+.n-hba    .node-type{color:var(--c-hba);}
+
+.n-sw     .node-type{color:var(--c-sw);}
+
+.n-stor   .node-type{color:var(--c-stor);}
+
+.n-err    .node-type{color:var(--danger);}
+
+.n-warn   .node-type{color:var(--warn);}
+
+.node-name{font-size:11px;font-weight:600;color:var(--text-bright);word-break:break-all;line-height:1.3;}
+
+.node-wwn{font-size:9px;font-weight:500;color:var(--c-hba);word-break:break-all;line-height:1.4;letter-spacing:.3px;font-family:'JetBrains Mono',monospace;}
+
+.node-sub{font-size:9px;color:var(--text-dim);margin-top:3px;line-height:1.5;}
+
+.node-port{font-size:9px;color:var(--accent);margin-top:3px;font-weight:600;}
+
+/* CONNECTOR */
+
+.connector{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 6px;min-width:50px;}
+
+.conn-line{width:100%;height:2px;position:relative;}
+
+.conn-line::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,currentColor 0,currentColor 6px,transparent 6px,transparent 10px);}
+
+.conn-line.fab-a{color:var(--c-host);}
+
+.conn-line.fab-b{color:var(--accent2);}
+
+.conn-line.storage{color:var(--c-stor);}
+
+.conn-line.generic{color:var(--text-dim);}
+
+.conn-line.err{color:var(--danger);}
+
+.conn-label{font-size:8px;color:var(--text-dim);margin-top:4px;letter-spacing:.5px;white-space:nowrap;}
+
+.conn-label.strong{color:var(--accent);font-weight:600;}
+
+/* UTILS */
+
+.center-state{text-align:center;padding:60px 20px;color:var(--text-dim);}
+
+/* NEW: 3D NETWORK SPHERE DESIGN for SAN Haritası */
+.vn-3d-container{position:relative;width:100%;height:700px;background:radial-gradient(ellipse at center,rgba(75,159,232,.08) 0%,rgba(8,12,20,.9) 70%);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:inset 0 0 80px rgba(0,0,0,.5);}
+
+.vn-canvas-3d{position:absolute;inset:0;cursor:grab;}
+
+.vn-controls-overlay{position:absolute;top:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:10;}
+
+.vn-control-btn{background:rgba(13,20,32,.85);border:1px solid var(--border);color:var(--text);padding:8px 12px;font-size:10px;border-radius:6px;cursor:pointer;backdrop-filter:blur(8px);transition:all .2s;letter-spacing:1px;text-transform:uppercase;}
+
+.vn-control-btn:hover{border-color:var(--accent3);color:var(--accent3);transform:translateY(-1px);}
+
+.vn-stats-panel{position:absolute;bottom:16px;left:16px;background:rgba(13,20,32,.85);border:1px solid var(--border);padding:12px 16px;border-radius:8px;backdrop-filter:blur(8px);font-size:10px;min-width:200px;}
+
+.vn-stat-row{display:flex;justify-content:space-between;margin:4px 0;padding:4px 0;border-bottom:1px solid rgba(30,45,68,.5);}
+
+.vn-stat-row:last-child{border:none;}
+
+.vn-stat-label{color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+
+.vn-stat-value{color:var(--accent3);font-weight:700;}
+
+/* NEW: TIMELINE FLOW DESIGN for SAN Layout */
+.sl-timeline-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+
+.sl-timeline-header{background:linear-gradient(135deg,var(--surface2),var(--surface));padding:20px;border-bottom:1px solid var(--border);}
+
+.sl-timeline-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text-bright);margin-bottom:8px;}
+
+.sl-timeline-subtitle{font-size:11px;color:var(--text-dim);letter-spacing:1px;}
+
+.sl-flow-canvas{position:relative;background:linear-gradient(180deg,rgba(13,20,32,1) 0%,rgba(17,27,46,.5) 50%,rgba(13,20,32,1) 100%);min-height:600px;overflow-x:auto;overflow-y:hidden;padding:40px 20px;}
+
+.sl-stage{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px;}
+
+.sl-stage-label{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);white-space:nowrap;background:var(--surface2);padding:4px 12px;border-radius:12px;border:1px solid var(--border);}
+
+.sl-node-card{background:var(--surface2);border:2px solid;border-radius:8px;padding:12px 16px;min-width:140px;transition:all .3s;cursor:pointer;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+
+.sl-node-card:hover{transform:translateX(4px) scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,.5);}
+
+.sl-node-card.type-host{border-color:var(--c-host);background:linear-gradient(135deg,rgba(75,232,160,.08),var(--surface2));}
+
+.sl-node-card.type-switch{border-color:var(--c-sw);background:linear-gradient(135deg,rgba(232,184,75,.10),var(--surface2));}
+
+.sl-node-card.type-storage{border-color:var(--c-stor);background:linear-gradient(135deg,rgba(192,132,252,.08),var(--surface2));}
+
+.sl-node-card.selected{box-shadow:0 0 20px currentColor,0 6px 20px rgba(0,0,0,.5);transform:scale(1.08);}
+
+.sl-node-card.dimmed{opacity:.2;filter:grayscale(.8);}
+
+.sl-node-icon{width:24px;height:24px;margin:0 auto 8px;opacity:.6;}
+
+.sl-node-name{font-size:11px;font-weight:700;color:var(--text-bright);margin-bottom:4px;text-align:center;}
+
+.sl-node-meta{font-size:8px;color:var(--text-dim);text-align:center;letter-spacing:.5px;}
+
+.sl-connection-layer{position:absolute;inset:0;pointer-events:none;z-index:1;}
+
+.sl-minimap{position:absolute;bottom:20px;right:20px;width:200px;height:120px;background:rgba(13,20,32,.9);border:1px solid var(--border);border-radius:8px;backdrop-filter:blur(8px);overflow:hidden;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+
+::-webkit-scrollbar-track{background:var(--bg);}
+
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+::-webkit-scrollbar-thumb:hover{background:var(--accent2);}
+</style>
+</head>
+<body>
+<div class="shell">
+<a href="../" class="back-link" id="backLink">&larr; Portala Dön</a>
+<header>
+<div class="brand">
+<div class="brand-icon">
+<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 12h6M16 7l-6 4M16 17l-6-4"/></svg>
+</div>
+<div>
+<div class="brand-title">Path Topology</div>
+<div class="brand-sub">Host → HBA → Switch → Storage</div>
+</div>
+</div>
+<div class="header-info">
+<div id="loadInfo">Yükleniyor...</div>
+<div id="hostCount" class="strong"></div>
+<div id="ghostCount" style="color:var(--warn)"></div>
+</div>
+</header>
+<div class="tp-tabs">
+<button class="tp-tab active" data-tptab="path" onclick="tpSwitch('path',this)">Path Arama</button>
+<button class="tp-tab" data-tptab="schema" onclick="tpSwitch('schema',this)">Şema Görünümü</button>
+<button class="tp-tab" data-tptab="visnet" onclick="tpSwitch('visnet',this)">🌐 3D Network Sphere</button>
+<button class="tp-tab" data-tptab="layout" onclick="tpSwitch('layout',this)">⚡ Timeline Flow</button>
+</div>
+<!-- SEKME 1: PATH ARAMA -->
+<div class="tp-page active" id="tppage-path">
+<div class="search-row">
+<div class="search-wrap">
+<input id="searchBox" type="text" placeholder="Host adı, WWN, switch, kabinet ara..." oninput="onSearch()" autocomplete="off">
+<span class="search-icon">⌕</span>
+</div>
+<button class="clear-btn" onclick="clearSearch()">✕ Temizle</button>
+<div class="filter-toggle" id="ghostFilterBtn" onclick="toggleGhostFilter()">
+<span class="dot"></span>
+<span>Sadece Ghost / Hatalı</span>
+</div>
+<span class="result-count" id="resultCount"></span>
+</div>
+<div class="legend">
+<div class="leg"><div class="leg-box" style="border-color:var(--c-host)"></div><span style="color:var(--c-host)">Host</span></div>
+<div class="leg"><div class="leg-box" style="border-color:var(--c-hba)"></div><span style="color:var(--c-hba)">HBA / WWN</span></div>
+<div class="leg"><div class="leg-box" style="border-color:var(--c-sw)"></div><span style="color:var(--c-sw)">SAN Switch</span></div>
+<div class="leg"><div class="leg-box" style="border-color:var(--c-stor)"></div><span style="color:var(--c-stor)">Storage</span></div>
+<div class="leg"><div class="leg-line" style="background:var(--c-host)"></div><span>Fabric A</span></div>
+<div class="leg"><div class="leg-line" style="background:var(--accent2)"></div><span>Fabric B</span></div>
+<div class="leg"><span class="badge badge-warn">No Fabric</span><span>Storage var, switch yok</span></div>
+<div class="leg"><span class="badge badge-err">No Storage</span><span>Switch var, storage yok</span></div>
+<span style="margin-left:auto;font-size:10px">Karta tıkla → detay aç</span>
+</div>
+<div id="results">
+<div class="center-state"><p>Veri yükleniyor...</p></div>
+</div>
+</div>
+<!-- SEKME 2: ŞEMA -->
+<div class="tp-page" id="tppage-schema">
+<div class="schema-wrap">
+<div class="schema-toolbar">
+<input id="sch-filter" type="text" placeholder="Host / switch / kabinet filtrele..." oninput="schFilter()" autocomplete="off">
+<button class="sch-btn" onclick="schExpandAll(true)">Tümünü Aç</button>
+<button class="sch-btn" onclick="schExpandAll(false)">Tümünü Kapat</button>
+<button class="sch-btn" id="schClearSelBtn" onclick="schClearSelection()" style="display:none">✕ Seçimi Temizle</button>
+<span class="st-info" id="sch-stat">Yükleniyor...</span>
+<div class="sch-legend-group">
+<span class="sch-legend-item"><span class="ln" style="background:var(--c-host)"></span>Fabric A</span>
+<span class="sch-legend-item"><span class="ln" style="background:var(--accent2)"></span>Fabric B</span>
+<span class="sch-legend-item" style="color:var(--text-dim)">Switch/Storage tıkla → bağlı olanları gör</span>
+</div>
+</div>
+<div class="schema-svg-box" id="sch-box">
+<div class="schema-empty">Şema oluşturuluyor...</div>
+</div>
+</div>
+</div>
+
+<!-- SEKME 3: 3D NETWORK SPHERE (Completely New Design) -->
+<div class="tp-page" id="tppage-visnet">
+<div class="vn-3d-container">
+<canvas id="vn-canvas-3d" class="vn-canvas-3d"></canvas>
+<div class="vn-controls-overlay">
+<button class="vn-control-btn" onclick="vn3dRotate()">↻ Auto Rotate</button>
+<button class="vn-control-btn" onclick="vn3dReset()">⟲ Reset View</button>
+<button class="vn-control-btn" onclick="vn3dToggleLabels()">🏷 Labels</button>
+</div>
+<div class="vn-stats-panel">
+<div style="font-size:11px;font-weight:700;color:var(--accent3);margin-bottom:8px;letter-spacing:1px;">NETWORK STATS</div>
+<div class="vn-stat-row"><span class="vn-stat-label">Switches</span><span class="vn-stat-value" id="vn-stat-sw">0</span></div>
+<div class="vn-stat-row"><span class="vn-stat-label">Storage</span><span class="vn-stat-value" id="vn-stat-stor">0</span></div>
+<div class="vn-stat-row"><span class="vn-stat-label">Links</span><span class="vn-stat-value" id="vn-stat-links">0</span></div>
+<div class="vn-stat-row"><span class="vn-stat-label">Active Hosts</span><span class="vn-stat-value" id="vn-stat-hosts">0</span></div>
+</div>
+</div>
+<div style="margin-top:14px;text-align:center;font-size:10px;color:var(--text-dim);letter-spacing:1px;">
+Drag to rotate · Scroll to zoom · Click node for details · 3D sphere visualization
+</div>
+</div>
+
+<!-- SEKME 4: TIMELINE FLOW (Completely New Design) -->
+<div class="tp-page" id="tppage-layout">
+<div class="sl-timeline-wrap">
+<div class="sl-timeline-header">
+<div class="sl-timeline-title">⚡ Path Flow Timeline</div>
+<div class="sl-timeline-subtitle">Horizontal journey visualization from hosts through fabric to storage arrays</div>
+</div>
+<div class="sl-flow-canvas" id="sl-flow-canvas">
+<svg id="sl-connection-svg" class="sl-connection-layer"></svg>
+<div class="sl-minimap" id="sl-minimap"></div>
+</div>
+</div>
+<div style="margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:10px;">
+<button class="sch-btn" onclick="slFlowReset()">⟲ Reset</button>
+<button class="sch-btn" onclick="slFlowFit()">⛶ Fit All</button>
+<input type="text" id="sl-flow-search" placeholder="Search..." oninput="slFlowSearch()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:4px;width:200px;">
+<label style="color:var(--text-dim);display:flex;align-items:center;gap:6px;cursor:pointer;">
+<input type="checkbox" id="sl-flow-hosts" onchange="slFlowRebuild()" style="accent-color:var(--c-host)"> Show Hosts
+</label>
+<div style="margin-left:auto;color:var(--text-dim)">Scroll horizontal · Click for details · Auto-layout flow</div>
+</div>
+</div>
+
+<script src="./storage-utils.js"></script>
+<script>
+
+const BASE = '.';
+
+const CSVS = {
+
+  fabHosts:  `${BASE}/San/SAN_Fabric_Hosts.csv`,
+
+  sanPorts:  `${BASE}/San/SAN_Director_Ports.csv`,
+
+  sanDash:   `${BASE}/San/SAN_Director_Dashboard.csv`,
+
+  hwHosts:   `${BASE}/Hw/Dorado_Host.csv`,
+
+  pmaxHosts: `${BASE}/Pmax/PmaxPoolHost.csv`,
+
+  pureHosts: `${BASE}/Pure/Pure_Host.csv`,
+
+  hwDash:    `${BASE}/Hw/Dorado_Dashboard.csv`,
+
+  pmaxDash:  `${BASE}/Pmax/PmaxPoolDash.csv`,
+
+};
+
+let DATA = {
+
+  hosts:       {},
+
+  hostWwns:    {},
+
+  hostStorage: {},
+
+  wwnToSwitch: {},
+
+  switchFabric:{},
+
+  portAlias:   {},
+
+  storageSwitchMap: {},
+
+  switchStorageMap: {},
+
+};
+
+let UI = {
+
+  ghostOnly: false,
+
+  schSelected: null,
+
+};
+
+function topoCleanWwn(wwn) {
+
+  if (!wwn) return '';
+
+  return wwn.toLowerCase().replace(/[^a-f0-9]/g, '');
+
+}
+
+function fmtWwn(w){
+
+  if(!w) return '';
+
+  const s = w.replace(/:/g,'').toLowerCase();
+
+  if(s.length !== 16) return s;
+
+  return s.match(/.{1,2}/g).join(':');
+
+}
+
+function getHostStatus(name){
+
+  const wwns = DATA.hostWwns[name] || [];
+
+  const st   = DATA.hostStorage[name] || [];
+
+  const hasStorage = st.length > 0;
+
+  const hasWwn = wwns.length > 0;
+
+  if(!hasStorage && !hasWwn) return 'empty';
+
+  const anyOnFabric = wwns.some(w => (DATA.wwnToSwitch[w]||[]).length > 0);
+
+  if(hasStorage && !hasWwn) return 'no-hba';
+
+  if(hasWwn && !anyOnFabric) return 'no-fabric';
+
+  if(!hasStorage && hasWwn && anyOnFabric) return 'no-storage';
+
+  const someOff = wwns.some(w => (DATA.wwnToSwitch[w]||[]).length === 0);
+
+  if(someOff) return 'partial-ghost';
+
+  return 'ok';
+
+}
+
+async function loadAll() {
+
+  try {
+
+    document.getElementById('loadInfo').textContent = 'CSV\'ler yükleniyor...';
+
+    const [fabHosts, sanPorts, sanDash, hwHosts, pmaxHosts, pureHosts] =
+
+      await Promise.all([CSVS.fabHosts,CSVS.sanPorts,CSVS.sanDash,CSVS.hwHosts,CSVS.pmaxHosts,CSVS.pureHosts].map(fetchCsv));
+
+    sanDash.forEach(r => {
+
+      if (r.SwitchName && r.Fabric) DATA.switchFabric[r.SwitchName.toUpperCase()] = r.Fabric.toUpperCase();
+
+    });
+
+    sanPorts.forEach(r => {
+
+      const wwn = cleanWwn(r.PortWWN);
+
+      if (!wwn) return;
+
+      const sw = (r.SwitchName||'').toUpperCase();
+
+      DATA.portAlias[wwn] = {
+
+        alias:  r.Alias || '',
+
+        switch: sw,
+
+        fabric: DATA.switchFabric[sw] || (r.Fabric||'').toUpperCase() || '?',
+
+        slot:   r.PortIndex || '',
+
+        speed:  r.Speed || '',
+
+        role:   r.Role || '',
+
+      };
+
+    });
+
+    fabHosts.forEach(r => {
+
+      const wwn = cleanWwn(r.PortWWN || '');
+
+      if (!wwn) return;
+
+      const sw = (r.SwitchName || '').toUpperCase();
+
+      const entry = {
+
+        switch: sw,
+
+        fabric: DATA.switchFabric[sw] || (r.Fabric||'').toUpperCase() || '?',
+
+        slot:   r.PortIndex || '',
+
+        alias:  r.Alias || (DATA.portAlias[wwn]?.alias || ''),
+
+        speed:  r.Speed || (DATA.portAlias[wwn]?.speed || ''),
+
+      };
+
+      if (!DATA.wwnToSwitch[wwn]) DATA.wwnToSwitch[wwn] = [];
+
+      DATA.wwnToSwitch[wwn].push(entry);
+
+    });
+
+    hwHosts.forEach(r => {
+
+      const name = (r['Host Name']||'').trim(); if (!name) return;
+
+      if (!DATA.hosts[name]) DATA.hosts[name] = {
+
+        name, os: r.OS||'', vendor:'Huawei', kabinet: r.Kabinet||'', lokasyon: r.Lokasyon||''
+
+      };
+
+      if (!DATA.hostWwns[name]) DATA.hostWwns[name] = [];
+
+      (r['Host WWN']||'').split('|').forEach(raw => {
+
+        const w = cleanWwn(raw);
+
+        if (w && !DATA.hostWwns[name].includes(w)) DATA.hostWwns[name].push(w);
+
+      });
+
+      if (!DATA.hostStorage[name]) DATA.hostStorage[name] = [];
+
+      DATA.hostStorage[name].push({
+
+        vendor:'Huawei', kabinet: r.Kabinet||'', provTB: parseFloat(r['Provisioned (TB)']||'0')||0,
+
+      });
+
+    });
+
+    const pmaxSeen = new Set();
+
+    pmaxHosts.forEach(r => {
+
+      const name = (r['Host Name']||'').trim(); if (!name) return;
+
+      const key  = `${name}::${r['Array ID']}`;
+
+      if (!DATA.hosts[name]) DATA.hosts[name] = {
+
+        name, os: r.OS||'', vendor:'PowerMax', kabinet: r['Array ID']||'', lokasyon: r.Lokasyon||''
+
+      };
+
+      if (!DATA.hostWwns[name]) DATA.hostWwns[name] = [];
+
+      (r['Host WWN']||'').split('|').forEach(raw => {
+
+        const w = cleanWwn(raw);
+
+        if (w && !DATA.hostWwns[name].includes(w)) DATA.hostWwns[name].push(w);
+
+      });
+
+      if (!pmaxSeen.has(key)) {
+
+        pmaxSeen.add(key);
+
+        if (!DATA.hostStorage[name]) DATA.hostStorage[name] = [];
+
+        DATA.hostStorage[name].push({
+
+          vendor:'PowerMax', kabinet: r['Array ID']||'', provTB: parseFloat(r['Provisioned (TB)']||'0')||0,
+
+        });
+
+      }
+
+    });
+
+    pureHosts.forEach(r => {
+
+      const name  = (r['Host Name']||'').trim(); if (!name) return;
+
+      if ((r['Protocol']||'FC').trim() === 'iSCSI') return;
+
+      if (!DATA.hosts[name]) DATA.hosts[name] = {
+
+        name, os: r.OS||'Linux', vendor:'Pure FA', kabinet: r.Kabinet||'', lokasyon: r.Lokasyon||''
+
+      };
+
+      if (!DATA.hostWwns[name]) DATA.hostWwns[name] = [];
+
+      (r['Host WWN']||'').split('|').forEach(raw => {
+
+        const w = cleanWwn(raw);
+
+        if (w && !DATA.hostWwns[name].includes(w)) DATA.hostWwns[name].push(w);
+
+      });
+
+      if (!DATA.hostStorage[name]) DATA.hostStorage[name] = [];
+
+      DATA.hostStorage[name].push({
+
+        vendor:'Pure FA', kabinet: r.Kabinet||'', provTB: parseFloat(r['Provisioned (TB)']||'0')||0,
+
+      });
+
+    });
+
+    for (const name of Object.keys(DATA.hostStorage)) {
+
+      const merged = {};
+
+      DATA.hostStorage[name].forEach(s => {
+
+        const k = `${s.vendor}::${s.kabinet}`;
+
+        if (!merged[k]) merged[k] = { ...s };
+
+        else merged[k].provTB += s.provTB;
+
+      });
+
+      DATA.hostStorage[name] = Object.values(merged);
+
+    }
+
+    DATA.switchStorageDetail = {};
+
+    DATA.storageSwitchDetail = {};
+
+    DATA.hostSwitches = {};
+
+    Object.keys(DATA.hosts).forEach(name=>{
+
+      const wwns = DATA.hostWwns[name] || [];
+
+      const stArr = DATA.hostStorage[name] || [];
+
+      const swSet = new Map();
+
+      wwns.forEach(w => (DATA.wwnToSwitch[w]||[]).forEach(s => swSet.set(s.switch, s.fabric)));
+
+      DATA.hostSwitches[name] = new Set(swSet.keys());
+
+      stArr.forEach(st => {
+
+        if(!st.kabinet) return;
+
+        const sk = `${st.vendor}|${st.kabinet}`;
+
+        swSet.forEach((fab, sw) => {
+
+          if(!DATA.switchStorageMap[sw]) DATA.switchStorageMap[sw] = new Set();
+
+          if(!DATA.storageSwitchMap[sk]) DATA.storageSwitchMap[sk] = new Set();
+
+          DATA.switchStorageMap[sw].add(sk);
+
+          DATA.storageSwitchMap[sk].add(sw);
+
+          if(!DATA.switchStorageDetail[sw]) DATA.switchStorageDetail[sw] = {};
+
+          if(!DATA.switchStorageDetail[sw][sk]) DATA.switchStorageDetail[sw][sk] = new Set();
+
+          DATA.switchStorageDetail[sw][sk].add(name);
+
+          if(!DATA.storageSwitchDetail[sk]) DATA.storageSwitchDetail[sk] = {};
+
+          if(!DATA.storageSwitchDetail[sk][sw]) DATA.storageSwitchDetail[sk][sw] = new Set();
+
+          DATA.storageSwitchDetail[sk][sw].add(name);
+
+        });
+
+      });
+
+    });
+
+    const hostCount = Object.keys(DATA.hosts).length;
+
+    document.getElementById('loadInfo').textContent = `${hostCount} host yüklendi`;
+
+    document.getElementById('hostCount').textContent = `Fabric'te ${Object.keys(DATA.wwnToSwitch).length} WWN görünüyor`;
+
+    let ghostCount = 0;
+
+    Object.keys(DATA.hosts).forEach(n=>{
+
+      const s = getHostStatus(n);
+
+      if(s !== 'ok' && s !== 'empty') ghostCount++;
+
+    });
+
+    if(ghostCount > 0){
+
+      document.getElementById('ghostCount').textContent = `⚠ ${ghostCount} host'ta ghost/hatalı path var`;
+
+    }
+
+    renderResults('');
+
+    buildSchema();
+
+  } catch(err) {
+
+    console.error("loadAll Genel Hata:", err);
+
+    document.getElementById('loadInfo').textContent = 'Yükleme hatası oluştu!';
+
+  }
+
+}
+
+function tpSwitch(name, btn){
+
+  document.querySelectorAll('.tp-page').forEach(p=>p.classList.remove('active'));
+
+  document.querySelectorAll('.tp-tabs > .tp-tab').forEach(b=>b.classList.remove('active'));
+
+  document.getElementById('tppage-'+name).classList.add('active');
+
+  if(btn) btn.classList.add('active');
+
+  if(name === 'schema' && SCH.built) drawSchema();
+
+  if(name === 'visnet') vn3dInit();
+
+  if(name === 'layout') slFlowInit();
+
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3D NETWORK SPHERE (NEW DESIGN)
+═══════════════════════════════════════════════════════════════ */
+const VN3D = {
+  canvas: null,
+  ctx: null,
+  nodes: [],
+  edges: [],
+  camera: { rotX: 0, rotY: 0, zoom: 400 },
+  mouse: { down: false, lastX: 0, lastY: 0 },
+  autoRotate: false,
+  showLabels: true,
+  raf: null,
+};
+
+function vn3dInit() {
+  if (VN3D.canvas) return;
+  const cv = document.getElementById('vn-canvas-3d');
+  if (!cv) return;
+  VN3D.canvas = cv;
+  VN3D.ctx = cv.getContext('2d');
+  const rect = cv.parentElement.getBoundingClientRect();
+  cv.width = rect.width;
+  cv.height = rect.height;
+
+  vn3dBuildData();
+  vn3dAttachEvents();
+  vn3dAnimate();
+}
+
+function vn3dBuildData() {
+  VN3D.nodes = [];
+  VN3D.edges = [];
+  
+  const swKeys = Object.keys(DATA.switchFabric);
+  const storKeys = Object.keys(DATA.storageSwitchMap);
+  
+  // Place switches on sphere
+  const radius = 180;
+  swKeys.forEach((sw, i) => {
+    const theta = (i / swKeys.length) * Math.PI * 2;
+    const phi = Math.PI / 3;
+    VN3D.nodes.push({
+      id: 'sw_' + sw,
+      x: radius * Math.sin(phi) * Math.cos(theta),
+      y: radius * Math.sin(phi) * Math.sin(theta),
+      z: radius * Math.cos(phi),
+      type: 'switch',
+      label: sw.length > 12 ? sw.slice(0, 11) + '…' : sw,
+      color: '#e8b84b',
+      _sw: sw,
+    });
+  });
+  
+  // Place storage at bottom hemisphere
+  storKeys.forEach((sk, i) => {
+    const theta = (i / storKeys.length) * Math.PI * 2;
+    const phi = Math.PI * 0.7;
+    VN3D.nodes.push({
+      id: 'st_' + sk,
+      x: radius * Math.sin(phi) * Math.cos(theta),
+      y: radius * Math.sin(phi) * Math.sin(theta),
+      z: radius * Math.cos(phi),
+      type: 'storage',
+      label: sk.split('|')[1].slice(0, 12),
+      color: '#c084fc',
+      _sk: sk,
+    });
+  });
+  
+  // Build edges
+  storKeys.forEach(sk => {
+    const swSet = DATA.storageSwitchMap[sk];
+    swSet.forEach(sw => {
+      VN3D.edges.push({
+        from: 'sw_' + sw,
+        to: 'st_' + sk,
+        color: '#4be8a080',
+      });
+    });
+  });
+  
+  // Update stats
+  document.getElementById('vn-stat-sw').textContent = swKeys.length;
+  document.getElementById('vn-stat-stor').textContent = storKeys.length;
+  document.getElementById('vn-stat-links').textContent = VN3D.edges.length;
+  document.getElementById('vn-stat-hosts').textContent = Object.keys(DATA.hosts).length;
+}
+
+function vn3dProject(x, y, z) {
+  const { rotX, rotY, zoom } = VN3D.camera;
+  
+  // Rotate Y
+  let cos = Math.cos(rotY), sin = Math.sin(rotY);
+  let x1 = x * cos - z * sin;
+  let z1 = x * sin + z * cos;
+  
+  // Rotate X
+  cos = Math.cos(rotX); sin = Math.sin(rotX);
+  let y1 = y * cos - z1 * sin;
+  let z2 = y * sin + z1 * cos;
+  
+  // Project
+  const scale = zoom / (zoom + z2);
+  return {
+    x: x1 * scale + VN3D.canvas.width / 2,
+    y: y1 * scale + VN3D.canvas.height / 2,
+    scale: scale,
+    z: z2,
+  };
+}
+
+function vn3dDraw() {
+  const ctx = VN3D.ctx;
+  const cv = VN3D.canvas;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  
+  // Sort by Z
+  const projected = VN3D.nodes.map(n => ({
+    node: n,
+    proj: vn3dProject(n.x, n.y, n.z),
+  })).sort((a, b) => a.proj.z - b.proj.z);
+  
+  // Draw edges
+  ctx.strokeStyle = '#4be8a040';
+  ctx.lineWidth = 1;
+  VN3D.edges.forEach(e => {
+    const a = VN3D.nodes.find(n => n.id === e.from);
+    const b = VN3D.nodes.find(n => n.id === e.to);
+    if (!a || !b) return;
+    const pa = vn3dProject(a.x, a.y, a.z);
+    const pb = vn3dProject(b.x, b.y, b.z);
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.lineTo(pb.x, pb.y);
+    ctx.stroke();
+  });
+  
+  // Draw nodes
+  projected.forEach(({ node, proj }) => {
+    const size = 6 * proj.scale;
+    ctx.fillStyle = node.color;
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff40';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    if (VN3D.showLabels && proj.scale > 0.8) {
+      ctx.fillStyle = '#e8f2ff';
+      ctx.font = '9px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText(node.label, proj.x, proj.y - size - 4);
+    }
+  });
+}
+
+function vn3dAnimate() {
+  if (VN3D.autoRotate) {
+    VN3D.camera.rotY += 0.005;
+  }
+  vn3dDraw();
+  VN3D.raf = requestAnimationFrame(vn3dAnimate);
+}
+
+function vn3dAttachEvents() {
+  const cv = VN3D.canvas;
+  
+  cv.addEventListener('mousedown', e => {
+    VN3D.mouse.down = true;
+    VN3D.mouse.lastX = e.clientX;
+    VN3D.mouse.lastY = e.clientY;
+    cv.style.cursor = 'grabbing';
+  });
+  
+  cv.addEventListener('mousemove', e => {
+    if (!VN3D.mouse.down) return;
+    const dx = e.clientX - VN3D.mouse.lastX;
+    const dy = e.clientY - VN3D.mouse.lastY;
+    VN3D.camera.rotY += dx * 0.01;
+    VN3D.camera.rotX += dy * 0.01;
+    VN3D.mouse.lastX = e.clientX;
+    VN3D.mouse.lastY = e.clientY;
+  });
+  
+  cv.addEventListener('mouseup', () => {
+    VN3D.mouse.down = false;
+    cv.style.cursor = 'grab';
+  });
+  
+  cv.addEventListener('wheel', e => {
+    e.preventDefault();
+    VN3D.camera.zoom += e.deltaY * -0.5;
+    VN3D.camera.zoom = Math.max(200, Math.min(800, VN3D.camera.zoom));
+  }, { passive: false });
+}
+
+function vn3dRotate() {
+  VN3D.autoRotate = !VN3D.autoRotate;
+}
+
+function vn3dReset() {
+  VN3D.camera = { rotX: 0, rotY: 0, zoom: 400 };
+}
+
+function vn3dToggleLabels() {
+  VN3D.showLabels = !VN3D.showLabels;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIMELINE FLOW (NEW DESIGN)
+═══════════════════════════════════════════════════════════════ */
+const SLFLOW = {
+  stages: [],
+  connections: [],
+  selected: null,
+  searchHL: new Set(),
+};
+
+function slFlowInit() {
+  if (SLFLOW.stages.length) return;
+  slFlowBuild();
+}
+
+function slFlowBuild() {
+  const canvas = document.getElementById('sl-flow-canvas');
+  const showHosts = document.getElementById('sl-flow-hosts')?.checked || false;
+  
+  SLFLOW.stages = [];
+  SLFLOW.connections = [];
+  
+  const swA = [], swB = [];
+  Object.keys(DATA.switchFabric).forEach(sw => {
+    const f = DATA.switchFabric[sw];
+    (f.toUpperCase().includes('A') ? swA : swB).push(sw);
+  });
+  
+  const storKeys = Object.keys(DATA.storageSwitchMap);
+  
+  let xOffset = 100;
+  
+  // Stage 1: Hosts (optional)
+  if (showHosts) {
+    const hostList = Object.keys(DATA.hosts).filter(n => (DATA.hostSwitches?.[n]?.size || 0) > 0).slice(0, 20);
+    const stage = document.createElement('div');
+    stage.className = 'sl-stage';
+    stage.style.left = xOffset + 'px';
+    stage.innerHTML = `<div class="sl-stage-label">HOSTS</div>`;
+    
+    hostList.forEach(name => {
+      const card = document.createElement('div');
+      card.className = 'sl-node-card type-host';
+      card.dataset.id = 'host_' + name;
+      card.innerHTML = `
+        <div class="sl-node-icon">💻</div>
+        <div class="sl-node-name">${name.slice(0, 12)}</div>
+        <div class="sl-node-meta">${DATA.hosts[name]?.os || ''}</div>
+      `;
+      card.onclick = () => slFlowSelect(card.dataset.id);
+      stage.appendChild(card);
+    });
+    
+    canvas.appendChild(stage);
+    SLFLOW.stages.push({ type: 'hosts', x: xOffset, nodes: hostList });
+    xOffset += 250;
+  }
+  
+  // Stage 2: Fabric A
+  const stageA = document.createElement('div');
+  stageA.className = 'sl-stage';
+  stageA.style.left = xOffset + 'px';
+  stageA.innerHTML = `<div class="sl-stage-label">FABRIC A</div>`;
+  
+  swA.forEach(sw => {
+    const card = document.createElement('div');
+    card.className = 'sl-node-card type-switch';
+    card.dataset.id = 'sw_' + sw;
+    card.innerHTML = `
+      <div class="sl-node-icon">🔀</div>
+      <div class="sl-node-name">${sw.slice(0, 12)}</div>
+      <div class="sl-node-meta">Fabric A</div>
+    `;
+    card.onclick = () => slFlowSelect(card.dataset.id);
+    stageA.appendChild(card);
+  });
+  
+  canvas.appendChild(stageA);
+  SLFLOW.stages.push({ type: 'fabA', x: xOffset, nodes: swA });
+  xOffset += 250;
+  
+  // Stage 3: Fabric B
+  const stageB = document.createElement('div');
+  stageB.className = 'sl-stage';
+  stageB.style.left = xOffset + 'px';
+  stageB.innerHTML = `<div class="sl-stage-label">FABRIC B</div>`;
+  
+  swB.forEach(sw => {
+    const card = document.createElement('div');
+    card.className = 'sl-node-card type-switch';
+    card.dataset.id = 'sw_' + sw;
+    card.innerHTML = `
+      <div class="sl-node-icon">🔀</div>
+      <div class="sl-node-name">${sw.slice(0, 12)}</div>
+      <div class="sl-node-meta">Fabric B</div>
+    `;
+    card.onclick = () => slFlowSelect(card.dataset.id);
+    stageB.appendChild(card);
+  });
+  
+  canvas.appendChild(stageB);
+  SLFLOW.stages.push({ type: 'fabB', x: xOffset, nodes: swB });
+  xOffset += 250;
+  
+  // Stage 4: Storage
+  const stageStor = document.createElement('div');
+  stageStor.className = 'sl-stage';
+  stageStor.style.left = xOffset + 'px';
+  stageStor.innerHTML = `<div class="sl-stage-label">STORAGE</div>`;
+  
+  storKeys.forEach(sk => {
+    const [vendor, kabinet] = sk.split('|');
+    const card = document.createElement('div');
+    card.className = 'sl-node-card type-storage';
+    card.dataset.id = 'st_' + sk;
+    card.innerHTML = `
+      <div class="sl-node-icon">🗄</div>
+      <div class="sl-node-name">${kabinet.slice(0, 12)}</div>
+      <div class="sl-node-meta">${vendor}</div>
+    `;
+    card.onclick = () => slFlowSelect(card.dataset.id);
+    stageStor.appendChild(card);
+  });
+  
+  canvas.appendChild(stageStor);
+  SLFLOW.stages.push({ type: 'storage', x: xOffset, nodes: storKeys });
+  
+  // Draw connections SVG
+  slFlowDrawConnections();
+}
+
+function slFlowDrawConnections() {
+  // TODO: Draw SVG lines between stages
+}
+
+function slFlowSelect(id) {
+  SLFLOW.selected = SLFLOW.selected === id ? null : id;
+  document.querySelectorAll('.sl-node-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.id === SLFLOW.selected);
+  });
+}
+
+function slFlowReset() {
+  document.getElementById('sl-flow-canvas').innerHTML = '';
+  SLFLOW.stages = [];
+  slFlowBuild();
+}
+
+function slFlowFit() {
+  document.getElementById('sl-flow-canvas').scrollLeft = 0;
+}
+
+function slFlowSearch() {
+  const q = document.getElementById('sl-flow-search').value.toLowerCase();
+  document.querySelectorAll('.sl-node-card').forEach(c => {
+    const text = c.textContent.toLowerCase();
+    c.style.display = text.includes(q) ? 'block' : 'none';
+  });
+}
+
+function slFlowRebuild() {
+  document.getElementById('sl-flow-canvas').innerHTML = '';
+  SLFLOW.stages = [];
+  slFlowBuild();
+}
+
+function toggleGhostFilter(){
+
+  UI.ghostOnly = !UI.ghostOnly;
+
+  document.getElementById('ghostFilterBtn').classList.toggle('active', UI.ghostOnly);
+
+  renderResults(document.getElementById('searchBox').value);
+
+}
+
+function onSearch() {
+
+  renderResults(document.getElementById('searchBox').value);
+
+}
+
+function clearSearch() {
+
+  document.getElementById('searchBox').value = '';
+
+  renderResults('');
+
+}
+
+function renderResults(query) {
+
+  const container = document.getElementById('results');
+
+  const q = query.trim().toLowerCase();
+
+  const filteredHosts = Object.keys(DATA.hosts).filter(name => {
+
+    const h = DATA.hosts[name];
+
+    const wwns = DATA.hostWwns[name] || [];
+
+    const st = DATA.hostStorage[name] || [];
+
+    if(UI.ghostOnly){
+
+      const status = getHostStatus(name);
+
+      if(status === 'ok' || status === 'empty') return false;
+
+    }
+
+    if (!q) return true;
+
+    return name.toLowerCase().includes(q) ||
+
+           (h.os||'').toLowerCase().includes(q) ||
+
+           (h.vendor||'').toLowerCase().includes(q) ||
+
+           wwns.some(w => w.includes(q)) ||
+
+           st.some(s => (s.kabinet||'').toLowerCase().includes(q));
+
+  }).sort();
+
+  document.getElementById('resultCount').textContent = `${filteredHosts.length} host listeleniyor`;
+
+  if (filteredHosts.length === 0) {
+
+    container.innerHTML = '<div class="center-state">Eşleşen host bulunamadı.</div>';
+
+    return;
+
+  }
+
+  let html = '';
+
+  filteredHosts.forEach(name => {
+
+    html += renderHostCard(name);
+
+  });
+
+  container.innerHTML = html;
+
+}
+
+function renderHostCard(name){
+
+  const h = DATA.hosts[name];
+
+  const wwns = DATA.hostWwns[name] || [];
+
+  const st = DATA.hostStorage[name] || [];
+
+  const status = getHostStatus(name);
+
+  let totalCap = st.reduce((a,b)=>a+b.provTB, 0).toFixed(1);
+
+  let vendors = [...new Set(st.map(s=>s.vendor))].join(', ') || '—';
+
+  const rows = buildPathRows(name);
+
+  let cardCls = 'path-card';
+
+  let statusBadge = '';
+
+  if(status === 'no-fabric'){
+
+    cardCls += ' fully-ghost';
+
+    statusBadge = '<span class="badge badge-warn">No Fabric</span>';
+
+  } else if(status === 'no-storage'){
+
+    cardCls += ' fully-ghost';
+
+    statusBadge = '<span class="badge badge-err">No Storage</span>';
+
+  } else if(status === 'no-hba'){
+
+    cardCls += ' fully-ghost';
+
+    statusBadge = '<span class="badge badge-err">No HBA</span>';
+
+  } else if(status === 'partial-ghost'){
+
+    cardCls += ' has-ghost';
+
+    statusBadge = '<span class="badge badge-warn">Partial Ghost</span>';
+
+  } else if(status === 'ok'){
+
+    statusBadge = '<span class="badge badge-ok">OK</span>';
+
+  }
+
+  return `
+<div class="${cardCls}">
+<div class="path-header" onclick="toggleCard(this)">
+<div style="flex:1;min-width:0">
+<div class="path-host-name">${esc(name)} <span style="font-size:11px;color:var(--text-dim);font-weight:400">(${esc(h.os||'?')})</span></div>
+<div class="path-meta">Storage: ${esc(vendors)} · Kapasite: ${totalCap} TB · ${wwns.length} HBA Port · ${rows.length} Path</div>
+</div>
+<div style="display:flex;gap:8px;align-items:center;">
+<div class="path-badges">
+            ${statusBadge}
+<span class="badge badge-vendor">${esc(h.vendor)}</span>
+</div>
+<span class="toggle-icon">▸</span>
+</div>
+</div>
+<div class="path-body">
+        ${rows.map(r=>renderPathRow(name, r)).join('')}
+</div>
+</div>
+  `;
+
+}
+
+function buildPathRows(name){
+
+  const wwns = DATA.hostWwns[name] || [];
+
+  const stArr = DATA.hostStorage[name] || [];
+
+  const rows = [];
+
+  if(wwns.length === 0){
+
+    stArr.forEach(st => {
+
+      rows.push({type:'no-hba', wwn:null, sw:null, storage:st});
+
+    });
+
+    if(stArr.length === 0){
+
+      rows.push({type:'empty', wwn:null, sw:null, storage:null});
+
+    }
+
+    return rows;
+
+  }
+
+  wwns.forEach(wwn => {
+
+    const sws = DATA.wwnToSwitch[wwn] || [];
+
+    if(sws.length === 0){
+
+      if(stArr.length > 0){
+
+        stArr.forEach(st => rows.push({type:'no-fabric', wwn, sw:null, storage:st}));
+
+      } else {
+
+        rows.push({type:'no-fabric', wwn, sw:null, storage:null});
+
+      }
+
+    } else {
+
+      sws.forEach(sw => {
+
+        if(stArr.length === 0){
+
+          rows.push({type:'no-storage', wwn, sw, storage:null});
+
+        } else {
+
+          stArr.forEach(st => {
+
+            rows.push({type:'ok', wwn, sw, storage:st});
+
+          });
+
+        }
+
+      });
+
+    }
+
+  });
+
+  return rows;
+
+}
+
+function renderPathRow(hostName, row){
+
+  const h = DATA.hosts[hostName] || {};
+
+  let rowCls = 'path-row';
+
+  if(row.type === 'no-fabric') rowCls += ' row-ghost-no-fabric';
+
+  if(row.type === 'no-storage') rowCls += ' row-ghost-no-storage';
+
+  if(row.type === 'no-hba') rowCls += ' row-ghost-no-storage';
+
+  let html = `<div class="${rowCls}"><div class="path-row-inner">`;
+
+  html += `<div class="node"><div class="node-box n-host">
+<div class="node-type">HOST</div>
+<div class="node-name">${esc(hostName)}</div>
+</div></div>`;
+
+  if(row.wwn){
+
+    html += renderConnector(row.sw ? row.sw.fabric : 'err', row.sw ? row.sw.fabric : 'GHOST');
+
+    const errCls = row.sw ? '' : ' n-warn';
+
+    html += `<div class="node"><div class="node-box n-hba${errCls}">
+<div class="node-type">HBA Port${row.sw ? '' : ' (No Fabric)'}</div>
+<div class="node-wwn">${esc(fmtWwn(row.wwn))}</div>
+</div></div>`;
+
+  } else if(row.type === 'no-hba'){
+
+    html += renderConnector('err', 'NO HBA');
+
+    html += `<div class="node"><div class="node-box n-err">
+<div class="node-type">HBA</div>
+<div class="node-name">WWN BULUNAMADI</div>
+</div></div>`;
+
+  }
+
+  if(row.sw){
+
+    const fab = row.sw.fabric;
+
+    const fabKey = fab === 'A' ? 'A' : fab === 'B' ? 'B' : 'err';
+
+    html += renderConnector(fabKey, row.sw.speed || `Fab ${fab}`);
+
+    html += `<div class="node"><div class="node-box n-sw">
+<div class="node-type">SAN SWITCH</div>
+<div class="node-name">${esc(row.sw.switch)}</div>
+<div class="node-sub">Fabric ${esc(fab)}</div>
+<div class="node-port">Port: ${esc(row.sw.slot || '—')}</div>
+</div></div>`;
+
+  } else if(row.wwn && row.type === 'no-fabric'){
+
+    html += renderConnector('err', '✗ NO LINK');
+
+    html += `<div class="node"><div class="node-box n-warn">
+<div class="node-type">SWITCH</div>
+<div class="node-name">FABRIC'TE GÖRÜNMÜYOR</div>
+</div></div>`;
+
+  }
+
+  if(row.storage){
+
+    html += renderConnector('storage', row.storage.vendor);
+
+    html += `<div class="node"><div class="node-box n-stor">
+<div class="node-type">STORAGE</div>
+<div class="node-name">${esc(row.storage.kabinet)}</div>
+<div class="node-sub">${esc(row.storage.vendor)} · ${row.storage.provTB.toFixed(1)} TB</div>
+</div></div>`;
+
+  } else if(row.type === 'no-storage'){
+
+    html += renderConnector('err', '✗');
+
+    html += `<div class="node"><div class="node-box n-err">
+<div class="node-type">STORAGE</div>
+<div class="node-name">HİÇ KAPASİTE YOK</div>
+</div></div>`;
+
+  }
+
+  html += `</div></div>`;
+
+  return html;
+
+}
+
+function renderConnector(fab, label){
+
+  let cls = 'generic';
+
+  if(fab === 'A') cls = 'fab-a';
+
+  else if(fab === 'B') cls = 'fab-b';
+
+  else if(fab === 'storage') cls = 'storage';
+
+  else if(fab === 'err') cls = 'err';
+
+  const lblCls = (fab === 'A' || fab === 'B' || fab === 'storage') ? 'conn-label strong' : 'conn-label';
+
+  return `<div class="connector"><div class="conn-line ${cls}"></div><span class="${lblCls}">${esc(label)}</span></div>`;
+
+}
+
+function toggleCard(headerElement) {
+
+  const body = headerElement.nextElementSibling;
+
+  const icon = headerElement.querySelector('.toggle-icon');
+
+  body.classList.toggle('open');
+
+  icon.classList.toggle('open');
+
+}
+
+const SCH = {
+
+  built:false, switches:[], storList:[], expanded:{}, page:{}, perPage:16, filter:''
+
+};
+
+function buildSchema(){
+
+  const box = document.getElementById('sch-box');
+
+  const stat = document.getElementById('sch-stat');
+
+  if(!box) return;
+
+  const storMap = {};
+
+  Object.entries(DATA.hostStorage).forEach(([hn,arr])=>{
+
+    (arr||[]).forEach(s=>{
+
+      if(!s.kabinet) return;
+
+      const k=`${s.vendor||'?'}|${s.kabinet}`;
+
+      if(!storMap[k]) storMap[k]={key:k,vendor:s.vendor||'?',kabinet:s.kabinet,prov:0,hosts:new Set()};
+
+      storMap[k].hosts.add(hn); storMap[k].prov+=(+s.provTB||0);
+
+    });
+
+  });
+
+  SCH.storList = Object.values(storMap).sort((a,b)=>b.hosts.size-a.hosts.size);
+
+  const swHosts = {};
+
+  Object.keys(DATA.switchFabric).forEach(sw=> swHosts[sw]=new Set());
+
+  Object.entries(DATA.hostWwns).forEach(([hn,wwns])=>{
+
+    (wwns||[]).forEach(w=>{
+
+      (DATA.wwnToSwitch[w]||[]).forEach(l=>{
+
+        if(swHosts[l.switch]) swHosts[l.switch].add(hn);
+
+      });
+
+    });
+
+  });
+
+  SCH.switches = Object.keys(DATA.switchFabric).sort().map(sw=>({
+
+    name:sw, fabric:DATA.switchFabric[sw]||'?', hosts:[...swHosts[sw]].sort()
+
+  }));
+
+  SCH.built = true;
+
+  SCH.switches.forEach(s=>{ if(SCH.page[s.name]==null) SCH.page[s.name]=0; });
+
+  if(SCH.switches.length===0 && SCH.storList.length===0 && Object.keys(DATA.hosts).length===0){
+
+    box.innerHTML='<div class="schema-empty">Şema için veri yok — CSV\'lerin doğru yolda olduğundan emin olun.</div>';
+
+    stat.textContent='Veri yok';
+
+    return;
+
+  }
+
+  drawSchema();
+
+}
+
+function schClearSelection(){
+
+  UI.schSelected = null;
+
+  document.getElementById('schClearSelBtn').style.display = 'none';
+
+  drawSchema();
+
+}
+
+function schSelectSwitch(sw){
+
+  if(UI.schSelected && UI.schSelected.type==='switch' && UI.schSelected.id===sw){
+
+    UI.schSelected = null;
+
+  } else {
+
+    UI.schSelected = {type:'switch', id:sw};
+
+  }
+
+  document.getElementById('schClearSelBtn').style.display = UI.schSelected ? 'inline-flex' : 'none';
+
+  drawSchema();
+
+}
+
+function schSelectStorage(sk){
+
+  if(UI.schSelected && UI.schSelected.type==='storage' && UI.schSelected.id===sk){
+
+    UI.schSelected = null;
+
+  } else {
+
+    UI.schSelected = {type:'storage', id:sk};
+
+  }
+
+  document.getElementById('schClearSelBtn').style.display = UI.schSelected ? 'inline-flex' : 'none';
+
+  drawSchema();
+
+}
+
+function drawSchema(){
+
+  const box = document.getElementById('sch-box');
+
+  const stat = document.getElementById('sch-stat');
+
+  if(!box || !SCH.built) return;
+
+  const f = SCH.filter.trim().toLowerCase();
+
+  const filtering = f.length >= 2;
+
+  let switches = SCH.switches;
+
+  let storList = SCH.storList;
+
+  if(filtering){
+
+    switches = SCH.switches.map(s=>{
+
+      const swMatch = s.name.toLowerCase().includes(f);
+
+      const hostMatch = s.hosts.filter(h=>{
+
+        const ho=DATA.hosts[h]||{};
+
+        return h.toLowerCase().includes(f) ||
+
+               (ho.os||'').toLowerCase().includes(f) ||
+
+               (ho.kabinet||'').toLowerCase().includes(f);
+
+      });
+
+      if(swMatch) return {...s, _hosts:s.hosts};
+
+      if(hostMatch.length) return {...s, _hosts:hostMatch};
+
+      return null;
+
+    }).filter(Boolean);
+
+    storList = SCH.storList.filter(st=>
+
+      st.kabinet.toLowerCase().includes(f) ||
+
+      st.vendor.toLowerCase().includes(f) ||
+
+      [...st.hosts].some(h=>h.toLowerCase().includes(f))
+
+    );
+
+    if(switches.length===0 && storList.length===0){
+
+      box.innerHTML=`<div class="schema-empty">"${esc(SCH.filter)}" için eşleşme yok.</div>`;
+
+      stat.textContent='0 eşleşme';
+
+      return;
+
+    }
+
+  }
+
+  let highlightSwitches = new Set();
+
+  let highlightStorages = new Set();
+
+  let highlightHosts = new Set();
+
+  if(UI.schSelected){
+
+    if(UI.schSelected.type==='switch'){
+
+      const swName = UI.schSelected.id;
+
+      highlightSwitches.add(swName);
+
+      const swStorages = DATA.switchStorageDetail[swName] || {};
+
+      Object.keys(swStorages).forEach(sk => {
+
+        highlightStorages.add(sk);
+
+        swStorages[sk].forEach(h => highlightHosts.add(h));
+
+      });
+
+    } else if(UI.schSelected.type==='storage'){
+
+      const sk = UI.schSelected.id;
+
+      highlightStorages.add(sk);
+
+      const stSwitches = DATA.storageSwitchDetail[sk] || {};
+
+      Object.keys(stSwitches).forEach(sw => {
+
+        highlightSwitches.add(sw);
+
+        stSwitches[sw].forEach(h => highlightHosts.add(h));
+
+      });
+
+    }
+
+  }
+
+  const isDimmed = (type, id) => {
+
+    if(!UI.schSelected) return false;
+
+    if(type==='switch') return !highlightSwitches.has(id);
+
+    if(type==='storage') return !highlightStorages.has(id);
+
+    if(type==='host') return !highlightHosts.has(id);
+
+    return false;
+
+  };
+
+  const layout = [];
+
+  switches.forEach(s=>{
+
+    let hostsAll = filtering ? (s._hosts||s.hosts) : s.hosts;
+
+    const isOpen = filtering ? true : !!SCH.expanded[s.name];
+
+    if(UI.schSelected && isOpen){
+
+      if(UI.schSelected.type==='switch'){
+
+        if(UI.schSelected.id === s.name){
+
+          hostsAll = hostsAll.filter(h => highlightHosts.has(h));
+
+        } else {
+
+          hostsAll = [];
+
+        }
+
+      } else if(UI.schSelected.type==='storage'){
+
+        if(highlightSwitches.has(s.name)){
+
+          hostsAll = hostsAll.filter(h => highlightHosts.has(h));
+
+        } else {
+
+          hostsAll = [];
+
+        }
+
+      }
+
+    }
+
+    if(isOpen && hostsAll.length){
+
+      const pg = SCH.page[s.name]||0;
+
+      const totalPg = Math.ceil(hostsAll.length / SCH.perPage);
+
+      const start = pg*SCH.perPage;
+
+      const slice = hostsAll.slice(start, start+SCH.perPage);
+
+      slice.forEach(h=> layout.push({type:'host', switch:s.name, host:h}));
+
+      if(totalPg>1){
+
+        layout.push({type:'pager', switch:s.name, page:pg, total:totalPg, count:hostsAll.length});
+
+      }
+
+    }
+
+  });
+
+  if(UI.schSelected){
+
+    storList = storList.filter(st => highlightStorages.has(st.key));
+
+  }
+
+  const visibleHostRows = layout.length || 1;
+
+  const W=1100;
+
+  const colHost=120, colSw=540, colStor=920;
+
+  const topPad=70, rowH=40;
+
+  const swN=switches.length||1, storN=storList.length||1;
+
+  const maxRows=Math.max(visibleHostRows, swN, storN, 4);
+
+  const H = topPad + maxRows*rowH + 90;
+
+  const yHost=(i)=> topPad + (i+0.5)*((maxRows*rowH)/Math.max(visibleHostRows,1)) + 10;
+
+  const ySw  =(i)=> topPad + (i+0.5)*((maxRows*rowH)/Math.max(swN,1)) + 10;
+
+  const yStor=(i)=> topPad + (i+0.5)*((maxRows*rowH)/Math.max(storN,1)) + 10;
+
+  const iconRect=(x,y,w,h,cls,extra='')=>`<rect class="sch-icon-box ${cls}" x="${x}" y="${y}" width="${w}" height="${h}" ${extra}/>`;
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">`;
+
+  svg+=`<rect class="sch-zone-lan" x="20" y="40" width="280" height="${H-90}" rx="10"/>`;
+
+  svg+=`<text class="sch-zone-lbl" x="40" y="65" fill="#4be8a0">LAN / HOSTS</text>`;
+
+  svg+=`<rect class="sch-zone-fab" x="${colSw-95}" y="40" width="200" height="${H-90}" rx="10"/>`;
+
+  svg+=`<text class="sch-zone-lbl" x="${colSw-75}" y="65" fill="#e8b84b">FABRIC</text>`;
+
+  svg+=`<rect class="sch-zone-san" x="${colStor-90}" y="40" width="260" height="${H-90}" rx="10"/>`;
+
+  svg+=`<text class="sch-zone-lbl" x="${colStor-70}" y="65" fill="#c084fc">SAN / STORAGE</text>`;
+
+  layout.forEach((it,i)=>{
+
+    if(it.type!=='host') return;
+
+    const hy=yHost(i);
+
+    const si=switches.findIndex(s=>s.name===it.switch);
+
+    if(si<0) return;
+
+    const sy=ySw(si);
+
+    const fab=DATA.switchFabric[it.switch]||'?';
+
+    const fc = fab==='A'?'fab-a':fab==='B'?'fab-b':'generic';
+
+    const dimmed = UI.schSelected && (!highlightHosts.has(it.host) || !highlightSwitches.has(it.switch));
+
+    const highlight = UI.schSelected && highlightHosts.has(it.host) && highlightSwitches.has(it.switch);
+
+    let linkCls = `sch-link ${fc}`;
+
+    if(dimmed) linkCls += ' dimmed';
+
+    if(highlight) linkCls += ' highlight';
+
+    svg+=`<path class="${linkCls}" d="M${colHost+70} ${hy} C ${colSw-60} ${hy}, ${colSw-60} ${sy}, ${colSw-30} ${sy}"/>`;
+
+  });
+
+  switches.forEach((s,si)=>{
+
+    const sy=ySw(si);
+
+    const fab=s.fabric;
+
+    const fc = fab==='A'?'fab-a':fab==='B'?'fab-b':'generic';
+
+    const swStorages = DATA.switchStorageMap[s.name] || new Set();
+
+    storList.forEach((st,ti)=>{
+
+      if(!swStorages.has(st.key)) return;
+
+      const ty=yStor(ti);
+
+      const dimmed = UI.schSelected && (!highlightSwitches.has(s.name) || !highlightStorages.has(st.key));
+
+      const highlight = UI.schSelected && highlightSwitches.has(s.name) && highlightStorages.has(st.key);
+
+      let linkCls = `sch-link ${fc}`;
+
+      if(dimmed) linkCls += ' dimmed';
+
+      if(highlight) linkCls += ' highlight';
+
+      else linkCls += '';
+
+      const baseStyle = !UI.schSelected ? 'style="opacity:.4"' : '';
+
+      svg+=`<path class="${linkCls}" ${baseStyle} d="M${colSw+70} ${sy} C ${colStor-60} ${sy}, ${colStor-60} ${ty}, ${colStor-30} ${ty}"/>`;
+
+    });
+
+  });
+
+  layout.forEach((it,i)=>{
+
+    const y=yHost(i);
+
+    if(it.type==='host'){
+
+      const h=DATA.hosts[it.host]||{};
+
+      const dim = isDimmed('host', it.host);
+
+      svg+=`<g class="sch-node-g${dim?' dimmed':''}">`+
+
+        iconRect(colHost,y-12,68,24,'sch-host-box'+(dim?' dimmed':''))+
+
+        `<text class="sch-node-lbl" x="${colHost+34}" y="${y-1}">${esc(it.host.length>11?it.host.slice(0,10)+'…':it.host)}</text>`+
+
+        `<text class="sch-node-sub" x="${colHost+34}" y="${y+8}">${esc((h.os||h.vendor||'').slice(0,12))}</text>`+
+
+        `</g>`;
+
+    } else if(it.type==='pager'){
+
+      const prevD = it.page>0;
+
+      const nextD = it.page < it.total-1;
+
+      svg+=`<g>`+
+
+        `<text class="sch-node-sub" x="${colHost+34}" y="${y-2}" style="fill:#5a7090">${it.count} host · s. ${it.page+1}/${it.total}</text>`+
+
+        `<text x="${colHost+2}" y="${y+12}" style="font-size:10px;cursor:${prevD?'pointer':'default'};fill:${prevD?'#e8b84b':'#1e2d44'}" `+
+
+          (prevD?`onclick="schPage('${it.switch}',-1)"`:'')+`>◂ Önc</text>`+
+
+        `<text x="${colHost+42}" y="${y+12}" style="font-size:10px;cursor:${nextD?'pointer':'default'};fill:${nextD?'#e8b84b':'#1e2d44'}" `+
+
+          (nextD?`onclick="schPage('${it.switch}',1)"`:'')+`>Sonr ▸</text>`+
+
+        `</g>`;
+
+    }
+
+  });
+
+  switches.forEach((s,si)=>{
+
+    const y=ySw(si);
+
+    const hostsAll = filtering ? (s._hosts||s.hosts) : s.hosts;
+
+    const isOpen = filtering ? true : !!SCH.expanded[s.name];
+
+    const arrow = hostsAll.length ? (isOpen?'▾':'▸') : '·';
+
+    const selected = UI.schSelected && UI.schSelected.type==='switch' && UI.schSelected.id===s.name;
+
+    const dim = isDimmed('switch', s.name);
+
+    const boxCls = 'sch-sw-box' + (selected?' selected':'') + (dim?' dimmed':'');
+
+    svg+=`<g class="sch-node-g${dim?' dimmed':''}" style="cursor:pointer">`+
+
+      `<title>Tıkla: bağlı host ve storage'ları göster${hostsAll.length?' (uzun tıkla: host listesini aç)':''}</title>`+
+
+      iconRect(colSw-35,y-15,90,30,boxCls, `onclick="schSelectSwitch('${s.name}')"`)+
+
+      `<text class="sch-node-lbl" x="${colSw+10}" y="${y-2}" onclick="schSelectSwitch('${s.name}')" style="pointer-events:auto">${esc(s.name.length>13?s.name.slice(0,12)+'…':s.name)}</text>`+
+
+      `<text class="sch-node-sub" x="${colSw+10}" y="${y+8}" onclick="${hostsAll.length?`schToggle('${s.name}')`:''}" style="${hostsAll.length?'cursor:pointer':''}">F${esc(s.fabric)} · ${arrow} ${hostsAll.length}h</text>`+
+
+      `</g>`;
+
+  });
+
+  storList.forEach((st,ti)=>{
+
+    const y=yStor(ti);
+
+    const selected = UI.schSelected && UI.schSelected.type==='storage' && UI.schSelected.id===st.key;
+
+    const dim = isDimmed('storage', st.key);
+
+    const boxCls = 'sch-stor-box' + (selected?' selected':'') + (dim?' dimmed':'');
+
+    svg+=`<g class="sch-node-g${dim?' dimmed':''}" style="cursor:pointer" onclick="schSelectStorage('${st.key.replace(/'/g, "\\'")}')">`+
+
+      iconRect(colStor-30,y-15,86,30,boxCls)+
+
+      `<text class="sch-node-lbl" x="${colStor+13}" y="${y-2}">${esc(st.kabinet.length>12?st.kabinet.slice(0,11)+'…':st.kabinet)}</text>`+
+
+      `<text class="sch-node-sub" x="${colStor+13}" y="${y+8}">${esc(st.vendor)} · ${st.hosts.size}h</text>`+
+
+      `</g>`;
+
+  });
+
+  svg+=`</svg>`;
+
+  box.innerHTML=svg;
+
+  const totalHosts = Object.keys(DATA.hosts).length;
+
+  const openCount = SCH.switches.filter(s=>SCH.expanded[s.name]).length;
+
+  let statTxt = '';
+
+  if(filtering){
+
+    const shown = layout.filter(x=>x.type==='host').length;
+
+    statTxt = `Filtre: "${SCH.filter}" · ${shown} host · ${switches.length} switch`;
+
+  } else {
+
+    statTxt = `${totalHosts} host · ${SCH.switches.length} switch (${openCount} açık) · ${SCH.storList.length} storage`;
+
+  }
+
+  if(UI.schSelected){
+
+    if(UI.schSelected.type==='switch'){
+
+      const conn = DATA.switchStorageMap[UI.schSelected.id]?.size || 0;
+
+      statTxt += ` · Seçili: ${UI.schSelected.id} → ${conn} storage`;
+
+    } else {
+
+      const conn = DATA.storageSwitchMap[UI.schSelected.id]?.size || 0;
+
+      statTxt += ` · Seçili: ${UI.schSelected.id} → ${conn} switch`;
+
+    }
+
+  }
+
+  stat.textContent = statTxt;
+
+}
+
+function schToggle(sw){
+
+  SCH.expanded[sw] = !SCH.expanded[sw];
+
+  drawSchema();
+
+}
+
+function schPage(sw, dir) {
+
+  if (SCH.page[sw] == null) SCH.page[sw] = 0;
+
+  SCH.page[sw] += dir;
+
+  drawSchema();
+
+}
+
+function schFilter() {
+
+  SCH.filter = document.getElementById('sch-filter').value;
+
+  drawSchema();
+
+}
+
+function schExpandAll(val) {
+
+  SCH.switches.forEach(s => { SCH.expanded[s.name] = val; });
+
+  drawSchema();
+
+}
+
+window.addEventListener('DOMContentLoaded', loadAll);
+</script>
+</body>
+</html>

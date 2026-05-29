@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hitachi Storage Dashboard</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<style>
+:root{
+  --bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d44;
+  --accent:#e8b84b;--accent2:#4b9fe8;--accent3:#4be8a0;
+  --danger:#e84b4b;--warn:#e8844b;--purple:#c084fc;
+  --text:#c8d8f0;--text-dim:#5a7090;--text-bright:#e8f2ff;--grid:#0f1928;
+  --hitachi:#e8533b;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:20px;}
+.back-link{display:inline-block;margin-bottom:12px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;}
+.back-link:hover{color:var(--accent2);}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-icon{width:40px;height:40px;border:2px solid var(--hitachi);display:grid;place-items:center;}
+.brand-icon svg{width:20px;height:20px;stroke:var(--hitachi);fill:none;stroke-width:1.5;stroke-linecap:round;}
+.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;}
+.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);}
+
+.arch-note{font-size:10px;color:var(--text-dim);background:var(--grid);border:1px solid var(--border);border-left:3px solid var(--hitachi);padding:10px 14px;margin-bottom:18px;line-height:1.6;}
+.arch-note b{color:var(--text-bright);}
+
+.src-strip{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.src{flex:1;min-width:240px;background:var(--surface);border:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;}
+.src.prod{border-left:3px solid var(--accent3);}
+.src.dr{border-left:3px solid var(--accent2);}
+.src-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);}
+.src-name{font-size:13px;color:var(--text-bright);font-weight:600;margin-top:3px;}
+.src-stat{font-size:10px;text-align:right;}
+.src-ok{color:var(--accent3);}
+.src-miss{color:var(--warn);}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat{background:var(--surface);border:1px solid var(--border);padding:14px 16px;}
+.stat.tot{border-left:3px solid var(--hitachi);}
+.stat.used{border-left:3px solid var(--accent2);}
+.stat.free{border-left:3px solid var(--accent3);}
+.stat.crit{border-left:3px solid var(--danger);}
+.stat-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text-bright);}
+.stat-sub{font-size:9px;color:var(--text-dim);margin-top:3px;}
+
+.toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.toolbar select,.toolbar input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 11px;outline:none;}
+.toolbar select:focus,.toolbar input:focus{border-color:var(--hitachi);}
+.toolbar input{flex:1;min-width:200px;}
+.btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 14px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
+.btn:hover{border-color:var(--hitachi);color:var(--hitachi);}
+
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:18px;}
+.panel-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-bright);display:flex;justify-content:space-between;align-items:center;}
+.tbl-wrap{max-height:600px;overflow:auto;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;cursor:pointer;user-select:none;}
+th:hover{color:var(--text-bright);}
+td{padding:9px 12px;border-bottom:1px solid rgba(30,45,68,.5);}
+tr:hover td{background:rgba(232,83,59,.04);}
+.cab-cell{color:var(--text-bright);font-weight:500;}
+.loc-badge{display:inline-block;font-size:8px;padding:1px 7px;border:1px solid;border-radius:8px;}
+.loc-prod{color:var(--accent3);border-color:rgba(75,232,160,.4);}
+.loc-dr{color:var(--accent2);border-color:rgba(75,159,232,.4);}
+.bar-wrap{position:relative;height:18px;background:var(--bg);border:1px solid var(--border);min-width:130px;}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent3);opacity:.55;}
+.bar-fill.w{background:var(--warn);}
+.bar-fill.c{background:var(--danger);}
+.bar-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-bright);}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(8,12,20,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;}
+.spinner{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--hitachi);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:14px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:12px;color:var(--text-dim);letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<a href="./index.html" class="back-link">← Portala Dön</a>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><rect x="3" y="11" width="18" height="5" rx="1"/><line x1="7" y1="6.5" x2="7" y2="6.5"/><line x1="7" y1="13.5" x2="7" y2="13.5"/><path d="M5 18v2M19 18v2"/></svg>
+    </div>
+    <div>
+      <div class="brand-title">Hitachi Storage</div>
+      <div class="brand-sub">CCI · PROD + DR · FTP Toplama</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div><span style="color:var(--hitachi)">●</span> HITACHI</div>
+    <div id="freshness" style="margin-top:4px"></div>
+  </div>
+</header>
+
+<div class="arch-note">
+  <b>Mimari farkı:</b> Hitachi diğer vendor'lardan farklı — merkezi SSH taraması yok.
+  PROD ve DR Windows server'larında <b>CCI (raidcom)</b> ile yerel PS1 çalışır,
+  çıktı FTP'ye atılır, ortak alandan <code>/Hitachi/</code> klasörüne çekilir.
+  Bu sayfa <b>Hitachi_PROD.csv</b> + <b>Hitachi_DR.csv</b> dosyalarını okur ve birleştirir.
+</div>
+
+<div class="src-strip">
+  <div class="src prod" id="src-prod">
+    <div><div class="src-lbl">Kaynak · PROD</div><div class="src-name">Hitachi_PROD.csv</div></div>
+    <div class="src-stat" id="stat-prod">kontrol ediliyor...</div>
+  </div>
+  <div class="src dr" id="src-dr">
+    <div><div class="src-lbl">Kaynak · DR</div><div class="src-name">Hitachi_DR.csv</div></div>
+    <div class="src-stat" id="stat-dr">kontrol ediliyor...</div>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat tot"><div class="stat-lbl">Toplam Kapasite</div><div class="stat-val" id="s-tot">—</div><div class="stat-sub">TB · tüm pool'lar</div></div>
+  <div class="stat used"><div class="stat-lbl">Kullanılan</div><div class="stat-val" id="s-used">—</div><div class="stat-sub">TB</div></div>
+  <div class="stat free"><div class="stat-lbl">Boş</div><div class="stat-val" id="s-free">—</div><div class="stat-sub">TB kullanılabilir</div></div>
+  <div class="stat crit"><div class="stat-lbl">Kritik Pool</div><div class="stat-val" id="s-crit">—</div><div class="stat-sub">%85+ dolu</div></div>
+</div>
+
+<div class="toolbar">
+  <select id="f-loc" onchange="renderTable()">
+    <option value="">Tüm Lokasyonlar (PROD+DR)</option>
+    <option value="PROD">Sadece PROD</option>
+    <option value="DR">Sadece DR</option>
+  </select>
+  <input id="f-search" placeholder="Kabinet / pool ara..." oninput="filterDeb()" autocomplete="off">
+  <button class="btn" onclick="reloadAll()">↻ Yenile</button>
+  <button class="btn" onclick="exportCSV()">⭳ CSV Aktar</button>
+</div>
+
+<div class="panel">
+  <div class="panel-hdr"><span>Pool Kapasiteleri</span><span id="row-info" style="font-size:10px;color:var(--text-dim);font-weight:normal"></span></div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th onclick="sortBy('kabinet')">Kabinet</th>
+        <th onclick="sortBy('loc')">Lokasyon</th>
+        <th onclick="sortBy('pool')">Pool</th>
+        <th onclick="sortBy('tot')">Total (TB)</th>
+        <th onclick="sortBy('used')">Used (TB)</th>
+        <th onclick="sortBy('free')">Free (TB)</th>
+        <th onclick="sortBy('pct')">Doluluk</th>
+      </tr></thead>
+      <tbody id="tbody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-dim)">Yükleniyor...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<div class="loading-overlay" id="overlay"><div class="spinner"></div><div class="loading-text">CSV Dosyaları Yükleniyor</div></div>
+<div class="toast sp-hidden" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--hitachi);color:var(--text-bright);padding:10px 20px;font-size:12px;z-index:99"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   HITACHI DASHBOARD
+   Beklenen CSV şeması (PS1 bunu üretmeli — CCI çıktısından):
+     Kabinet, Lokasyon, Pool, Total (TB), Used (TB), Free (TB), Doluluk (%)
+   İki dosya: /Hitachi/Hitachi_PROD.csv  +  /Hitachi/Hitachi_DR.csv
+   Lokasyon kolonu PROD/DR ayrımı için (PS1 sabit yazabilir).
+════════════════════════════════════════════════════════════ */
+const CSV_PROD = './Hitachi/Hitachi_PROD.csv';
+const CSV_DR   = './Hitachi/Hitachi_DR.csv';
+
+let ROWS = [];
+let SORT = { key:'pct', dir:-1 };
+
+function setOverlay(on){ document.getElementById('overlay').style.display = on?'flex':'none'; }
+
+function normLoc(v, fallback){
+  const s=(v||'').trim().toUpperCase();
+  if(s.includes('DR')) return 'DR';
+  if(s.includes('PROD')||s.includes('PRD')) return 'PROD';
+  return fallback;
+}
+
+async function loadOne(url, fallbackLoc){
+  try{
+    const text = await fetchCSVText(url);
+    if(!text) return { ok:false, rows:[] };
+    const data=parseCSV(text);
+    const rows=data.map(x=>{
+      const tot=toN(x['Total (TB)']??x['Total']??x['Total(TB)']);
+      const used=toN(x['Used (TB)']??x['Used']??x['Used(TB)']);
+      let free=toN(x['Free (TB)']??x['Free']??x['Free(TB)']);
+      if(!free && tot>0) free=Math.max(0,tot-used);
+      let pct=toN(x['Doluluk (%)']??x['Doluluk']??x['Pct']);
+      if(!pct && tot>0) pct=used/tot*100;
+      return {
+        kabinet:(x['Kabinet']??x['Array']??x['Serial']??'').trim()||'—',
+        loc:normLoc(x['Lokasyon'], fallbackLoc),
+        pool:(x['Pool']??x['Pool Name']??x['PoolID']??'').trim()||'—',
+        tot, used, free, pct
+      };
+    }).filter(r=>r.kabinet!=='—'||r.pool!=='—');
+    return { ok:true, rows };
+  }catch{ return { ok:false, rows:[] }; }
+}
+
+async function loadAll(){
+  setOverlay(true);
+  const [prod, dr] = await Promise.all([
+    loadOne(CSV_PROD,'PROD'),
+    loadOne(CSV_DR,'DR')
+  ]);
+
+  // Kaynak durum rozetleri
+  const sp=document.getElementById('stat-prod'), sd=document.getElementById('stat-dr');
+  sp.className='src-stat '+(prod.ok?'src-ok':'src-miss');
+  sp.textContent=prod.ok?`✓ ${prod.rows.length} pool`:'✗ bulunamadı';
+  sd.className='src-stat '+(dr.ok?'src-ok':'src-miss');
+  sd.textContent=dr.ok?`✓ ${dr.rows.length} pool`:'✗ bulunamadı';
+
+  ROWS=[...prod.rows, ...dr.rows];
+
+  // Freshness rozeti (ortak yardımcı)
+  try{
+    await renderFreshnessBadge('freshness',[CSV_PROD,CSV_DR],true);
+  }catch{}
+
+  computeStats();
+  renderTable();
+  setOverlay(false);
+
+  if(ROWS.length===0){
+    document.getElementById('tbody').innerHTML=
+      '<tr><td colspan="7">'+spEmptyState({
+        type:'no-data',
+        title:'Hitachi verisi yok',
+        msg:'PROD/DR sunucularinda CCI PS1 calisip FTP uzerinden /Hitachi/ klasorune cekildikten sonra burada gorunur.'
+      })+'</td></tr>';
+  }
+}
+
+function computeStats(){
+  const f=document.getElementById('f-loc').value;
+  const rows = f ? ROWS.filter(r=>r.loc===f) : ROWS;
+  const tot=rows.reduce((s,r)=>s+r.tot,0);
+  const used=rows.reduce((s,r)=>s+r.used,0);
+  const free=rows.reduce((s,r)=>s+r.free,0);
+  const crit=rows.filter(r=>r.pct>=85).length;
+  document.getElementById('s-tot').textContent=tot.toFixed(1);
+  document.getElementById('s-used').textContent=used.toFixed(1);
+  document.getElementById('s-free').textContent=free.toFixed(1);
+  document.getElementById('s-crit').textContent=crit;
+}
+
+function sortBy(key){
+  if(SORT.key===key) SORT.dir*=-1;
+  else { SORT.key=key; SORT.dir=(key==='kabinet'||key==='pool'||key==='loc')?1:-1; }
+  renderTable();
+}
+
+let _filterT=null;
+function filterDeb(){
+  clearTimeout(_filterT);
+  _filterT=setTimeout(renderTable,200);
+}
+
+function renderTable(){
+  computeStats();
+  const f=document.getElementById('f-loc').value;
+  const q=(document.getElementById('f-search').value||'').toLowerCase();
+  let rows = f ? ROWS.filter(r=>r.loc===f) : ROWS.slice();
+  if(q) rows=rows.filter(r=>r.kabinet.toLowerCase().includes(q)||r.pool.toLowerCase().includes(q));
+
+  const k=SORT.key, d=SORT.dir;
+  rows.sort((a,b)=>{
+    let av=a[k], bv=b[k];
+    if(typeof av==='string') return av.localeCompare(bv)*d;
+    return (av-bv)*d;
+  });
+
+  document.getElementById('row-info').textContent=`${rows.length} pool gösteriliyor`;
+  const tb=document.getElementById('tbody');
+  if(rows.length===0){
+    tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-dim)">Eşleşen kayıt yok</td></tr>';
+    return;
+  }
+  tb.innerHTML=rows.map(r=>{
+    const pct=Math.min(100,Math.max(0,r.pct));
+    const cls=pct>=85?'c':pct>=70?'w':'';
+    const rowCls=pct>=85?'sp-row-crit':'';
+    return `<tr class="${rowCls}">
+      <td class="cab-cell">${esc(r.kabinet)}</td>
+      <td><span class="loc-badge loc-${r.loc==='DR'?'dr':'prod'}">${esc(r.loc)}</span></td>
+      <td>${esc(r.pool)}</td>
+      <td>${r.tot.toFixed(2)}</td>
+      <td>${r.used.toFixed(2)}</td>
+      <td>${r.free.toFixed(2)}</td>
+      <td><div class="bar-wrap"><div class="bar-fill ${cls}" style="width:${pct}%"></div><div class="bar-txt">${pct.toFixed(1)}%</div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCSV(){
+  if(ROWS.length===0){ toast('Aktarılacak veri yok'); return; }
+  const head=['Kabinet','Lokasyon','Pool','Total (TB)','Used (TB)','Free (TB)','Doluluk (%)'];
+  const lines=[head.join(',')];
+  ROWS.forEach(r=>lines.push([r.kabinet,r.loc,r.pool,r.tot.toFixed(2),r.used.toFixed(2),r.free.toFixed(2),r.pct.toFixed(1)]
+    .map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')));
+  const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='hitachi_birlesik.csv'; a.click();
+  toast(`${ROWS.length} satır CSV'ye aktarıldı`);
+}
+
+function reloadAll(){ toast('Yeniden yükleniyor'); loadAll(); }
+
+loadAll();
+</script>
+</body>
+</html>

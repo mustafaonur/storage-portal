@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capacity Planner · Storage Portal</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<style>
+:root{
+  --bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d44;
+  --accent:#e8b84b;--accent2:#4b9fe8;--accent3:#4be8a0;
+  --danger:#e84b4b;--warn:#e8844b;--purple:#c084fc;
+  --text:#c8d8f0;--text-dim:#5a7090;--text-bright:#e8f2ff;--grid:#0f1928;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:20px;}
+.back-link{display:inline-block;margin-bottom:12px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;}
+.back-link:hover{color:var(--accent2);}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-icon{width:40px;height:40px;border:2px solid var(--accent2);display:grid;place-items:center;}
+.brand-icon svg{width:20px;height:20px;stroke:var(--accent2);fill:none;stroke-width:1.5;stroke-linecap:round;}
+.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;}
+.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);}
+
+.note{font-size:10px;color:var(--text-dim);background:var(--grid);border:1px solid var(--border);border-left:3px solid var(--warn);padding:10px 14px;margin-bottom:18px;line-height:1.6;}
+.note b{color:var(--text-bright);}
+
+.layout{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start;}
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:16px;}
+.panel-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-bright);}
+.panel-body{padding:16px;}
+
+.lbl{display:block;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;}
+.inp,.sel{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;padding:9px 11px;outline:none;box-sizing:border-box;margin-bottom:14px;}
+.inp:focus,.sel:focus{border-color:var(--accent2);}
+.scenario-box{background:var(--grid);border:1px solid var(--border);padding:14px;margin-bottom:14px;}
+.scenario-box .sb-ttl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;}
+.row2{display:grid;grid-template-columns:1fr 80px;gap:8px;align-items:end;}
+.btn{width:100%;background:transparent;border:1px solid var(--accent2);color:var(--accent2);font-family:'JetBrains Mono',monospace;font-size:11px;padding:11px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:all .15s;}
+.btn:hover{background:var(--accent2);color:var(--bg);}
+.btn.sec{border-color:var(--border);color:var(--text-dim);margin-top:8px;}
+.btn.sec:hover{background:var(--surface2);color:var(--text);}
+
+.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.preset{font-size:9px;padding:5px 9px;background:var(--bg);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all .12s;letter-spacing:.5px;}
+.preset:hover{border-color:var(--accent);color:var(--accent);}
+
+.result-hero{background:linear-gradient(135deg,rgba(75,159,232,.10),rgba(75,159,232,.02));border:1px solid var(--accent2);border-left:3px solid var(--accent2);padding:18px 20px;margin-bottom:16px;}
+.result-hero h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
+.result-hero .rh-sub{font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.5;}
+
+.proj-table{width:100%;border-collapse:collapse;font-size:11px;}
+.proj-table th{background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;}
+.proj-table td{padding:10px 12px;border-bottom:1px solid rgba(30,45,68,.5);}
+.proj-table tr:hover td{background:rgba(75,159,232,.04);}
+.cab-cell{color:var(--text-bright);font-weight:500;}
+.ven-cell{font-size:9px;color:var(--text-dim);}
+.bar-wrap{position:relative;height:18px;background:var(--bg);border:1px solid var(--border);min-width:120px;}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent3);opacity:.6;}
+.bar-fill.warn{background:var(--warn);}
+.bar-fill.crit{background:var(--danger);}
+.bar-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-bright);}
+.eta-crit{color:var(--danger);font-weight:600;}
+.eta-warn{color:var(--warn);font-weight:600;}
+.eta-ok{color:var(--accent3);}
+.eta-safe{color:var(--text-dim);}
+.tbl-wrap{max-height:560px;overflow:auto;border:1px solid var(--border);}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:420px;text-align:center;color:var(--text-dim);padding:40px;}
+.empty svg{width:46px;height:46px;stroke:var(--text-dim);fill:none;stroke-width:1.3;opacity:.5;margin-bottom:16px;}
+.empty .e-ttl{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text-bright);}
+.empty .e-msg{font-size:12px;margin-top:6px;max-width:400px;line-height:1.6;}
+
+.loadbar{height:3px;background:var(--surface2);overflow:hidden;margin-bottom:14px;display:none;}
+.loadbar.show{display:block;}
+.loadbar i{display:block;height:100%;background:var(--accent2);width:0;transition:width .2s;}
+.summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.sum{background:var(--surface);border:1px solid var(--border);padding:13px 15px;}
+.sum.crit{border-left:3px solid var(--danger);}
+.sum.warn{border-left:3px solid var(--warn);}
+.sum.ok{border-left:3px solid var(--accent3);}
+.sum-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;}
+.sum-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
+.sum-sub{font-size:9px;color:var(--text-dim);margin-top:3px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<a href="./index.html" class="back-link">← Portala Dön</a>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/><circle cx="17" cy="7" r="1.5" fill="currentColor"/></svg>
+    </div>
+    <div>
+      <div class="brand-title">Capacity Planner</div>
+      <div class="brand-sub">What-If Senaryo &amp; Projeksiyon</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div><span style="color:var(--accent2)">●</span> PLANNER</div>
+    <div id="data-info" style="margin-top:4px"></div>
+  </div>
+</header>
+
+<div class="note">
+  <b>Nasıl çalışır:</b> Her kabinetin son 30 günlük <b>_history</b> verisinden lineer büyüme hızı hesaplanır.
+  Senaryonuzu (örn. +50 TB ekle) uygulayıp <b>"kritik eşiğe (%) kaç gün kaldı"</b> tahminini gösterir.
+  Bu bir <b>tahmindir</b>, garantili değildir — geçmiş eğilime dayanır, gerçek büyüme değişebilir.
+</div>
+
+<div class="layout">
+
+  <!-- SOL: SENARYO -->
+  <div>
+    <div class="panel">
+      <div class="panel-hdr">Senaryo Tanımla</div>
+      <div class="panel-body">
+        <label class="lbl">Vendor Kapsamı</label>
+        <select class="sel" id="f-vendor">
+          <option value="all">Tüm Vendor'lar</option>
+          <option value="huawei">Huawei</option>
+          <option value="pmax">PowerMax</option>
+          <option value="purefa">Pure FA</option>
+          <option value="purefb">Pure FB</option>
+          <option value="netapp">NetApp</option>
+        </select>
+
+        <label class="lbl">Kritik Eşik (%)</label>
+        <input class="inp" id="f-thresh" type="number" min="50" max="100" value="85">
+
+        <div class="scenario-box">
+          <div class="sb-ttl">What-If Senaryosu</div>
+
+          <label class="lbl">Eklenecek/Çıkacak Kapasite (TB)</label>
+          <input class="inp" id="s-tb" type="number" value="0" placeholder="+50 = ekle, -20 = arşivle">
+
+          <label class="lbl">Senaryo Hangi Kabinete?</label>
+          <select class="sel" id="s-target">
+            <option value="all">Tüm kabinetlere dağıt (eşit)</option>
+            <option value="biggest">En büyük kabinete</option>
+            <option value="fullest">En dolu kabinete</option>
+          </select>
+
+          <label class="lbl">Büyüme Hızı Çarpanı</label>
+          <select class="sel" id="s-growth" style="margin-bottom:0">
+            <option value="1">1× (mevcut trend devam eder)</option>
+            <option value="1.5">1.5× (büyüme hızlanır)</option>
+            <option value="2">2× (yeni proje, agresif)</option>
+            <option value="0.5">0.5× (yavaşlar)</option>
+          </select>
+        </div>
+
+        <div class="preset-row">
+          <span class="preset" onclick="preset(50,'all')">+50 TB dağıt</span>
+          <span class="preset" onclick="preset(100,'biggest')">+100 TB en büyük</span>
+          <span class="preset" onclick="preset(-20,'fullest')">-20 TB arşiv</span>
+          <span class="preset" onclick="preset(0,'all')">Sıfırla</span>
+        </div>
+
+        <button class="btn" onclick="runPlan()">▸ Projeksiyonu Hesapla</button>
+        <button class="btn sec" onclick="reloadAll()">↻ History Yeniden Yükle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAĞ: SONUÇ -->
+  <div id="result">
+    <div class="empty">
+      <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>
+      <div class="e-ttl">Senaryonuzu tanımlayın</div>
+      <div class="e-msg">Soldan bir senaryo girip "Projeksiyonu Hesapla" deyin. Her kabinet için kritik eşiğe kaç gün kaldığını, senaryonuzun etkisini göreceksiniz.</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="loadbar" id="loadbar" style="position:fixed;top:0;left:0;right:0;margin:0;z-index:99"><i id="loadbar-i"></i></div>
+<div class="toast sp-hidden" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent2);color:var(--text-bright);padding:10px 20px;font-size:12px;z-index:99"></div>
+
+<script>
+const BASE='.';
+const VC={
+  huawei:{lbl:'Huawei',  hist:`${BASE}/Hw/_history/Dorado_Dashboard_{D}.csv`,   cabCol:'Kabinet',  used:'Used (TB)', tot:'Total (TB)', pct:'Doluluk (%)'},
+  pmax:  {lbl:'PowerMax',hist:`${BASE}/Pmax/_history/PmaxPoolDash_{D}.csv`,      cabCol:'Array ID', used:'Used (TB)', tot:'Total (TB)', pct:'Doluluk (%)'},
+  purefa:{lbl:'Pure FA', hist:`${BASE}/Pure/_history/Pure_Dashboard_{D}.csv`,    cabCol:'Kabinet',  used:'Used (TB)', tot:'Total (TB)', pct:'Doluluk (%)'},
+  purefb:{lbl:'Pure FB', hist:`${BASE}/Pure/_history/FB_Dashboard_{D}.csv`,      cabCol:'Kabinet',  used:'Used (TB)', tot:'Total (TB)', pct:'Doluluk (%)'},
+  netapp:{lbl:'NetApp',  hist:`${BASE}/NetApp/_history/NetApp_Dashboard_{D}.csv`,cabCol:'Kabinet',  used:'Used (TB)', tot:'Total (TB)', pct:'Doluluk (%)'},
+};
+const SKIP=r=>['===','---'].includes(r.Lokasyon)||/^(TOPLAM|GENEL)/i.test(r.Kabinet||r['Array ID']||'');
+let CACHE={};
+
+// esc, toN, parseCSV, toast, dateRangeBack → storage-utils.js (ortak)
+function linReg(pts){
+  const n=pts.length;if(n<3)return null;
+  let sx=0,sy=0,sxy=0,sxx=0;
+  pts.forEach((p,i)=>{sx+=i;sy+=p;sxy+=i*p;sxx+=i*i;});
+  const slope=(n*sxy-sx*sy)/(n*sxx-sx*sx);
+  return{slope:isFinite(slope)?slope:0,intercept:(sy-slope*sx)/n};
+}
+
+async function loadVendor(vid){
+  if(CACHE[vid])return CACHE[vid];
+  const cfg=VC[vid],dates=dateRangeBack(30),out=[];
+  const lb=document.getElementById('loadbar'),lbi=document.getElementById('loadbar-i');
+  lb.classList.add('show');let done=0;
+  const tasks=dates.map(d=>fetchCSVText(cfg.hist.replace('{D}',d))
+    .then(txt=>{done++;lbi.style.width=(done/dates.length*100)+'%';
+      const rows=parseCSV(txt).filter(r=>!SKIP(r));
+      if(rows.length)out.push({date:d,rows});}));
+  for(let i=0;i<tasks.length;i+=6){await Promise.all(tasks.slice(i,i+6));}
+  out.sort((a,b)=>a.date.localeCompare(b.date));
+  lb.classList.remove('show');lbi.style.width='0';
+  CACHE[vid]=out;return out;
+}
+
+function preset(tb,target){
+  document.getElementById('s-tb').value=tb;
+  document.getElementById('s-target').value=target;
+  if(tb===0&&target==='all'){ document.getElementById('s-growth').value='1'; }
+  runPlan();
+}
+
+async function runPlan(){
+  const vSel=document.getElementById('f-vendor').value;
+  const thresh=toN(document.getElementById('f-thresh').value)||85;
+  const scenTB=toN(document.getElementById('s-tb').value);
+  const scenTarget=document.getElementById('s-target').value;
+  const growthMul=parseFloat(document.getElementById('s-growth').value)||1;
+  const vendors=vSel==='all'?Object.keys(VC):[vSel];
+
+  const resEl=document.getElementById('result');
+  resEl.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div class="e-ttl">Hesaplanıyor...</div></div>';
+
+  // Kabinet bazlı seri topla
+  let cabs=[]; // {cab, vendor, usedSeries:[], totLast, pctLast}
+  let totalDays=0;
+  for(const vid of vendors){
+    const snaps=await loadVendor(vid);
+    totalDays+=snaps.length;
+    const cfg=VC[vid];
+    const map={}; // cab -> {used:[], tot, pct}
+    snaps.forEach(s=>s.rows.forEach(r=>{
+      const cab=(r[cfg.cabCol]||'').trim();if(!cab)return;
+      if(!map[cab])map[cab]={used:[],tot:0,pct:0};
+      map[cab].used.push(toN(r[cfg.used]));
+      map[cab].tot=toN(r[cfg.tot])||map[cab].tot;
+      map[cab].pct=toN(r[cfg.pct]);
+    }));
+    Object.entries(map).forEach(([cab,m])=>{
+      if(m.used.length<3||m.tot<=0)return;
+      cabs.push({cab,vendor:cfg.lbl,vid,used:m.used,tot:m.tot,
+        usedLast:m.used[m.used.length-1],pctLast:m.pct});
+    });
+  }
+
+  document.getElementById('data-info').textContent=`${totalDays} snapshot · ${cabs.length} kabinet`;
+
+  if(cabs.length===0){
+    resEl.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg><div class="e-ttl">Yeterli history yok</div><div class="e-msg">Projeksiyon için her kabinette en az 3 günlük _history snapshot gerekir. StorageReport.ps1 düzenli çalıştıkça veri birikecek.</div></div>';
+    return;
+  }
+
+  // Senaryo: scenTB nereye uygulanacak?
+  let targetCab=null;
+  if(scenTB!==0 && scenTarget!=='all'){
+    if(scenTarget==='biggest') targetCab=cabs.reduce((a,b)=>b.tot>a.tot?b:a).cab;
+    else if(scenTarget==='fullest') targetCab=cabs.reduce((a,b)=>b.pctLast>a.pctLast?b:a).cab;
+  }
+  const perCabTB = (scenTB!==0 && scenTarget==='all') ? scenTB/cabs.length : 0;
+
+  // Her kabinet için projeksiyon
+  const rows=cabs.map(c=>{
+    const reg=linReg(c.used);
+    let slope=reg?reg.slope*growthMul:0;  // günlük TB artış (senaryo çarpanı)
+    // Senaryo etkisi: bu kabinete eklenen TB anında used'a eklenir
+    let addTB=perCabTB;
+    if(targetCab && c.cab===targetCab) addTB=scenTB;
+    const usedNow=c.usedLast + addTB;
+    const totNow=c.tot;
+    const pctNow=totNow>0 ? usedNow/totNow*100 : 0;
+    // Kritik eşiğe kaç gün? (eşik %'sine karşılık gelen TB)
+    const threshTB = totNow * thresh/100;
+    let etaDays=null;
+    if(usedNow>=threshTB) etaDays=0;            // zaten eşikte/üstünde
+    else if(slope>0.001) etaDays=Math.round((threshTB-usedNow)/slope);
+    // slope<=0 ise dolmuyor → null (güvende)
+    let etaDate=null;
+    if(etaDays!==null && etaDays>0 && etaDays<3650){
+      const d=new Date();d.setDate(d.getDate()+etaDays);
+      etaDate=d.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    }
+    return {cab:c.cab,vendor:c.vendor,usedNow,totNow,pctNow,slope,etaDays,etaDate,
+            addTB, baseline:c.usedLast, baselinePct:c.tot>0?c.usedLast/c.tot*100:0};
+  });
+
+  // Sırala: en kısa ETA önce (kritik), güvende olanlar sonda
+  rows.sort((a,b)=>{
+    const ea=a.etaDays==null?9e9:a.etaDays, eb=b.etaDays==null?9e9:b.etaDays;
+    return ea-eb;
+  });
+
+  const crit=rows.filter(r=>r.etaDays!=null&&r.etaDays<30).length;
+  const warn=rows.filter(r=>r.etaDays!=null&&r.etaDays>=30&&r.etaDays<90).length;
+  const safe=rows.filter(r=>r.etaDays==null||r.etaDays>=90).length;
+
+  const firstCrit=rows.find(r=>r.etaDays!=null&&r.etaDays<3650);
+  const scenTxt = scenTB===0 ? 'Senaryo yok (mevcut trend)' :
+    (scenTB>0?`+${scenTB} TB`:`${scenTB} TB`) +
+    (targetCab?` → ${targetCab}`:scenTarget==='all'?' tüm kabinetlere dağıtıldı':'') +
+    (growthMul!==1?` · büyüme ${growthMul}×`:'');
+
+  let html=`<div class="result-hero">
+    <h2>${firstCrit ? `İlk kritik: ${esc(firstCrit.cab)} → ${firstCrit.etaDays===0?'ŞİMDİ':firstCrit.etaDays+' gün'}` : 'Yakın vadede kritik kabinet yok'}</h2>
+    <div class="rh-sub">Senaryo: <b style="color:var(--text-bright)">${esc(scenTxt)}</b> · Kritik eşik: %${thresh}<br>
+    ${firstCrit ? `Mevcut hızla ${esc(firstCrit.cab)} ${firstCrit.etaDate?firstCrit.etaDate+' civarı':'kısa sürede'} %${thresh} doluluğa ulaşır.` : 'Hiçbir kabinet 10 yıl içinde eşiğe ulaşmıyor (ya da büyümüyor).'}</div>
+  </div>
+  <div class="summary-strip">
+    <div class="sum crit"><div class="sum-lbl">Kritik (&lt;30 gün)</div><div class="sum-val">${crit}</div><div class="sum-sub">acil planlama gerek</div></div>
+    <div class="sum warn"><div class="sum-lbl">Dikkat (30-90 gün)</div><div class="sum-val">${warn}</div><div class="sum-sub">orta vade</div></div>
+    <div class="sum ok"><div class="sum-lbl">Güvende (&gt;90 gün)</div><div class="sum-val">${safe}</div><div class="sum-sub">izlemeye devam</div></div>
+  </div>
+  <div class="panel"><div class="panel-hdr">Kabinet Projeksiyonları (${rows.length})</div></div>
+  <div class="tbl-wrap"><table class="proj-table">
+    <thead><tr><th>Kabinet</th><th>Vendor</th><th>Senaryo Sonrası Doluluk</th><th>Günlük Artış</th><th>Kritik Eşiğe</th><th>Tahmini Tarih</th></tr></thead>
+    <tbody>`;
+
+  rows.forEach(r=>{
+    const pct=Math.min(100,Math.max(0,r.pctNow));
+    const barCls = pct>=85?'crit':pct>=70?'warn':'';
+    let etaTxt,etaCls;
+    if(r.etaDays===0){ etaTxt='ŞİMDİ ⚠'; etaCls='eta-crit'; }
+    else if(r.etaDays==null){ etaTxt='büyümüyor'; etaCls='eta-safe'; }
+    else if(r.etaDays>=3650){ etaTxt='10+ yıl'; etaCls='eta-safe'; }
+    else if(r.etaDays<30){ etaTxt=`${r.etaDays} gün`; etaCls='eta-crit'; }
+    else if(r.etaDays<90){ etaTxt=`${r.etaDays} gün`; etaCls='eta-warn'; }
+    else { etaTxt=`${r.etaDays} gün`; etaCls='eta-ok'; }
+    const addBadge = Math.abs(r.addTB)>0.01 ? ` <span style="font-size:9px;color:${r.addTB>0?'var(--warn)':'var(--accent3)'}">(${r.addTB>0?'+':''}${r.addTB.toFixed(1)} TB)</span>` : '';
+    return html+=`<tr>
+      <td class="cab-cell">${esc(r.cab)}</td>
+      <td class="ven-cell">${esc(r.vendor)}</td>
+      <td><div class="bar-wrap"><div class="bar-fill ${barCls}" style="width:${pct}%"></div><div class="bar-txt">${pct.toFixed(1)}%${addBadge}</div></div></td>
+      <td>${r.slope>0?'+':''}${r.slope.toFixed(2)} TB/gün</td>
+      <td class="${etaCls}">${etaTxt}</td>
+      <td style="color:var(--text-dim);font-size:10px">${r.etaDate||'—'}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  resEl.innerHTML=html;
+  LAST_ROWS=rows;
+}
+
+let LAST_ROWS=[];
+function reloadAll(){ CACHE={}; toast('History yeniden yüklenecek'); runPlan(); }
+
+runPlan();
+</script>
+</body>
+</html>

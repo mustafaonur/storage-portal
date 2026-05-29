@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pure FlashArray Dashboard</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<style>
+  :root {
+    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
+    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
+    --danger:#e84b4b; --warn:#e8844b;
+    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image: linear-gradient(rgba(30,45,68,.3) 1px,transparent 1px), linear-gradient(90deg,rgba(30,45,68,.3) 1px,transparent 1px);
+    background-size:40px 40px; pointer-events:none; z-index:0;
+  }
+
+  #loading-overlay {
+    position:fixed; inset:0; background:rgba(8,12,20,.96); z-index:999;
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+  }
+  .spinner { width:40px; height:40px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-text { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--text-dim); animation:blink 1.5s ease-in-out infinite; }
+
+  .shell { position:relative; z-index:1; max-width:1600px; margin:0 auto; padding:24px; }
+  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
+  .back-link:hover { color:var(--accent2); }
+
+  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:center; gap:14px; }
+  .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
+  @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
+  .brand-icon svg { width:22px; height:22px; stroke:var(--accent); fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+  .brand-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text-bright); letter-spacing:-.5px; }
+  .brand-sub { font-size:10px; color:var(--text-dim); letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
+  .header-meta { text-align:right; font-size:11px; color:var(--text-dim); line-height:1.8; }
+  .live-dot { display:inline-block; width:6px; height:6px; background:var(--accent3); border-radius:50%; margin-right:6px; animation:blink 2s ease-in-out infinite; vertical-align:middle; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .tabs { display:flex; gap:2px; margin-bottom:24px; border-bottom:1px solid var(--border); }
+  .tab-btn { background:none; border:none; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:10px 20px; cursor:pointer; position:relative; transition:color .2s; }
+  .tab-btn::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:var(--accent); transform:scaleX(0); transition:transform .2s; }
+  .tab-btn.active { color:var(--accent); }
+  .tab-btn.active::after { transform:scaleX(1); }
+  .tab-btn:hover { color:var(--text); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  .summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); padding:20px; position:relative; overflow:hidden; transition:border-color .2s,transform .2s; }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; }
+  .stat-card.gold::before { background:var(--accent); }
+  .stat-card.blue::before { background:var(--accent2); }
+  .stat-card.green::before { background:var(--accent3); }
+  .stat-card.red::before { background:var(--danger); }
+  .stat-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .stat-card-click { cursor:pointer; }
+  .stat-card-click:hover { border-color:var(--accent2); }
+  
+  .cabinet-card-click { cursor:pointer; }
+  .os-legend-clickable { cursor:pointer; transition:background .15s; }
+  .os-legend-clickable:hover {
+    background:rgba(75,159,232,.1);
+    border-radius:3px;
+  }
+  .stat-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; }
+  .stat-value { font-family:'Syne',sans-serif; font-size:28px; font-weight:700; color:var(--text-bright); line-height:1; }
+  .stat-unit { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); margin-left:4px; }
+  .stat-sub { font-size:11px; color:var(--text-dim); margin-top:6px; }
+
+  .location-block { margin-bottom:36px; }
+  .location-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .location-tag { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--accent); padding:4px 12px; border:1px solid var(--accent); }
+  .location-line { flex:1; height:1px; background:linear-gradient(90deg,var(--accent) 0%,transparent 100%); opacity:.3; }
+
+  .cabinet-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+  .cabinet-card { background:var(--surface); border:1px solid var(--border); position:relative; overflow:hidden; transition:border-color .25s,box-shadow .25s; animation:fadeInUp .4s ease both; }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .cabinet-card:hover { border-color:rgba(75,159,232,.5); box-shadow:0 0 30px rgba(75,159,232,.07); }
+  .cabinet-card.error { border-color:rgba(232,75,75,.4); }
+  .cabinet-card.warn-high { border-color:rgba(232,132,75,.4); }
+  .card-header { display:flex; justify-content:space-between; align-items:flex-start; padding:16px 18px 12px; border-bottom:1px solid var(--border); background:var(--surface2); }
+  .card-name { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:var(--text-bright); }
+  .card-ip { font-size:11px; color:var(--text-dim); margin-top:3px; }
+  .status-badge { font-size:10px; padding:3px 8px; border-radius:2px; letter-spacing:1px; text-transform:uppercase; font-weight:500; }
+  .badge-ok  { background:rgba(75,232,160,.15); color:var(--accent3); border:1px solid rgba(75,232,160,.3); }
+  .badge-warn{ background:rgba(232,132,75,.15); color:var(--warn);    border:1px solid rgba(232,132,75,.3); }
+  .badge-err { background:rgba(232,75,75,.15);  color:var(--danger);  border:1px solid rgba(232,75,75,.3); }
+  .card-body { padding:16px 18px; }
+  .cap-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .cap-label { font-size:10px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; }
+  .cap-pct { font-family:'Syne',sans-serif; font-size:20px; font-weight:700; }
+  .bar-track { height:6px; background:var(--grid); border:1px solid var(--border); margin-bottom:14px; position:relative; overflow:hidden; }
+  .bar-fill { height:100%; position:absolute; left:0; top:0; }
+  .bar-low { background:var(--accent3); } .bar-mid { background:var(--accent); }
+  .bar-high { background:var(--warn); }   .bar-crit { background:var(--danger); }
+  .metrics-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+  .metric { background:var(--grid); border:1px solid var(--border); padding:8px; text-align:center; }
+  .metric-val { font-size:13px; font-weight:500; color:var(--text-bright); }
+  .metric-lbl { font-size:9px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-top:3px; }
+  .os-section { margin-bottom:12px; }
+  .os-title { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; }
+  .os-bars { display:flex; gap:4px; align-items:flex-end; height:32px; }
+  .os-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; }
+  .os-bar { width:100%; min-height:3px; border-radius:1px; }
+  .os-vmware { background:#4b9fe8; } .os-linux { background:#4be8a0; }
+  .os-aix    { background:#e8b84b; } .os-windows{ background:#e87a4b; }
+  .os-legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:8px; }
+  .os-legend-item { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--text-dim); }
+  .os-dot { width:8px; height:8px; border-radius:1px; }
+  .card-footer { display:flex; justify-content:space-between; align-items:center; padding:10px 18px; border-top:1px solid var(--border); background:var(--surface2); font-size:11px; }
+  .footer-dr { color:var(--accent); } .footer-ver { color:var(--text-dim); }
+  .error-overlay { display:flex; flex-direction:column; align-items:center; justify-content:center; height:140px; gap:10px; color:var(--danger); font-size:12px; letter-spacing:1px; }
+
+  .section-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:var(--accent); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  .filter-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .filter-select { background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:8px 12px; outline:none; transition:border-color .2s; }
+  .filter-select:focus { border-color:var(--accent2); }
+  .filter-select option { background:var(--surface2); }
+
+  /* Aktif filtre chip alani */
+  .active-filter-chips {
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    background:rgba(232,184,75,.08);
+    border:1px solid rgba(232,184,75,.25);
+    border-left:3px solid var(--accent);
+    padding:10px 14px; margin-bottom:14px;
+  }
+  .filter-chip {
+    background:var(--surface2); border:1px solid var(--border);
+    color:var(--text-dim); font-size:10px;
+    padding:3px 10px; letter-spacing:.5px;
+  }
+  .filter-chip strong { color:var(--accent); margin-left:4px; }
+  .filter-chip-clear {
+    background:transparent; border:1px solid var(--text-dim);
+    color:var(--text-dim); font-family:'JetBrains Mono',monospace;
+    font-size:10px; padding:3px 10px; cursor:pointer;
+    letter-spacing:1px; text-transform:uppercase;
+    margin-left:auto; transition:all .2s;
+  }
+  .filter-chip-clear:hover { color:var(--danger); border-color:var(--danger); }
+  .search-box { position:relative; flex:1; max-width:280px; }
+  .search-box input { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:8px 12px 8px 32px; outline:none; transition:border-color .2s; }
+  .search-box input:focus { border-color:var(--accent2); }
+  .search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-dim); font-size:13px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead th { background:var(--surface2); border:1px solid var(--border); padding:10px 14px; text-align:left; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); white-space:nowrap; cursor:pointer; user-select:none; transition:color .2s; }
+  thead th:hover { color:var(--accent); }
+  tbody tr { border:1px solid var(--border); transition:background .15s; }
+  tbody tr:hover { background:var(--surface2); }
+  tbody td { padding:9px 14px; border-bottom:1px solid rgba(30,45,68,.6); color:var(--text); }
+  .tag-os { display:inline-block; padding:2px 7px; font-size:10px; border-radius:2px; font-weight:500; }
+  .tag-vmware  { background:rgba(75,159,232,.2); color:#4b9fe8; }
+  .tag-linux   { background:rgba(75,232,160,.2); color:#4be8a0; }
+  .tag-aix     { background:rgba(232,184,75,.2); color:#e8b84b; }
+  .tag-windows { background:rgba(232,122,75,.2); color:#e87a4b; }
+  .map-status { font-size:10px; padding:2px 8px; border-radius:2px; }
+  .mapped   { background:rgba(75,232,160,.15); color:var(--accent3); }
+  .unmapped { background:rgba(90,112,144,.15); color:var(--text-dim); }
+
+  /* WWN cell - tiklanabilir */
+  .wwn-cell-clickable { cursor:pointer; transition:opacity .15s; }
+  .wwn-cell-clickable:hover { opacity:.7; }
+  .wwn-cell-clickable .wwn-extra {
+    background:rgba(75,159,232,.12); border:1px solid rgba(75,159,232,.3);
+    color:var(--accent2); padding:1px 6px; border-radius:2px;
+    font-size:9px; margin-left:4px;
+  }
+
+  /* MODAL */
+  .modal-backdrop {
+    position:fixed; inset:0; background:rgba(8,12,20,.85); z-index:1000;
+    display:none; align-items:center; justify-content:center;
+    animation:fadeIn .2s ease;
+  }
+  .modal-backdrop.show { display:flex; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-left:3px solid var(--accent);
+    width:90%; max-width:560px; max-height:80vh;
+    display:flex; flex-direction:column;
+    animation:slideUp .25s ease;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  .modal-header {
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface2);
+  }
+  .modal-title {
+    font-family:'Syne',sans-serif; font-size:14px; font-weight:700;
+    color:var(--text-bright); letter-spacing:.5px;
+  }
+  .modal-host { font-size:11px; color:var(--text-dim); margin-top:3px; letter-spacing:.5px; }
+  .modal-close {
+    background:transparent; border:none; color:var(--text-dim);
+    font-size:20px; cursor:pointer; padding:0 6px; transition:color .2s;
+  }
+  .modal-close:hover { color:var(--danger); }
+  .modal-body { padding:16px 20px; overflow-y:auto; flex:1; }
+  .wwn-row {
+    display:flex; align-items:center; gap:10px;
+    padding:8px 10px; background:var(--grid); border:1px solid var(--border);
+    margin-bottom:8px; font-family:'JetBrains Mono',monospace;
+  }
+  .wwn-row:hover { border-color:var(--accent2); }
+  .wwn-index { font-size:10px; color:var(--text-dim); min-width:18px; }
+  .wwn-value {
+    flex:1; font-size:12px; color:var(--accent3);
+    word-break:break-all; letter-spacing:.5px; user-select:all;
+  }
+  .wwn-copy-btn {
+    background:transparent; border:1px solid var(--border); color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace; font-size:9px;
+    padding:4px 10px; cursor:pointer; letter-spacing:1px;
+    text-transform:uppercase; transition:all .2s; white-space:nowrap;
+  }
+  .wwn-copy-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+  .wwn-copy-btn.copied { border-color:var(--accent3); color:var(--accent3); }
+  .modal-actions {
+    padding:12px 20px; border-top:1px solid var(--border);
+    background:var(--surface2); display:flex; gap:8px; justify-content:flex-end;
+  }
+  .modal-btn {
+    background:transparent; border:1px solid var(--border); color:var(--text);
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    padding:7px 14px; cursor:pointer; letter-spacing:1px;
+    text-transform:uppercase; transition:all .2s;
+  }
+  .modal-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+  .modal-btn.primary { border-color:var(--accent); color:var(--accent); }
+  .modal-btn.primary:hover { background:var(--accent); color:var(--bg); }
+  .wwn-format-toggle {
+    display:flex; gap:0; margin-bottom:12px; border:1px solid var(--border);
+  }
+  .wwn-format-btn {
+    flex:1; background:transparent; border:none; color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    padding:6px 10px; cursor:pointer; letter-spacing:1px;
+    text-transform:uppercase; transition:all .15s;
+  }
+  .wwn-format-btn.active { background:var(--surface2); color:var(--accent2); }
+  .wwn-format-btn:hover:not(.active) { color:var(--text); }
+
+  .dash-footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">CSV Dosyalari Yukleniyor</div>
+</div>
+
+<div class="shell">
+
+  <a href="./index.html" class="back-link">&larr; Portala Don</a>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <div class="brand-title">Storage Intelligence</div>
+        <div class="brand-sub">Pure FlashArray Fleet</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div><span class="live-dot"></span>LIVE MONITORING</div>
+      <div id="clock"></div>
+      <div id="data-fresh-badge" data-fresh-badge style="margin-top:2px"></div>
+      <div id="header-summary">-</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn" onclick="switchTab('hosts')">Host Listesi</button>
+    <button class="tab-btn" onclick="switchTab('luns')">Volumes</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-overview">
+    <div class="summary-grid" id="global-summary"></div>
+    <div id="location-blocks"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-hosts">
+    <div class="section-title">Host Envanteri</div>
+    <!-- Aktif filtre chip alani (alarm tiklamasi ile aktif olur) -->
+    <div class="active-filter-chips" id="hostFilterChips" class="sp-hidden"></div>
+    <div class="filter-row">
+      <div class="search-box">
+        <span class="search-icon">&#9906;</span>
+        <input type="text" placeholder="Host ara..." id="host-search" oninput="renderHostTable()">
+      </div>
+      <select class="filter-select" id="host-location" onchange="renderHostTable()"><option value="">Tum Lokasyonlar</option></select>
+      <select class="filter-select" id="host-cabinet" onchange="renderHostTable()"><option value="">Tum Kabinetler</option></select>
+      <select class="filter-select" id="host-os" onchange="renderHostTable()">
+        <option value="">Tum OS</option>
+        <option>Linux</option><option>Windows</option><option>VMware ESX</option><option>AIX</option>
+      </select>
+      <select class="filter-select" id="host-protocol" onchange="renderHostTable()">
+        <option value="">Tum Protokoller</option><option>FC</option><option>iSCSI</option>
+      </select>
+      <select class="filter-select" id="host-map" onchange="renderHostTable()" class="sp-hidden">
+        <option value="">Tum Durumlar</option><option>Mapped</option><option>Unmapped</option>
+      </select>
+    </div>
+    <div id="host-table-wrap"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-luns">
+    <div class="section-title">Volume Envanteri</div>
+    <div class="filter-row">
+      <div class="search-box">
+        <span class="search-icon">&#9906;</span>
+        <input type="text" placeholder="Volume ara..." id="lun-search" oninput="renderLunTable()">
+      </div>
+      <select class="filter-select" id="lun-location" onchange="renderLunTable()"><option value="">Tum Lokasyonlar</option></select>
+      <select class="filter-select" id="lun-cabinet" onchange="renderLunTable()"><option value="">Tum Kabinetler</option></select>
+    </div>
+    <div id="lun-table-wrap"></div>
+  </div>
+
+  <div class="dash-footer">
+    <span>PURE FLASHARRAY FLEET DASHBOARD</span>
+    <span>POWERSHELL AUTOMATION v2.0</span>
+  </div>
+</div>
+
+<!-- WWN MODAL -->
+<div class="modal-backdrop" id="wwnModal" onclick="if(event.target===this)closeWwnModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Host WWN'ler</div>
+        <div class="modal-host" id="modalHostName">-</div>
+      </div>
+      <button class="modal-close" onclick="closeWwnModal()" title="Kapat">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="wwn-format-toggle">
+        <button class="wwn-format-btn active" id="fmtColon" onclick="setWwnFormat('colon')">aa:aa:aa:aa</button>
+        <button class="wwn-format-btn" id="fmtPlain" onclick="setWwnFormat('plain')">aaaaaaaa</button>
+      </div>
+      <div id="wwnList"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="copyAllWwns()">Hepsini Kopyala</button>
+      <button class="modal-btn primary" onclick="closeWwnModal()">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let cabinets  = [];
+let hosts     = [];
+let lunGroups = [];
+
+const CSV_DASHBOARD = './Pure/Pure_Dashboard.csv';
+const CSV_HOSTS     = './Pure/Pure_Host.csv';
+const CSV_LUNGROUPS = './Pure/Pure_Volume.csv';
+
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleDateString('tr-TR') + ' · ' + new Date().toLocaleTimeString('tr-TR');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+
+function parseDashboard(text) {
+  const skip = ['---', '==='];
+  return parseCSV(text)
+    .filter(r => {
+      const k = (r['Kabinet'] || '').trim();
+      const l = (r['Lokasyon'] || '').trim();
+      if (!k) return false;
+      if (skip.includes(l)) return false;
+      if (/^TOPLAM|^GENEL/i.test(k)) return false;
+      return true;
+    })
+    .map(r => {
+      const ip  = (r['IP'] || '').trim();
+      const tot = (r['Total (TB)'] || '').trim();
+      const isErr = ip === 'HATA' || tot === '' || tot === '-' || tot.toUpperCase() === 'HATA';
+
+      if (isErr) return { location:r['Lokasyon'], name:r['Kabinet'], ip, error:true };
+
+      const osObj = {};
+      (r['OS Dagilimi'] || '').split('|').forEach(p => {
+        const m = p.trim().match(/^(.+?):\s*(\d+)$/);
+        if (m) osObj[m[1].trim()] = parseInt(m[2]);
+      });
+
+      return {
+        location:   r['Lokasyon'],
+        name:       r['Kabinet'],
+        ip,
+        total:      toN(r['Total (TB)']),
+        used:       toN(r['Used (TB)']),
+        subscribed: toN(r['Subscribed (TB)']),
+        free:       toN(r['Free (TB)']),
+        pct:        toN(r['Doluluk (%)']),
+        dr:         (r['Data Reduction'] || '-').trim(),
+        hostCount:  parseInt(r['Host Sayisi']) || 0,
+        os:         osObj,
+        version:    (r['Versiyon'] || '').trim(),
+      };
+    });
+}
+
+function parseHosts(text) {
+  return parseCSV(text)
+    .filter(r => (r['Host Name'] || '').trim() !== '')
+    .map(r => {
+      const proto = (r['Protocol'] || 'FC').trim();
+      const rawWwn = r['Host WWN'] || '';
+      // iSCSI ise IQN'ler pipe ayrilmis string olarak gelir, expandWwns kullanma
+      const wwns = proto === 'iSCSI'
+        ? rawWwn.split('|').map(s => s.trim()).filter(s => s)
+        : expandWwns(rawWwn);
+      return {
+        location:  r['Lokasyon'],
+        cabinet:   r['Kabinet'],
+        host:      r['Host Name'],
+        os:        r['OS'],
+        hostGroup: (r['Host Group'] || '').trim(),
+        protocol:  proto,
+        // Map Durumu Pure'da yok; provTB > 0 ise "Mapped" varsay
+        map:       (toN(r['Provisioned (TB)']) > 0) ? 'Mapped' : 'Unmapped',
+        provTB:    toN(r['Provisioned (TB)']),
+        wwns:      wwns,
+      };
+    });
+}
+
+// Pipe-ayrılmış WWN listesini parse et; birleşik 32-hex'leri de ayır
+function expandWwns(raw) {
+  const result = [];
+  (raw || '').split('|').forEach(chunk => {
+    const hex = chunk.trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+    if (hex.length === 0) return;
+    // 16'nın katlarına böl
+    for (let i = 0; i + 16 <= hex.length; i += 16) {
+      const w = hex.substring(i, i + 16);
+      // kolonlu format: aa:bb:cc:dd:ee:ff:00:11
+      result.push(w.match(/.{2}/g).join(':'));
+    }
+  });
+  return result;
+}
+
+function parseLunGroups(text) {
+  return parseCSV(text)
+    .filter(r => (r['Volume'] || r['Lun Group Name'] || '').trim() !== '')
+    .map(r => ({
+      location: r['Lokasyon'],
+      cabinet:  r['Kabinet'],
+      name:     (r['Volume'] || r['Lun Group Name']).trim(),
+      capacity: toN(r['Size (TB)'] || r['Total Capacity (TB)']),
+      lunCount: parseInt(r['LUN Count']) || 0,
+      serial:   r['Serial'] || '',
+    }));
+}
+
+async function loadCSVs() {
+  setOverlay(true, '<div class="spinner"></div><div class="loading-text">CSV Dosyalari Yukleniyor</div>');
+  try {
+    const fetchCSV = fetchCSVText;
+    const [dashText, hostText, lunText] = await Promise.all([
+      fetchCSV(CSV_DASHBOARD), fetchCSV(CSV_HOSTS), fetchCSV(CSV_LUNGROUPS),
+    ]);
+    cabinets  = parseDashboard(dashText);
+    hosts     = parseHosts(hostText);
+    lunGroups = parseLunGroups(lunText);
+    setOverlay(false);
+    initDashboard();
+  } catch (err) {
+    setOverlay(true, `
+      <div style="text-align:center;max-width:500px;padding:32px">
+        <div style="font-size:36px;color:var(--danger);margin-bottom:16px">!</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;color:var(--text-bright);margin-bottom:12px">CSV Yuklenemedi</div>
+        <div style="font-size:12px;color:var(--danger);padding:8px 14px;background:rgba(232,75,75,.1);border:1px solid rgba(232,75,75,.3);margin-bottom:20px">${err.message}</div>
+        <button onclick="loadCSVs()" style="margin-top:24px;background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:10px 24px;cursor:pointer">YENIDEN DENE</button>
+      </div>`);
+  }
+}
+
+function setOverlay(show, html) {
+  const el = document.getElementById('loading-overlay');
+  el.style.display = show ? 'flex' : 'none';
+  if (show && html) el.innerHTML = html;
+}
+
+function initDashboard() {
+  const locCount = [...new Set(cabinets.map(c => c.location))].length;
+  document.getElementById('header-summary').textContent =
+    `${cabinets.length} Kabinet · ${locCount} Lokasyon`;
+  buildSummary();
+  buildOverview();
+  populateFilters();
+  renderHostTable();
+  renderLunTable();
+}
+
+const dotColors = { vmware:'#4b9fe8', linux:'#4be8a0', aix:'#e8b84b', windows:'#e87a4b' };
+const osBarMap  = { 'VMware ESX':'os-vmware', Linux:'os-linux', AIX:'os-aix', Windows:'os-windows' };
+
+function barClass(p) { return p<30?'bar-low':p<50?'bar-mid':p<65?'bar-high':'bar-crit'; }
+function pctColor(p) { return p<30?'var(--accent3)':p<50?'var(--accent)':p<65?'var(--warn)':'var(--danger)'; }
+function statusBadge(p) {
+  if (p<50) return '<span class="status-badge badge-ok">OK</span>';
+  if (p<65) return '<span class="status-badge badge-warn">WARN</span>';
+  return '<span class="status-badge badge-err">CRITICAL</span>';
+}
+function osTagClass(os) { return 'tag-' + ({ 'Linux':'linux','Windows':'windows','VMware ESX':'vmware','AIX':'aix' }[os] || 'linux'); }
+function fmt(n) { return typeof n==='number' ? n.toFixed(2) : n; }
+
+function buildSummary() {
+  const v = cabinets.filter(c => !c.error);
+  const totCap  = v.reduce((s,c)=>s+c.total, 0);
+  const totUsed = v.reduce((s,c)=>s+c.used,  0);
+  const totFree = v.reduce((s,c)=>s+c.free,  0);
+  const totHost = v.reduce((s,c)=>s+c.hostCount, 0);
+  const avgPct  = totCap>0 ? (totUsed/totCap*100).toFixed(1) : '0';
+  const crit = v.filter(c=>c.pct>=65).length;
+  const warn = v.filter(c=>c.pct>=50&&c.pct<65).length;
+  const locs = [...new Set(cabinets.map(c=>c.location))].length;
+
+  document.getElementById('global-summary').innerHTML = `
+    <div class="stat-card gold"><div class="stat-label">Toplam Kapasite</div><div class="stat-value">${(totCap/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">${totCap.toFixed(0)} TB</div></div>
+    <div class="stat-card blue"><div class="stat-label">Kullanilan</div><div class="stat-value">${(totUsed/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">Ort. %${avgPct}</div></div>
+    <div class="stat-card green"><div class="stat-label">Bos Alan</div><div class="stat-value">${(totFree/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">${totFree.toFixed(0)} TB</div></div>
+    <div class="stat-card ${crit>0?'red':'gold'}"><div class="stat-label">Alarm Durumu</div><div class="stat-value">${crit}<span class="stat-unit">kritik</span></div><div class="stat-sub">${warn} uyari</div></div>
+    <div class="stat-card blue stat-card-click" onclick="applyHostFilter({label:'Tum Hostlar'})"><div class="stat-label">Toplam Host</div><div class="stat-value">${totHost}</div><div class="stat-sub">${locs} lokasyon &middot; tikla &rarr;</div></div>`;
+}
+
+function cabinetCard(c) {
+  if (c.error) return `
+    <div class="cabinet-card error">
+      <div class="card-header"><div><div class="card-name">${c.name}</div><div class="card-ip">${c.location}</div></div><span class="status-badge badge-err">ERROR</span></div>
+      <div class="error-overlay">! Baglanti Hatasi</div>
+    </div>`;
+
+  const osKeys = Object.keys(c.os);
+  const totOS  = osKeys.reduce((s,k)=>s+c.os[k], 0);
+  const osBars = osKeys.map(k => `<div class="os-bar-wrap"><div class="os-bar ${osBarMap[k]||'os-linux'}" style="height:${totOS>0?c.os[k]/totOS*100:0}%"></div></div>`).join('');
+  // OS legend tiklanabilir: o kabinet + o OS filtresi
+  const osLegend = osKeys.map(k => {
+    const safeK = k.replace(/'/g, "\\'");
+    return `<div class="os-legend-item os-legend-clickable" onclick="event.stopPropagation();applyHostFilter({label:'${c.name} - ${k}', cabinet:'${c.name}', os:'${safeK}'})"><div class="os-dot" style="background:${dotColors[(osBarMap[k]||'os-linux').replace('os-','')]}"></div><span>${k}: ${c.os[k]}</span></div>`;
+  }).join('');
+
+  return `
+    <div class="${c.pct>=65?'cabinet-card warn-high':'cabinet-card'} cabinet-card-click" onclick="applyHostFilter({label:'${c.name} - Tum Hostlar', cabinet:'${c.name}'})">
+      <div class="card-header"><div><div class="card-name">${c.name}</div><div class="card-ip">${c.location} · ${c.ip}</div></div>${statusBadge(c.pct)}</div>
+      <div class="card-body">
+        <div class="cap-row"><span class="cap-label">Doluluk</span><span class="cap-pct" style="color:${pctColor(c.pct)}">%${c.pct}</span></div>
+        <div class="bar-track"><div class="bar-fill ${barClass(c.pct)}" style="width:${c.pct}%"></div></div>
+        <div class="metrics-row">
+          <div class="metric"><div class="metric-val">${fmt(c.total)}</div><div class="metric-lbl">Total</div></div>
+          <div class="metric"><div class="metric-val">${fmt(c.used)}</div><div class="metric-lbl">Used</div></div>
+          <div class="metric"><div class="metric-val">${fmt(c.subscribed)}</div><div class="metric-lbl">Sub</div></div>
+          <div class="metric"><div class="metric-val">${fmt(c.free)}</div><div class="metric-lbl">Free</div></div>
+        </div>
+        <div class="os-section">
+          <div class="os-title">OS Dagilimi · ${totOS} Host</div>
+          <div class="os-bars">${osBars}</div>
+          <div class="os-legend">${osLegend}</div>
+        </div>
+      </div>
+      <div class="card-footer"><span class="footer-dr">DR ${c.dr}</span><span class="footer-ver">${c.version}</span></div>
+    </div>`;
+}
+
+function buildOverview() {
+  const locs = [...new Set(cabinets.map(c=>c.location))].sort();
+  document.getElementById('location-blocks').innerHTML = locs.map(loc => {
+    const lc = cabinets.filter(c=>c.location===loc);
+    return `
+      <div class="location-block">
+        <div class="location-header"><div class="location-tag">${loc}</div><div class="location-line"></div></div>
+        <div class="cabinet-grid">${lc.map(c=>cabinetCard(c)).join('')}</div>
+      </div>`;
+  }).join('');
+}
+
+function populateFilters() {
+  function fill(id, values) {
+    const sel = document.getElementById(id);
+    const first = sel.options[0].outerHTML;
+    sel.innerHTML = first;
+    [...new Set(values)].filter(v => v).sort().forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v;
+      sel.appendChild(o);
+    });
+  }
+  fill('host-location', hosts.map(h=>h.location));
+  fill('host-cabinet',  hosts.map(h=>h.cabinet));
+  fill('lun-location',  lunGroups.map(l=>l.location));
+  fill('lun-cabinet',   lunGroups.map(l=>l.cabinet));
+}
+
+let hostSort = { col:'host', dir:'asc' };
+function renderHostTable() {
+  const search = document.getElementById('host-search').value.toLowerCase();
+  const loc = document.getElementById('host-location').value;
+  const cab = document.getElementById('host-cabinet').value;
+  const os = document.getElementById('host-os').value;
+  const map = document.getElementById('host-map').value;
+  const proto = document.getElementById('host-protocol')?.value || '';
+
+  let data = hosts.filter(h =>
+    (!search || h.host.toLowerCase().includes(search)) &&
+    (!loc || h.location===loc) &&
+    (!cab || h.cabinet===cab) &&
+    (!os || h.os===os) &&
+    (!map || h.map===map) &&
+    (!proto || h.protocol===proto)
+  );
+  data.sort((a,b) => (hostSort.dir==='asc'?1:-1)*((a[hostSort.col]??'')<(b[hostSort.col]??'')?-1:1));
+
+  const tbody = data.map((h, idx) => {
+    const hasWwns = h.wwns && h.wwns.length > 0;
+    const cellClass = hasWwns ? 'wwn-cell-clickable' : '';
+    const onclick = hasWwns ? `onclick="openWwnModalByIdx(${idx})"` : '';
+    const title = hasWwns ? 'title="Tikla ve kopyala"' : '';
+    const provStr = h.provTB > 0
+      ? `<span style="color:var(--accent3);font-weight:500">${h.provTB.toFixed(2)}</span>`
+      : `<span style="color:var(--text-dim)">—</span>`;
+    const protoStr = h.protocol === 'iSCSI'
+      ? `<span style="color:var(--accent2);font-size:10px;letter-spacing:1px">iSCSI</span>`
+      : `<span style="color:var(--accent);font-size:10px;letter-spacing:1px">FC</span>`;
+    const hgStr = h.hostGroup
+      ? `<span style="color:var(--text);font-size:11px">${h.hostGroup}</span>`
+      : `<span style="color:var(--text-dim)">—</span>`;
+    return `
+    <tr>
+      <td>${h.location}</td>
+      <td>${h.cabinet}</td>
+      <td style="color:var(--text-bright)">${h.host}</td>
+      <td><span class="tag-os ${osTagClass(h.os)}">${h.os}</span></td>
+      <td>${hgStr}</td>
+      <td style="text-align:center">${protoStr}</td>
+      <td class="sp-right">${provStr}</td>
+      <td class="${cellClass}" ${title} ${onclick}>${formatWwnCell(h.wwns)}</td>
+    </tr>`;
+  }).join('');
+
+  window._renderedHostData = data;
+
+  // Mapped host sayisi ve toplam provisioned
+  const mappedHosts = data.filter(h => h.map === 'Mapped');
+  const totalProv   = mappedHosts.reduce((s, h) => s + (h.provTB || 0), 0);
+  const summaryHtml = mappedHosts.length > 0
+    ? `<span style="font-size:11px;color:var(--text-dim);margin-right:12px">
+        ${mappedHosts.length} Mapped host &nbsp;·&nbsp;
+        Toplam: <strong style="color:var(--accent3)">${totalProv.toFixed(2)} TB</strong>
+       </span>
+       <button onclick="exportMappedHosts('purefa')" style="background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;" onmouseover="this.style.background='var(--accent)';this.style.color='var(--bg)'" onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">
+         &#8615; Mapped Export
+       </button>`
+    : '';
+
+  document.getElementById('host-table-wrap').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:flex-end;padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);">
+      ${summaryHtml}
+    </div>
+    <table>
+      <thead><tr>
+        <th onclick="sortHost('location')">Lokasyon</th>
+        <th onclick="sortHost('cabinet')">Kabinet</th>
+        <th onclick="sortHost('host')">Host Name</th>
+        <th>OS</th>
+        <th>Host Group</th>
+        <th style="text-align:center">Protokol</th>
+        <th class="sp-right">Provisioned (TB)</th>
+        <th>Host WWN / IQN</th>
+      </tr></thead>
+      <tbody>${tbody || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody>
+    </table>`;
+}
+
+function formatWwnCell(wwns) {
+  if (!wwns || wwns.length === 0) return '<span class="sp-dim-sm">—</span>';
+  const first = wwns[0];
+  const short = first.length >= 16 ? first.substring(0, 6) + '…' + first.substring(first.length - 4) : first;
+  const extra = wwns.length > 1 ? `<span class="wwn-extra">+${wwns.length - 1}</span>` : '';
+  return `<span style="font-family:monospace;font-size:10px;color:var(--accent2)">${short}</span>${extra}`;
+}
+
+/**
+ * Mapped host'ları CSV olarak indir.
+ * Mevcut filtreli tablodaki Mapped host'ları alır.
+ * vendor: 'purefa' | 'pmax'
+ */
+function exportMappedHosts(vendor) {
+  const data = (window._renderedHostData || []).filter(h => h.map === 'Mapped');
+  if (data.length === 0) {
+    alert('Görünümde Mapped host yok.');
+    return;
+  }
+
+  const bom = '\uFEFF'; // Excel UTF-8 uyumluluğu
+  const cols = vendor === 'pmax'
+    ? ['Lokasyon','Array ID','Host Name','OS','Provisioned (TB)','Masking View','Storage Group','Host WWN']
+    : ['Lokasyon','Kabinet','Host Name','OS','Provisioned (TB)','Host WWN'];
+  
+  const rows = data.map(h => {
+    const wwns = (h.wwns || []).join(' | ');
+    if (vendor === 'pmax') {
+      return [h.location, h.cabinet, h.host, h.os,
+              h.provTB ? h.provTB.toFixed(2) : '0',
+              h.maskingView || '', h.storageGroup || '', wwns]
+        .map(v => `"${String(v).replace(/"/g,'""')}"`)
+        .join(',');
+    }
+    return [h.location, h.cabinet, h.host, h.os,
+            h.provTB ? h.provTB.toFixed(2) : '0', wwns]
+      .map(v => `"${String(v).replace(/"/g,'""')}"`)
+      .join(',');
+  });
+
+  const today = new Date().toISOString().split('T')[0];
+  const cab   = document.getElementById('host-cabinet').value || 'tum';
+  const fname = `${vendor}_mapped_hosts_${cab}_${today}.csv`;
+  const csv   = bom + cols.join(',') + '\r\n' + rows.join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   WWN MODAL
+   ────────────────────────────────────────────────────────────── */
+let currentWwns = [];
+let currentWwnFormat = 'colon';
+
+function openWwnModalByIdx(idx) {
+  const h = window._renderedHostData && window._renderedHostData[idx];
+  if (!h || !h.wwns || h.wwns.length === 0) return;
+  openWwnModal(h.host, h.cabinet, h.wwns);
+}
+
+function openWwnModal(hostName, cabinet, wwns) {
+  if (!wwns || wwns.length === 0) return;
+  currentWwns = wwns;
+  document.getElementById('modalHostName').textContent = `${cabinet} / ${hostName}  ·  ${wwns.length} WWN`;
+  renderWwnList();
+  document.getElementById('wwnModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeWwnModal() {
+  document.getElementById('wwnModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function setWwnFormat(fmt) {
+  currentWwnFormat = fmt;
+  document.getElementById('fmtColon').classList.toggle('active', fmt === 'colon');
+  document.getElementById('fmtPlain').classList.toggle('active', fmt === 'plain');
+  renderWwnList();
+}
+
+function formatWwn(raw, fmt) {
+  if (raw.startsWith('iqn:')) return raw.substring(4);  // iSCSI IQN olarak goster
+  const clean = raw.replace(/[:-]/g, '').toLowerCase();
+  if (fmt === 'plain') return clean;
+  // colon format: aa:bb:cc:dd:ee:ff:gg:hh
+  return clean.match(/.{1,2}/g).join(':');
+}
+
+function renderWwnList() {
+  const list = document.getElementById('wwnList');
+  list.innerHTML = currentWwns.map((w, i) => {
+    const formatted = formatWwn(w, currentWwnFormat);
+    return `
+      <div class="wwn-row">
+        <span class="wwn-index">${i + 1}.</span>
+        <span class="wwn-value">${formatted}</span>
+        <button class="wwn-copy-btn" onclick="copyOne(this, ${i})">Kopyala</button>
+      </div>`;
+  }).join('');
+}
+
+function copyOne(btn, idx) {
+  const text = formatWwn(currentWwns[idx], currentWwnFormat);
+  copyToClipboard(text).then(() => {
+    btn.textContent = 'Kopyalandi';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Kopyala'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function copyAllWwns() {
+  const text = currentWwns.map(w => formatWwn(w, currentWwnFormat)).join('\n');
+  copyToClipboard(text).then(() => {
+    // Tüm row'ların kopya butonlarını flash et
+    document.querySelectorAll('.wwn-copy-btn').forEach(b => {
+      b.textContent = 'Kopyalandi'; b.classList.add('copied');
+      setTimeout(() => { b.textContent = 'Kopyala'; b.classList.remove('copied'); }, 1500);
+    });
+  });
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  }
+  // Fallback: textarea hack
+  return new Promise((resolve) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch {}
+    document.body.removeChild(ta);
+    resolve();
+  });
+}
+
+// ESC ile kapat
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeWwnModal();
+});
+
+function sortHost(col) { hostSort.dir = hostSort.col===col?(hostSort.dir==='asc'?'desc':'asc'):'asc'; hostSort.col = col; renderHostTable(); }
+
+let lunSort = { col:'capacity', dir:'desc' };
+function renderLunTable() {
+  const search = document.getElementById('lun-search').value.toLowerCase();
+  const loc = document.getElementById('lun-location').value;
+  const cab = document.getElementById('lun-cabinet').value;
+
+  let data = lunGroups.filter(l =>
+    (!search || l.name.toLowerCase().includes(search)) &&
+    (!loc || l.location===loc) &&
+    (!cab || l.cabinet===cab)
+  );
+  data.sort((a,b) => (lunSort.dir==='asc'?1:-1)*(a[lunSort.col]-b[lunSort.col]));
+
+  const tbody = data.map(l => `
+    <tr>
+      <td>${l.location}</td>
+      <td>${l.cabinet}</td>
+      <td style="color:var(--text-bright)">${l.name}</td>
+      <td>${l.capacity.toFixed(2)}</td>
+      <td>${l.lunCount}</td>
+    </tr>`).join('');
+
+  document.getElementById('lun-table-wrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Lokasyon</th>
+        <th>Kabinet</th>
+        <th>Volume</th>
+        <th>Kapasite (TB)</th>
+        <th>LUN Sayisi</th>
+      </tr></thead>
+      <tbody>${tbody || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody>
+    </table>`;
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.getAttribute('onclick').includes(name)));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+/* ========================================================
+   DRILL-DOWN: kabinet kart -> host listesi filter
+   ======================================================== */
+function applyHostFilter(opts) {
+  // opts: { location?, cabinet?, os?, map?, search?, label? }
+  document.getElementById('host-search').value   = opts.search   || '';
+  document.getElementById('host-location').value = opts.location || '';
+  document.getElementById('host-cabinet').value  = opts.cabinet  || '';
+  document.getElementById('host-os').value       = opts.os       || '';
+  document.getElementById('host-map').value      = opts.map      || '';
+  
+  renderHostFilterChips(opts);
+  switchTab('hosts');
+  renderHostTable();
+  window.scrollTo({ top: 200, behavior: 'smooth' });
+}
+
+function renderHostFilterChips(opts) {
+  const box = document.getElementById('hostFilterChips');
+  if (!box) return;
+  const chips = [];
+  if (opts.label)    chips.push({ key:'label', val:opts.label });
+  if (opts.location) chips.push({ key:'Lokasyon', val:opts.location });
+  if (opts.cabinet)  chips.push({ key:'Kabinet',  val:opts.cabinet  });
+  if (opts.os)       chips.push({ key:'OS',       val:opts.os       });
+  if (opts.map)      chips.push({ key:'Durum',    val:opts.map      });
+  
+  if (chips.length === 0) {
+    box.innerHTML = ''; box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'flex';
+  box.innerHTML = chips.map(c =>
+    `<span class="filter-chip">${c.key === 'label' ? `<strong>${c.val}</strong>` : `${c.key}: <strong>${c.val}</strong>`}</span>`
+  ).join('') + `<button class="filter-chip-clear" onclick="clearHostFilters()">Temizle</button>`;
+}
+
+function clearHostFilters() {
+  document.getElementById('host-search').value   = '';
+  document.getElementById('host-location').value = '';
+  document.getElementById('host-cabinet').value  = '';
+  document.getElementById('host-os').value       = '';
+  document.getElementById('host-map').value      = '';
+  renderHostFilterChips({});
+  renderHostTable();
+}
+
+loadCSVs();
+
+/* Veri tazeliği rozeti */
+renderFreshnessBadge('data-fresh-badge', ['./Pure/Pure_Dashboard.csv', './Pure/Pure_Host.csv']);
+
+</script>
+</body>
+</html>

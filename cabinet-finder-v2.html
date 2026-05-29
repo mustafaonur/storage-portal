@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<link rel="stylesheet" href="./storage-styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Cabinet Finder v2 · Storage Portal</title> <script src="./storage-utils.js"></script>
+<style> :root {
+  --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
+  --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
+  --danger:#e84b4b; --warn:#e8844b; --purple:#c084fc;
+  --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928; } *{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.22) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+.shell{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:24px;} .back-link{display:inline-block;margin-bottom:14px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;} .back-link:hover{color:var(--accent2);}
+
+/* HEADER */
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);} .brand{display:flex;align-items:center;gap:14px;}
+.brand-icon{width:42px;height:42px;border:2px solid var(--accent);display:grid;place-items:center;animation:pb 3s ease-in-out infinite;} @keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(232,184,75,.4);}50%{box-shadow:0 0 0 6px rgba(232,184,75,0);}} .brand-icon svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);line-height:1.8;}
+.live-dot{display:inline-block;width:6px;height:6px;background:var(--accent3);border-radius:50%;margin-right:6px;animation:blink 2s infinite;vertical-align:middle;} @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* SEARCH */
+.search-wrap{display:flex;gap:10px;margin-bottom:20px;align-items:stretch;}
+.search-box{
+  flex:1;background:var(--surface);border:1px solid var(--border);
+  color:var(--text-bright);font-family:'JetBrains Mono',monospace;
+  font-size:16px;padding:14px 18px;outline:none;
+  transition:border-color .2s;letter-spacing:.5px; } .search-box:focus{border-color:var(--accent);}
+.search-box::placeholder{color:var(--text-dim);font-size:13px;}
+.clear-btn{
+  background:transparent;border:1px solid var(--border);color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;font-size:11px;padding:0 16px;
+  cursor:pointer;letter-spacing:1px;text-transform:uppercase;
+  transition:all .2s;white-space:nowrap; } .clear-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+/* STATUS */
+.status-bar{
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);border:1px solid var(--border);
+  padding:10px 16px;margin-bottom:16px;font-size:11px;
+}
+.stat-pill{padding:3px 10px;border:1px solid var(--border);font-size:10px;letter-spacing:1px;}
+.stat-pill.san{color:var(--accent2);border-color:rgba(75,159,232,.4);}
+.stat-pill.nas{color:var(--accent3);border-color:rgba(75,232,160,.4);}
+.stat-pill.s3{color:var(--purple);border-color:rgba(192,132,252,.4);}
+#status-text{color:var(--text-dim);margin-left:auto;}
+
+/* TABS */
+.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:0;} .tab-btn{
+  background:transparent;border:none;border-bottom:2px solid transparent;
+  color:var(--text-dim);font-family:'JetBrains Mono',monospace;
+  font-size:12px;padding:12px 24px;cursor:pointer;
+  letter-spacing:1px;text-transform:uppercase;transition:all .2s;
+  display:flex;align-items:center;gap:8px;
+}
+.tab-btn.active.san{color:var(--accent2);border-bottom-color:var(--accent2);}
+.tab-btn.active.nas{color:var(--accent3);border-bottom-color:var(--accent3);}
+.tab-btn.active.s3 {color:var(--purple);border-bottom-color:var(--purple);}
+.tab-btn:hover{color:var(--text);}
+.tab-count{
+  font-size:9px;padding:2px 7px;border:1px solid var(--border);
+  color:var(--text-dim);background:var(--surface2);min-width:20px;text-align:center;
+}
+.tab-btn.active .tab-count{border-color:currentColor;color:currentColor;background:rgba(255,255,255,.05);}
+
+.tab-page{display:none;padding-top:16px;}
+.tab-page.active{display:block;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:11px;}
+thead{position:sticky;top:0;z-index:2;}
+th{
+  background:var(--surface2);color:var(--text-dim);
+  font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+  padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);
+  white-space:nowrap;cursor:pointer;user-select:none;
+}
+th:hover{color:var(--text);}
+td{padding:9px 12px;border-bottom:1px solid rgba(30,45,68,.5);vertical-align:middle;}
+tr:hover td{background:rgba(255,255,255,.02);}
+tr.highlight td{background:rgba(232,184,75,.06);}
+tr.highlight td:first-child{border-left:2px solid var(--accent);}
+
+/* MATCH HIGHLIGHT */
+.hl{background:rgba(232,184,75,.25);color:var(--accent);border-radius:2px;padding:0 2px;}
+
+/* SIZE BAR */
+.size-bar-wrap{display:flex;align-items:center;gap:8px;}
+.size-bar{height:4px;background:var(--grid);flex:1;max-width:80px;overflow:hidden;}
+.size-bar-fill{height:100%;transition:width .4s;}
+
+/* VENDOR BADGE */
+.v-badge{font-size:9px;padding:2px 6px;border:1px solid;letter-spacing:1px;white-space:nowrap;}
+.vb-hw   {color:var(--accent);   border-color:rgba(232,184,75,.4);}
+.vb-pmax {color:var(--accent2);  border-color:rgba(75,159,232,.4);}
+.vb-pure {color:var(--accent3);  border-color:rgba(75,232,160,.4);}
+.vb-fb   {color:var(--purple);   border-color:rgba(192,132,252,.4);}
+.vb-netapp{color:#00b4d8;        border-color:rgba(0,180,216,.4);}
+.vb-ecs  {color:var(--warn);     border-color:rgba(232,132,75,.4);}
+
+/* EMPTY / LOADING */
+.center-state{text-align:center;padding:60px 20px;color:var(--text-dim);} .center-state .icon{font-size:36px;margin-bottom:12px;}
+.center-state p{font-size:12px;line-height:1.8;}
+
+/* SUMMARY ROW */
+.summary-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);
+  font-size:11px;color:var(--text-dim);
+}
+.summary-bar strong{color:var(--text-bright);}
+
+.dash-footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);letter-spacing:1px;}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<a href="./index.html" class="back-link">&larr; Portala Don</a>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+    <div>
+      <div class="brand-title">Cabinet Finder v2</div>
+      <div class="brand-sub">SAN · NAS · S3 · Unified Search</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div><span class="live-dot"></span>CAPACITY SEARCH</div>
+    <div id="clock">--:--:--</div>
+    <div id="load-info" style="color:var(--text-dim);font-size:10px">Yükleniyor...</div>
+  </div>
+</header>
+
+<!-- SEARCH -->
+<div class="search-wrap">
+  <input class="search-box" id="searchBox" type="text"
+    placeholder="Host, volume, bucket, kabinet adı ara... (min 2 karakter)"
+    oninput="onSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
+  <button class="clear-btn" onclick="clearSearch()">✕ Temizle</button> </div>
+
+<!-- STATUS -->
+<div class="status-bar" id="statusBar" style="display:none">
+  <span class="stat-pill san" id="pill-san">SAN 0</span>
+  <span class="stat-pill nas" id="pill-nas">NAS 0</span>
+  <span class="stat-pill s3"  id="pill-s3">S3 0</span>
+  <span id="status-text">Arama yapın...</span> </div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <button class="tab-btn active san" data-tab="san" onclick="setTab('san',this)">
+    SAN / Block
+    <span class="tab-count" id="cnt-san">—</span>
+  </button>
+  <button class="tab-btn nas" data-tab="nas" onclick="setTab('nas',this)">
+    NAS / File
+    <span class="tab-count" id="cnt-nas">—</span>
+  </button>
+  <button class="tab-btn s3" data-tab="s3" onclick="setTab('s3',this)">
+    S3 / Object
+    <span class="tab-count" id="cnt-s3">—</span>
+  </button>
+</div>
+
+<div class="tab-page active" id="tab-san">
+  <div id="san-result"><div class="center-state"><div class="icon">⏳</div><p>Veriler yükleniyor...</p></div></div> </div> <div class="tab-page" id="tab-nas">
+  <div id="nas-result"><div class="center-state"><div class="icon">⏳</div><p>Veriler yükleniyor...</p></div></div> </div> <div class="tab-page" id="tab-s3">
+  <div id="s3-result"><div class="center-state"><div class="icon">⏳</div><p>Veriler yükleniyor...</p></div></div> </div>
+
+<div class="dash-footer">
+  <span>CABINET FINDER v2 · SAN · NAS · S3</span>
+  <span>Storage Portal</span>
+</div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   DATA SOURCES
+════════════════════════════════════════════════════════════ */ const BASE = '.';
+
+// SAN: host → kabinet + provisioned
+// NAS: volume → SVM + kabinet + boyut
+// S3:  bucket → kabinet + boyut
+
+const SOURCES = {
+  san: [
+    { file:`${BASE}/Hw/Dorado_Host.csv`,     vendor:'Huawei', nameCol:'Host Name', kabCol:'Kabinet',   sizeCol:'Provisioned (TB)', unit:'TB', lokCol:'Lokasyon' },
+    { file:`${BASE}/Pmax/PmaxPoolHost.csv`,  vendor:'PMAX',   nameCol:'Host Name', kabCol:'Array ID',  sizeCol:'Provisioned (TB)', unit:'TB', lokCol:'Lokasyon' },
+    { file:`${BASE}/Pure/Pure_Host.csv`,     vendor:'Pure FA',nameCol:'Host Name', kabCol:'Kabinet',   sizeCol:'Provisioned (TB)', unit:'TB', lokCol:'Lokasyon' },
+    { file:`${BASE}/Pure/FB_FileSystems.csv`,vendor:'Pure FB',nameCol:'File System',kabCol:'Kabinet',  sizeCol:'Virtual (TB)',     unit:'TB', lokCol:'Lokasyon' },
+  ],
+  nas: [
+    { file:`${BASE}/NetApp/NetApp_Volume.csv`,vendor:'NetApp',nameCol:'Volume',      kabCol:'Kabinet', sizeCol:'Size (TB)',      unit:'TB', lokCol:'Lokasyon', extraCol:'SVM' },
+    { file:`${BASE}/Hw/Dorado_NAS.csv`,       vendor:'Huawei', nameCol:'Filesystem', kabCol:'Kabinet', sizeCol:'Kapasite (TB)', unit:'TB', lokCol:'Lokasyon', extraCol:'Pool' },
+  ],
+  s3: [
+    { file:`${BASE}/Ecs/ECS_Buckets.csv`,    vendor:'ECS',   nameCol:'Bucket',    kabCol:'Namespace', sizeCol:'Size (GiB)', unit:'GiB', lokCol:'', extraCol:'Owner' },
+    { file:`${BASE}/Pure/FB_Buckets.csv`,    vendor:'Pure FB',nameCol:'Bucket',   kabCol:'Kabinet',   sizeCol:'Virtual (TB)', unit:'TB', lokCol:'Lokasyon', extraCol:'Account' },
+  ],
+};
+
+/* ════════════════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════════════════ */ const DATA = { san:[], nas:[], s3:[] }; let loaded = false; let sortState = { san:{col:'size',dir:-1}, nas:{col:'size',dir:-1}, s3:{col:'size',dir:-1} }; let activeTab = 'san'; let lastQuery = '';
+
+/* ════════════════════════════════════════════════════════════
+   LOAD
+════════════════════════════════════════════════════════════ */
+
+function parseLine(line) {
+  const r = []; let cur = ''; let inQ = false;
+  for (const c of line) {
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === ',' && !inQ) { r.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  r.push(cur); return r;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   SEARCH + RENDER
+════════════════════════════════════════════════════════════ */ let searchTimer = null; function onSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(doSearch, 120); }
+
+function doSearch() {
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  lastQuery = q;
+
+  if (q.length < 2) {
+    // Sorgu yoksa: tüm verileri göster (ilk 200 satır)
+    renderTab('san', DATA.san.slice(0, 200), '');
+    renderTab('nas', DATA.nas.slice(0, 200), '');
+    renderTab('s3',  DATA.s3.slice(0, 200), '');
+    document.getElementById('statusBar').style.display = 'none';
+    document.getElementById('cnt-san').textContent = DATA.san.length;
+    document.getElementById('cnt-nas').textContent = DATA.nas.length;
+    document.getElementById('cnt-s3').textContent  = DATA.s3.length;
+    return;
+  }
+
+  const res = { san:[], nas:[], s3:[] };
+  for (const tab of ['san','nas','s3']) {
+    res[tab] = DATA[tab].filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      r.kabinet.toLowerCase().includes(q) ||
+      r.lokasyon.toLowerCase().includes(q) ||
+      r.extra.toLowerCase().includes(q)
+    );
+  }
+
+  // Sort
+  for (const tab of ['san','nas','s3']) {
+    sortRows(res[tab], tab);
+  }
+
+  renderTab('san', res.san, q);
+  renderTab('nas', res.nas, q);
+  renderTab('s3',  res.s3,  q);
+
+  // Sayaçlar
+  document.getElementById('cnt-san').textContent  = res.san.length;
+  document.getElementById('cnt-nas').textContent  = res.nas.length;
+  document.getElementById('cnt-s3').textContent   = res.s3.length;
+  document.getElementById('pill-san').textContent = `SAN ${res.san.length}`;
+  document.getElementById('pill-nas').textContent = `NAS ${res.nas.length}`;
+  document.getElementById('pill-s3').textContent  = `S3 ${res.s3.length}`;
+
+  const total = res.san.length + res.nas.length + res.s3.length;
+  document.getElementById('status-text').textContent =
+    total > 0 ? `"${q}" için ${total} sonuç` : `"${q}" için sonuç bulunamadı`;
+  document.getElementById('statusBar').style.display = 'flex'; }
+
+function sortRows(rows, tab) {
+  const s = sortState[tab];
+  rows.sort((a, b) => {
+    if (s.col === 'size')    return s.dir * (b.size - a.size);
+    if (s.col === 'name')    return s.dir * a.name.localeCompare(b.name);
+    if (s.col === 'kabinet') return s.dir * a.kabinet.localeCompare(b.kabinet);
+    if (s.col === 'vendor')  return s.dir * a.vendor.localeCompare(b.vendor);
+    return 0;
+  });
+}
+
+function renderTab(tab, rows, q) {
+  const el = document.getElementById(`${tab}-result`);
+
+  if (!loaded) {
+    el.innerHTML = '<div class="center-state"><div class="icon">⏳</div><p>Yükleniyor...</p></div>';
+    return;
+  }
+  if (rows.length === 0) {
+    const msg = q.length >= 2
+      ? `<p>"<strong style="color:var(--accent)">${esc(q)}</strong>" ile eşleşen kayıt bulunamadı.</p>`
+      : '<p>Arama yapmak için en az 2 karakter girin.</p>';
+    el.innerHTML = `<div class="center-state"><div class="icon">🔍</div>${msg}</div>`;
+    return;
+  }
+
+  const maxSize = Math.max(...rows.map(r => r.size), 0.001);
+  const totalSize = rows.reduce((s, r) => s + r.size, 0);
+
+  // Tab'a göre başlık kolonları
+  const isNas = tab === 'nas';
+  const isS3  = tab === 's3';
+
+  const sizeHeader  = tab === 's3'
+    ? '<th onclick="colSort(\'s3\',\'size\')">Boyut ↕</th>'
+    : `<th onclick="colSort('${tab}','size')">Provisioned / Size ↕</th>`;
+
+  const tbody = rows.map(r => {
+    const pct    = maxSize > 0 ? (r.size / maxSize * 100) : 0;
+    const barCol = tab==='san' ? 'var(--accent2)' : tab==='nas' ? 'var(--accent3)' : 'var(--purple)';
+    const sizeStr = r.size > 0
+      ? `<div class="size-bar-wrap">
+           <span style="color:var(--text-bright);font-weight:500;min-width:70px">${r.size.toFixed(r.size < 1 ? 3 : 2)} ${r.unit}</span>
+           <div class="size-bar"><div class="size-bar-fill" style="width:${pct.toFixed(1)}%;background:${barCol}"></div></div>
+         </div>`
+      : `<span style="color:var(--text-dim)">—</span>`;
+
+    const nameHl = hlMatch(r.name, q);
+    const kabHl  = hlMatch(r.kabinet, q);
+    const lokHl  = hlMatch(r.lokasyon, q);
+    const extHl  = hlMatch(r.extra, q);
+
+    const vbClass = { 'Huawei':'vb-hw','PMAX':'vb-pmax','Pure FA':'vb-pure','Pure FB':'vb-fb','NetApp':'vb-netapp','ECS':'vb-ecs' }[r.vendor] || '';
+    const vBadge  = `<span class="v-badge ${vbClass}">${r.vendor}</span>`;
+
+    const extraTd = isNas ? `<td style="color:var(--text-dim);font-size:10px">${extHl}</td>`
+                 : isS3  ? `<td style="color:var(--text-dim);font-size:10px">${extHl}</td>` : '';
+    const lokTd = `<td style="color:var(--text-dim);font-size:10px">${lokHl}</td>`;
+
+    return `<tr>
+      <td>${vBadge}</td>
+      <td style="color:var(--text-bright);font-weight:500">${nameHl}</td>
+      <td>${kabHl}</td>
+      ${extraTd}
+      ${lokTd}
+      <td>${sizeStr}</td>
+    </tr>`;
+  }).join('');
+
+  const extraTh = isNas ? '<th>SVM / Pool</th>' : isS3 ? '<th>Owner / NS</th>' : '';
+  const nameLabel = tab==='nas' ? 'Volume / Filesystem' : tab==='s3' ? 'Bucket' : 'Host / FileSystem';
+
+  el.innerHTML = `
+    <div class="summary-bar">
+      <span>${rows.length} kayıt</span>
+      <span>Toplam: <strong>${totalSize.toFixed(2)} ${rows[0]?.unit||'TB'}</strong></span>
+    </div>
+    <table>
+      <thead><tr>
+        <th onclick="colSort('${tab}','vendor')">Vendor</th>
+        <th onclick="colSort('${tab}','name')">${nameLabel}</th>
+        <th onclick="colSort('${tab}','kabinet')">Kabinet</th>
+        ${extraTh}
+        <th>Lokasyon</th>
+        ${sizeHeader}
+      </tr></thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+}
+
+function hlMatch(text, q) {
+  if (!q || !text) return esc(text || '');
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx < 0) return esc(text);
+  return esc(text.substring(0, idx)) +
+    `<span class="hl">${esc(text.substring(idx, idx + q.length))}</span>` +
+    esc(text.substring(idx + q.length)); }
+
+function colSort(tab, col) {
+  const s = sortState[tab];
+  if (s.col === col) s.dir *= -1;
+  else { s.col = col; s.dir = col === 'size' ? -1 : 1; }
+  doSearch();
+}
+
+function setTab(name, btn) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  activeTab = name;
+}
+
+function clearSearch() {
+  document.getElementById('searchBox').value = '';
+  onSearch();
+  document.getElementById('searchBox').focus();
+}
+
+/* ════════════════════════════════════════════════════════════
+   LOAD ALL — CSV'leri çek, DATA objesini doldur, ilk render ════════════════════════════════════════════════════════════ */ async function loadAll() {
+  // Tüm kaynaklardan paralel fetch
+  const allSources = [
+    ...SOURCES.san.map(s => ({ ...s, tab:'san' })),
+    ...SOURCES.nas.map(s => ({ ...s, tab:'nas' })),
+    ...SOURCES.s3.map(s  => ({ ...s, tab:'s3'  })),
+  ];
+
+  await Promise.all(allSources.map(async src => {
+    try {
+      const text = await fetchCSVText(src.file);
+      const rows = parseCSV(text);   // storage-utils.js'den (delimiter tespitli)
+
+      rows.forEach(row => {
+        const name = (row[src.nameCol] || '').trim();
+        if (!name) return;
+        // Toplam/genel satırları atla
+        if (/^(TOPLAM|GENEL)/i.test(name)) return;
+
+        const kb   = (row[src.kabCol]  || '').trim();
+        const lok  = (row[src.lokCol]  || '').trim();
+        const ext  = src.extraCol ? (row[src.extraCol] || '').trim() : '';
+        const sizeRaw = row[src.sizeCol] || '0';
+        const size = toN(sizeRaw);   // storage-utils.js'den (Türkçe ondalık uyumlu)
+
+        DATA[src.tab].push({
+          name, kabinet: kb, lokasyon: lok,
+          size, unit: src.unit,
+          vendor: src.vendor, extra: ext,
+        });
+      });
+    } catch { /* bu kaynak yoksa/patlarsa sessizce atla */ }
+  }));
+
+  loaded = true;
+
+  // Sayaçları güncelle
+  document.getElementById('cnt-san').textContent = DATA.san.length;
+  document.getElementById('cnt-nas').textContent = DATA.nas.length;
+  document.getElementById('cnt-s3').textContent  = DATA.s3.length;
+  document.getElementById('pill-san').textContent = `SAN ${DATA.san.length}`;
+  document.getElementById('pill-nas').textContent = `NAS ${DATA.nas.length}`;
+  document.getElementById('pill-s3').textContent  = `S3 ${DATA.s3.length}`;
+
+  // İlk render (ilk 200 satır, sırasız)
+  renderTab('san', DATA.san.slice(0, 200), '');
+  renderTab('nas', DATA.nas.slice(0, 200), '');
+  renderTab('s3',  DATA.s3.slice(0, 200),  ''); }
+
+(function(){ function tick(){ document.getElementById('clock').textContent=new Date().toLocaleTimeString('tr-TR'); } tick(); setInterval(tick,1000); })();
+
+loadAll();
+</script>
+</body>
+</html>
+

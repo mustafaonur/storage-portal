@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pure FlashBlade Dashboard</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<style>
+
+  :root {
+
+    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
+
+    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
+
+    --danger:#e84b4b; --warn:#e8844b;
+
+    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
+
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
+
+  body::before {
+
+    content:''; position:fixed; inset:0;
+
+    background-image: linear-gradient(rgba(30,45,68,.3) 1px,transparent 1px), linear-gradient(90deg,rgba(30,45,68,.3) 1px,transparent 1px);
+
+    background-size:40px 40px; pointer-events:none; z-index:0;
+
+  }
+
+  #loading-overlay {
+
+    position:fixed; inset:0; background:rgba(8,12,20,.96); z-index:999;
+
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+
+  }
+
+  .spinner { width:40px; height:40px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .loading-text { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--text-dim); animation:blink 1.5s ease-in-out infinite; }
+
+  .shell { position:relative; z-index:1; max-width:1600px; margin:0 auto; padding:24px; }
+
+  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
+
+  .back-link:hover { color:var(--accent2); }
+
+  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+
+  .brand { display:flex; align-items:center; gap:14px; }
+
+  .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
+
+  @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
+
+  .brand-icon svg { width:22px; height:22px; stroke:var(--accent); fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+
+  .brand-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text-bright); letter-spacing:-.5px; }
+
+  .brand-sub { font-size:10px; color:var(--text-dim); letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
+
+  .header-meta { text-align:right; font-size:11px; color:var(--text-dim); line-height:1.8; }
+
+  .live-dot { display:inline-block; width:6px; height:6px; background:var(--accent3); border-radius:50%; margin-right:6px; animation:blink 2s ease-in-out infinite; vertical-align:middle; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .tabs { display:flex; gap:2px; margin-bottom:24px; border-bottom:1px solid var(--border); }
+
+  .tab-btn { background:none; border:none; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:10px 20px; cursor:pointer; position:relative; transition:color .2s; }
+
+  .tab-btn::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:var(--accent); transform:scaleX(0); transition:transform .2s; }
+
+  .tab-btn.active { color:var(--accent); }
+
+  .tab-btn.active::after { transform:scaleX(1); }
+
+  .tab-btn:hover { color:var(--text); }
+
+  .tab-panel { display:none; }
+
+  .tab-panel.active { display:block; }
+
+  .summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+
+  .stat-card { background:var(--surface); border:1px solid var(--border); padding:20px; position:relative; overflow:hidden; transition:border-color .2s,transform .2s; }
+
+  .stat-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; }
+
+  .stat-card.gold::before { background:var(--accent); }
+
+  .stat-card.blue::before { background:var(--accent2); }
+
+  .stat-card.green::before { background:var(--accent3); }
+
+  .stat-card.red::before { background:var(--danger); }
+
+  .stat-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+
+  .stat-card-click { cursor:pointer; }
+
+  .stat-card-click:hover { border-color:var(--accent2); }
+
+  .cabinet-card-click { cursor:pointer; }
+
+  .stat-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; }
+
+  .stat-value { font-family:'Syne',sans-serif; font-size:28px; font-weight:700; color:var(--text-bright); line-height:1; }
+
+  .stat-unit { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); margin-left:4px; }
+
+  .stat-sub { font-size:11px; color:var(--text-dim); margin-top:6px; }
+
+  .location-block { margin-bottom:36px; }
+
+  .location-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+
+  .location-tag { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--accent); padding:4px 12px; border:1px solid var(--accent); }
+
+  .location-line { flex:1; height:1px; background:linear-gradient(90deg,var(--accent) 0%,transparent 100%); opacity:.3; }
+
+  .cabinet-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+
+  .cabinet-card { background:var(--surface); border:1px solid var(--border); position:relative; overflow:hidden; transition:border-color .25s,box-shadow .25s; animation:fadeInUp .4s ease both; }
+
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  .cabinet-card:hover { border-color:rgba(75,159,232,.5); box-shadow:0 0 30px rgba(75,159,232,.07); }
+
+  .cabinet-card.error { border-color:rgba(232,75,75,.4); }
+
+  .cabinet-card.warn-high { border-color:rgba(232,132,75,.4); }
+
+  .card-header { display:flex; justify-content:space-between; align-items:flex-start; padding:16px 18px 12px; border-bottom:1px solid var(--border); background:var(--surface2); }
+
+  .card-name { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:var(--text-bright); }
+
+  .card-ip { font-size:11px; color:var(--text-dim); margin-top:3px; }
+
+  .status-badge { font-size:10px; padding:3px 8px; border-radius:2px; letter-spacing:1px; text-transform:uppercase; font-weight:500; }
+
+  .badge-ok  { background:rgba(75,232,160,.15); color:var(--accent3); border:1px solid rgba(75,232,160,.3); }
+
+  .badge-warn{ background:rgba(232,132,75,.15); color:var(--warn);    border:1px solid rgba(232,132,75,.3); }
+
+  .badge-err { background:rgba(232,75,75,.15);  color:var(--danger);  border:1px solid rgba(232,75,75,.3); }
+
+  .card-body { padding:16px 18px; }
+
+  .cap-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+
+  .cap-label { font-size:10px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; }
+
+  .cap-pct { font-family:'Syne',sans-serif; font-size:20px; font-weight:700; }
+
+  .bar-track { height:6px; background:var(--grid); border:1px solid var(--border); margin-bottom:14px; position:relative; overflow:hidden; }
+
+  .bar-fill { height:100%; position:absolute; left:0; top:0; }
+
+  .bar-low { background:var(--accent3); } .bar-mid { background:var(--accent); }
+
+  .bar-high { background:var(--warn); }   .bar-crit { background:var(--danger); }
+
+  .metrics-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+
+  .metric { background:var(--grid); border:1px solid var(--border); padding:8px; text-align:center; }
+
+  .metric-val { font-size:13px; font-weight:500; color:var(--text-bright); }
+
+  .metric-lbl { font-size:9px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-top:3px; }
+
+  .card-footer { display:flex; justify-content:space-between; align-items:center; padding:10px 18px; border-top:1px solid var(--border); background:var(--surface2); font-size:11px; }
+
+  .footer-dr { color:var(--accent); } .footer-ver { color:var(--text-dim); }
+
+  .error-overlay { display:flex; flex-direction:column; align-items:center; justify-content:center; height:140px; gap:10px; color:var(--danger); font-size:12px; letter-spacing:1px; }
+
+  .section-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:var(--accent); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+
+  .filter-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+
+  .filter-select { background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:8px 12px; outline:none; transition:border-color .2s; }
+
+  .filter-select:focus { border-color:var(--accent2); }
+
+  .filter-select option { background:var(--surface2); }
+
+  .active-filter-chips {
+
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+
+    background:rgba(232,184,75,.08);
+
+    border:1px solid rgba(232,184,75,.25);
+
+    border-left:3px solid var(--accent);
+
+    padding:10px 14px; margin-bottom:14px;
+
+  }
+
+  .filter-chip {
+
+    background:var(--surface2); border:1px solid var(--border);
+
+    color:var(--text-dim); font-size:10px;
+
+    padding:3px 10px; letter-spacing:.5px;
+
+  }
+
+  .filter-chip strong { color:var(--accent); margin-left:4px; }
+
+  .filter-chip-clear {
+
+    background:transparent; border:1px solid var(--text-dim);
+
+    color:var(--text-dim); font-family:'JetBrains Mono',monospace;
+
+    font-size:10px; padding:3px 10px; cursor:pointer;
+
+    letter-spacing:1px; text-transform:uppercase;
+
+    margin-left:auto; transition:all .2s;
+
+  }
+
+  .filter-chip-clear:hover { color:var(--danger); border-color:var(--danger); }
+
+  .search-box { position:relative; flex:1; max-width:280px; }
+
+  .search-box input { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:8px 12px 8px 32px; outline:none; transition:border-color .2s; }
+
+  .search-box input:focus { border-color:var(--accent2); }
+
+  .search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-dim); font-size:13px; }
+
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+
+  thead th { background:var(--surface2); border:1px solid var(--border); padding:10px 14px; text-align:left; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); white-space:nowrap; cursor:pointer; user-select:none; transition:color .2s; }
+
+  thead th:hover { color:var(--accent); }
+
+  tbody tr { border:1px solid var(--border); transition:background .15s; }
+
+  tbody tr:hover { background:var(--surface2); }
+
+  tbody td { padding:9px 14px; border-bottom:1px solid rgba(30,45,68,.6); color:var(--text); }
+
+  .dash-footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+
+  ::-webkit-scrollbar { width:6px; height:6px; }
+
+  ::-webkit-scrollbar-track { background:var(--bg); }
+
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  ::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
+</style>
+</head>
+<body>
+<div id="loading-overlay">
+<div class="spinner"></div>
+<div class="loading-text">CSV Dosyalari Yukleniyor</div>
+</div>
+<div class="shell">
+<a href="./index.html" class="back-link">&larr; Portala Don</a>
+<header>
+<div class="brand">
+<div class="brand-icon">
+<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+</div>
+<div>
+<div class="brand-title">Storage Intelligence</div>
+<div class="brand-sub">Pure FlashBlade Fleet</div>
+</div>
+</div>
+<div class="header-meta">
+<div><span class="live-dot"></span>LIVE MONITORING</div>
+<div id="clock"></div>
+<div id="data-fresh-badge" data-fresh-badge style="margin-top:2px"></div>
+<div id="header-summary">-</div>
+</div>
+</header>
+<div class="tabs">
+<button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+<button class="tab-btn" onclick="switchTab('hosts')">Bucket Listesi</button>
+<button class="tab-btn" onclick="switchTab('luns')">File Systems</button>
+<button class="tab-btn" onclick="switchTab('replication')">Replikasyon</button>
+</div>
+<div class="tab-panel active" id="tab-overview">
+<div class="summary-grid" id="global-summary"></div>
+<div id="location-blocks"></div>
+</div>
+<div class="tab-panel" id="tab-hosts">
+<div class="section-title">Bucket Envanteri</div>
+<div class="active-filter-chips" id="hostFilterChips" style="display:none;"></div>
+<div class="filter-row">
+<div class="search-box">
+<span class="search-icon">&#9906;</span>
+<input type="text" placeholder="Bucket ara..." id="host-search" oninput="renderHostTable()">
+</div>
+<select class="filter-select" id="host-location" onchange="renderHostTable()"><option value="">Tum Lokasyonlar</option></select>
+<select class="filter-select" id="host-cabinet" onchange="renderHostTable()"><option value="">Tum Kabinetler</option></select>
+</div>
+<div id="host-table-wrap"></div>
+</div>
+<div class="tab-panel" id="tab-luns">
+<div class="section-title">Volume Envanteri</div>
+<div class="filter-row">
+<div class="search-box">
+<span class="search-icon">&#9906;</span>
+<input type="text" placeholder="Volume ara..." id="lun-search" oninput="renderLunTable()">
+</div>
+<select class="filter-select" id="lun-location" onchange="renderLunTable()"><option value="">Tum Lokasyonlar</option></select>
+<select class="filter-select" id="lun-cabinet" onchange="renderLunTable()"><option value="">Tum Kabinetler</option></select>
+</div>
+<div id="lun-table-wrap"></div>
+</div>
+<div class="tab-panel" id="tab-replication">
+<div class="section-title">Bucket Replikasyon Linkleri</div>
+<div id="fb-repl-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px"></div>
+<div class="filter-row">
+<div class="search-box">
+<span class="search-icon">&#9906;</span>
+<input type="text" placeholder="Bucket, hedef ara..." id="fb-repl-search" oninput="renderFbRepl()">
+</div>
+<select class="filter-select" id="fb-repl-status" onchange="renderFbRepl()">
+<option value="">Tüm Durumlar</option>
+<option value="Replike Ediliyor">Replike Ediliyor</option>
+<option value="Duraklatildi">Duraklatıldı</option>
+<option value="Sagliksiz">Sağlıksız</option>
+</select>
+</div>
+<div id="fb-repl-table-wrap"></div>
+</div>
+<div class="dash-footer">
+<span>PURE FLASHBLADE FLEET DASHBOARD</span>
+<span>POWERSHELL AUTOMATION v2.0</span>
+</div>
+</div>
+<script type="module">
+
+let cabinets  = [];
+
+let hosts     = [];
+
+let lunGroups = [];
+
+let fbReplData = [];
+
+const CSV_DASHBOARD = './Pure/FB_Dashboard.csv';
+
+const CSV_HOSTS     = './Pure/FB_Buckets.csv';
+
+const CSV_LUNGROUPS = './Pure/FB_FileSystems.csv';
+
+const CSV_FB_REPL   = './Pure/FB_Replication.csv';
+
+function updateClock() {
+
+  document.getElementById('clock').textContent =
+
+    new Date().toLocaleDateString('tr-TR') + ' · ' + new Date().toLocaleTimeString('tr-TR');
+
+}
+
+setInterval(updateClock, 1000);
+
+updateClock();
+
+window.switchTab = function(name) {
+
+  document.querySelectorAll('.tab-btn').forEach(b => {
+
+    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${name}'`));
+
+  });
+
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+  const targetPanel = document.getElementById('tab-' + name);
+
+  if(targetPanel) targetPanel.classList.add('active');
+
+};
+
+window.applyHostFilter = function(opts) {
+
+  document.getElementById('host-search').value   = opts.search   || '';
+
+  document.getElementById('host-location').value = opts.location || '';
+
+  document.getElementById('host-cabinet').value  = opts.cabinet  || '';
+
+  renderHostFilterChips(opts);
+
+  switchTab('hosts');
+
+  renderHostTable();
+
+  window.scrollTo({ top: 200, behavior: 'smooth' });
+
+};
+
+window.clearHostFilters = function() {
+
+  document.getElementById('host-search').value   = '';
+
+  document.getElementById('host-location').value = '';
+
+  document.getElementById('host-cabinet').value  = '';
+
+  renderHostFilterChips({});
+
+  renderHostTable();
+
+};
+
+window.renderHostTable = renderHostTable;
+
+window.renderLunTable = renderLunTable;
+
+window.renderFbRepl = renderFbRepl;
+
+// Global Sıralama Durumları
+
+let hostSort = { col: 'provTB', dir: 'desc' };
+
+let lunSort = { col: 'capacity', dir: 'desc' };
+
+let replSort = { col: 'kabinet', dir: 'asc' };
+
+// Dinamik Sıralama Fonksiyonu
+
+window.toggleSort = function(tab, colName) {
+
+  if (tab === 'host') {
+
+    hostSort.dir = (hostSort.col === colName && hostSort.dir === 'desc') ? 'asc' : 'desc';
+
+    hostSort.col = colName;
+
+    renderHostTable();
+
+  } else if (tab === 'lun') {
+
+    lunSort.dir = (lunSort.col === colName && lunSort.dir === 'desc') ? 'asc' : 'desc';
+
+    lunSort.col = colName;
+
+    renderLunTable();
+
+  } else if (tab === 'repl') {
+
+    replSort.dir = (replSort.col === colName && replSort.dir === 'desc') ? 'asc' : 'desc';
+
+    replSort.col = colName;
+
+    renderFbRepl();
+
+  }
+
+};
+
+function getSortIcon(sortObj, colName) {
+
+  if (sortObj.col !== colName) return ' <span style="color:var(--text-dim);font-size:9px;">↕</span>';
+
+  return sortObj.dir === 'asc' ? ' <span style="color:var(--accent)">▲</span>' : ' <span style="color:var(--accent)">▼</span>';
+
+}
+
+function parseDashboard(text) {
+
+  const skip = ['---', '==='];
+
+  return parseCSV(text)
+
+    .filter(r => {
+
+      const k = (r['Kabinet'] || '').trim();
+
+      const l = (r['Lokasyon'] || '').trim();
+
+      if (!k) return false;
+
+      if (skip.includes(l)) return false;
+
+      if (/^TOPLAM|^GENEL/i.test(k)) return false;
+
+      return true;
+
+    })
+
+    .map(r => {
+
+      const ip  = (r['IP'] || '').trim();
+
+      const tot = (r['Total (TB)'] || '').trim();
+
+      const isErr = ip === 'HATA' || tot === '' || tot === '-' || tot.toUpperCase() === 'HATA';
+
+      if (isErr) return { location:r['Lokasyon'], name:r['Kabinet'], ip, error:true };
+
+      return {
+
+        location:   r['Lokasyon'],
+
+        name:       r['Kabinet'],
+
+        ip,
+
+        total:      toN(r['Total (TB)']),
+
+        used:       toN(r['Used (TB)']),
+
+        subscribed: toN(r['Subscribed (TB)']),
+
+        free:       toN(r['Free (TB)']),
+
+        pct:        toN(r['Doluluk (%)']),
+
+        dr:         (r['Data Reduction'] || '-').trim(),
+
+        hostCount:  parseInt(r['Host Sayisi']) || 0,
+
+        version:    (r['Versiyon'] || '').trim(),
+
+      };
+
+    });
+
+}
+
+function parseHosts(text) {
+
+  return parseCSV(text)
+
+    .filter(r => {
+
+      const b = (r['Bucket'] || '').trim();
+
+      return b !== '' && b.toLowerCase() !== 'bucket' && b.toLowerCase() !== 'name';
+
+    })
+
+    .map(r => ({
+
+      location:  r['Lokasyon'],
+
+      cabinet:   r['Kabinet'],
+
+      host:      r['Bucket'],          
+
+      os:        r['Account'] || '—',  
+
+      hostGroup: r['Versioning'] || '',
+
+      protocol:  r['Created'] || '',
+
+      map:       'Mapped',
+
+      provTB:    toN(r['Virtual (TB)']),
+
+      uniqueTB:  toN(r['Unique (TB)']),
+
+      snapTB:    toN(r['Snapshot (TB)']),
+
+      dr:        r['Data Reduction'] || '—',
+
+      objCount:  parseInt(r['Object Count']) || 0,
+
+      wwns:      [],
+
+    }));
+
+}
+
+let bucketHistory = {};
+
+let historyDateUsed = null;
+
+const FB_HIST_PATH = './Pure/_history/FB_Buckets_{D}.csv';
+
+async function loadHistory() {
+
+  // ~30 gun once aranan tarih; 25-35 gun penceresinde ilk bulunan snapshot kullanilir.
+
+  // Ortak storage-utils helperlari: dateRangeBack(n) ve fetchCSVText(url)
+
+  // dateRangeBack(N) => son N gunun tarih listesi (eski->yeni). Bizim icin baska gun listeleri uretmek lazim.
+
+  const today = new Date();
+
+  const candidates = [];
+
+  for (let off = 28; off <= 35; off++) {
+
+    const d = new Date(today); d.setDate(d.getDate() - off);
+
+    candidates.push(d.toISOString().slice(0, 10));
+
+  }
+
+  for (let off = 27; off >= 21; off--) {
+
+    const d = new Date(today); d.setDate(d.getDate() - off);
+
+    candidates.push(d.toISOString().slice(0, 10));
+
+  }
+
+  for (const dateStr of candidates) {
+
+    const url = FB_HIST_PATH.replace('{D}', dateStr);
+
+    const text = await fetchCSVText(url);
+
+    if (!text) continue;
+
+    const rows = parseCSV(text);
+
+    if (rows.length === 0) continue;
+
+    rows.forEach(row => {
+
+      const b = (row['Bucket'] || '').trim();
+
+      if (b && b.toLowerCase() !== 'bucket') {
+
+        bucketHistory[b] = toN(row['Virtual (TB)']);
+
+      }
+
+    });
+
+    historyDateUsed = dateStr;
+console.info(`[FB History] Karsilastirma tarihi: ${dateStr} (${Object.keys(bucketHistory).length} bucket)`);
+
+    return;
+
+  }
+console.info('[FB History] 21-35 gun penceresinde snapshot bulunamadi - delta sutunu bos kalacak');
+
+}
+
+function parseLunGroups(text) {
+
+  return parseCSV(text)
+
+    .filter(r => {
+
+      // CSV gercek kolon adi: FileSystem (bosluksuz)
+
+      const fs = (r['FileSystem'] || r['File System'] || '').trim();
+
+      const low = fs.toLowerCase();
+
+      return fs !== '' && low !== 'filesystem' && low !== 'file system' && low !== 'name';
+
+    })
+
+    .map(r => ({
+
+      location:  r['Lokasyon'],
+
+      cabinet:   r['Kabinet'],
+
+      name:      r['FileSystem'] || r['File System'],
+
+      protocols: r['Protocol'] || r['Protokoller'] || '',
+
+      capacity:  toN(r['Virtual (TB)']),    // gercek kullanim
+
+      sizeTB:    toN(r['Size (TB)']),       // quota / provisioned
+
+      snapTB:    toN(r['Snapshot (TB)']),
+
+    }));
+
+}
+
+async function loadCSVs() {
+
+  setOverlay(true, '<div class="spinner"></div><div class="loading-text">CSV Dosyalari Yukleniyor</div>');
+
+  try {
+
+    const fetchCSV = fetchCSVText;
+
+    const [dashText, hostText, lunText] = await Promise.all([
+
+      fetchCSV(CSV_DASHBOARD), fetchCSV(CSV_HOSTS), fetchCSV(CSV_LUNGROUPS),
+
+    ]);
+
+    cabinets  = parseDashboard(dashText);
+
+    hosts     = parseHosts(hostText);
+
+    lunGroups = parseLunGroups(lunText);
+
+    await loadFbReplData();
+
+    setOverlay(false);
+
+    initDashboard();
+
+  } catch (err) {
+
+    setOverlay(true, `
+<div style="text-align:center;max-width:500px;padding:32px">
+<div style="font-size:36px;color:var(--danger);margin-bottom:16px">!</div>
+<div style="font-family:'Syne',sans-serif;font-size:18px;color:var(--text-bright);margin-bottom:12px">CSV Yuklenemedi</div>
+<div style="font-size:12px;color:var(--danger);padding:8px 14px;background:rgba(232,75,75,.1);border:1px solid rgba(232,75,75,.3);margin-bottom:20px">${err.message}</div>
+<button onclick="window.location.reload()" style="margin-top:24px;background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:10px 24px;cursor:pointer">YENIDEN DENE</button>
+</div>`);
+
+  }
+
+}
+
+function setOverlay(show, html) {
+
+  const el = document.getElementById('loading-overlay');
+
+  el.style.display = show ? 'flex' : 'none';
+
+  if (show && html) el.innerHTML = html;
+
+}
+
+async function initDashboard() {
+
+  const locCount = [...new Set(cabinets.map(c => c.location))].length;
+
+  document.getElementById('header-summary').textContent =
+
+    `${cabinets.length} Kabinet · ${locCount} Lokasyon`;
+
+  await loadHistory();  
+
+  buildSummary();
+
+  buildOverview();
+
+  populateFilters();
+
+  renderHostTable();
+
+  renderLunTable();
+
+  renderFbRepl();
+
+}
+
+function barClass(p) { return p<30?'bar-low':p<50?'bar-mid':p<65?'bar-high':'bar-crit'; }
+
+function pctColor(p) { return p<30?'var(--accent3)':p<50?'var(--accent)':p<65?'var(--warn)':'var(--danger)'; }
+
+function statusBadge(p) {
+
+  if (p<50) return '<span class="status-badge badge-ok">OK</span>';
+
+  if (p<65) return '<span class="status-badge badge-warn">WARN</span>';
+
+  return '<span class="status-badge badge-err">CRITICAL</span>';
+
+}
+
+function fmt(n) { return typeof n==='number' ? n.toFixed(2) : n; }
+
+function buildSummary() {
+
+  const v = cabinets.filter(c => !c.error);
+
+  const totCap  = v.reduce((s,c)=>s+c.total, 0);
+
+  const totUsed = v.reduce((s,c)=>s+c.used,  0);
+
+  const totFree = v.reduce((s,c)=>s+c.free,  0);
+
+  const avgPct  = totCap>0 ? (totUsed/totCap*100).toFixed(1) : '0';
+
+  const crit = v.filter(c=>c.pct>=65).length;
+
+  const warn = v.filter(c=>c.pct>=50&&c.pct<65).length;
+
+  const locs = [...new Set(cabinets.map(c=>c.location))].length;
+
+  const totalBuckets = hosts.length;
+
+  document.getElementById('global-summary').innerHTML = `
+<div class="stat-card gold"><div class="stat-label">Toplam Kapasite</div><div class="stat-value">${(totCap/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">${totCap.toFixed(0)} TB</div></div>
+<div class="stat-card blue"><div class="stat-label">Kullanilan</div><div class="stat-value">${(totUsed/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">Ort. %${avgPct}</div></div>
+<div class="stat-card green"><div class="stat-label">Bos Alan</div><div class="stat-value">${(totFree/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">${totFree.toFixed(0)} TB</div></div>
+<div class="stat-card ${crit>0?'red':'gold'}"><div class="stat-label">Alarm Durumu</div><div class="stat-value">${crit}<span class="stat-unit">kritik</span></div><div class="stat-sub">${warn} uyari</div></div>
+<div class="stat-card blue stat-card-click" onclick="applyHostFilter({label:'Tum Bucketlar'})"><div class="stat-label">Toplam Bucket</div><div class="stat-value">${totalBuckets}</div><div class="stat-sub">${locs} lokasyon &middot; tikla &rarr;</div></div>`;
+
+}
+
+function cabinetCard(c) {
+
+  if (c.error) return `
+<div class="cabinet-card error">
+<div class="card-header"><div><div class="card-name">${c.name}</div><div class="card-ip">${c.location}</div></div><span class="status-badge badge-err">ERROR</span></div>
+<div class="error-overlay">! Baglanti Hatasi</div>
+</div>`;
+
+  const cabinetBuckets = hosts.filter(h => h.cabinet === c.name).length;
+
+  return `
+<div class="${c.pct>=65?'cabinet-card warn-high':'cabinet-card'} cabinet-card-click" onclick="applyHostFilter({label:'${c.name} - Tum Bucketlar', cabinet:'${c.name}'})">
+<div class="card-header"><div><div class="card-name">${c.name}</div><div class="card-ip">${c.location} · ${c.ip}</div></div>${statusBadge(c.pct)}</div>
+<div class="card-body">
+<div class="cap-row"><span class="cap-label">Doluluk</span><span class="cap-pct" style="color:${pctColor(c.pct)}">%${c.pct}</span></div>
+<div class="bar-track"><div class="bar-fill ${barClass(c.pct)}" style="width:${c.pct}%"></div></div>
+<div class="metrics-row">
+<div class="metric"><div class="metric-val">${fmt(c.total)}</div><div class="metric-lbl">Total</div></div>
+<div class="metric"><div class="metric-val">${fmt(c.used)}</div><div class="metric-lbl">Used</div></div>
+<div class="metric"><div class="metric-val">${cabinetBuckets}</div><div class="metric-lbl">Bucket</div></div>
+<div class="metric"><div class="metric-val">${fmt(c.free)}</div><div class="metric-lbl">Free</div></div>
+</div>
+</div>
+<div class="card-footer"><span class="footer-dr">DR ${c.dr}</span><span class="footer-ver">${c.version}</span></div>
+</div>`;
+
+}
+
+function buildOverview() {
+
+  const locs = [...new Set(cabinets.map(c=>c.location))].sort();
+
+  document.getElementById('location-blocks').innerHTML = locs.map(loc => {
+
+    const lc = cabinets.filter(c=>c.location===loc);
+
+    return `
+<div class="location-block">
+<div class="location-header"><div class="location-tag">${loc}</div><div class="location-line"></div></div>
+<div class="cabinet-grid">${lc.map(c=>cabinetCard(c)).join('')}</div>
+</div>`;
+
+  }).join('');
+
+}
+
+function populateFilters() {
+
+  function fill(id, values) {
+
+    const sel = document.getElementById(id);
+
+    if (!sel) return;
+
+    const first = sel.options[0].outerHTML;
+
+    sel.innerHTML = first;
+
+    [...new Set(values)].filter(v => v).sort().forEach(v => {
+
+      const o = document.createElement('option');
+
+      o.value = v; o.textContent = v;
+
+      sel.appendChild(o);
+
+    });
+
+  }
+
+  fill('host-location', hosts.map(h=>h.location));
+
+  fill('host-cabinet',  hosts.map(h=>h.cabinet));
+
+  fill('lun-location',  lunGroups.map(l=>l.location));
+
+  fill('lun-cabinet',   lunGroups.map(l=>l.cabinet));
+
+}
+
+function renderHostTable() {
+
+  const search = document.getElementById('host-search').value.toLowerCase();
+
+  const loc    = document.getElementById('host-location').value;
+
+  const cab    = document.getElementById('host-cabinet').value;
+
+  let data = hosts.filter(h =>
+
+    (!search || h.host.toLowerCase().includes(search) || (h.os||'').toLowerCase().includes(search)) &&
+
+    (!loc || h.location===loc) &&
+
+    (!cab || h.cabinet===cab)
+
+  );
+
+  // Sıralama motoru
+
+  data.sort((a, b) => {
+
+    let valA = a[hostSort.col];
+
+    let valB = b[hostSort.col];
+
+    if (typeof valA === 'string') {
+
+      return hostSort.dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+
+    } else {
+
+      return hostSort.dir === 'asc' ? valA - valB : valB - valA;
+
+    }
+
+  });
+
+  const totalVirt   = data.reduce((s,h) => s + h.provTB, 0);
+
+  const totalUniq   = data.reduce((s,h) => s + (h.uniqueTB||0), 0);
+
+  const totalObjs   = data.reduce((s,h) => s + (h.objCount||0), 0);
+
+  const tbody = data.map(h => {
+
+    const prev     = bucketHistory[h.host];
+
+    let deltaHtml  = '<span style="color:var(--text-dim)">—</span>';
+
+    if (prev !== undefined && prev > 0) {
+
+      const diffPct = (h.provTB - prev) / prev * 100;
+
+      const diffTB  = h.provTB - prev;
+
+      if (Math.abs(diffPct) < 0.05) {
+
+        deltaHtml = '<span style="color:var(--text-dim)">≈0%</span>';
+
+      } else if (diffPct > 0) {
+
+        deltaHtml = `<span style="color:var(--danger)">▲ ${diffPct.toFixed(1)}% <span style="font-size:9px">(+${Math.abs(diffTB).toFixed(2)} TB)</span></span>`;
+
+      } else {
+
+        deltaHtml = `<span style="color:var(--accent3)">▼ ${Math.abs(diffPct).toFixed(1)}% <span style="font-size:9px">(-${Math.abs(diffTB).toFixed(2)} TB)</span></span>`;
+
+      }
+
+    }
+
+    return `
+<tr>
+<td>${h.location}</td>
+<td>${h.cabinet}</td>
+<td style="color:var(--text-bright); font-weight:500;">${h.host}</td>
+<td>${h.os}</td>
+<td style="text-align:right;color:var(--accent2);font-weight:500">${h.provTB.toFixed(4)}</td>
+<td style="text-align:right;color:var(--text-dim)">${(h.uniqueTB||0).toFixed(4)}</td>
+<td style="text-align:right;color:var(--text-dim)">${(h.snapTB||0).toFixed(4)}</td>
+<td style="text-align:right;color:var(--accent);font-size:10px">${h.dr}</td>
+<td style="text-align:right;">${(h.objCount||0).toLocaleString('tr-TR')}</td>
+<td>${deltaHtml}</td>
+</tr>`;
+
+  }).join('');
+
+  window._renderedHostData = data;
+
+  const summaryHtml = `
+<span style="font-size:11px;color:var(--text-dim)">
+
+      ${data.length} bucket &nbsp;·&nbsp;
+
+      Virtual: <strong style="color:var(--accent2)">${totalVirt.toFixed(2)} TB</strong> &nbsp;·&nbsp;
+
+      Unique: <strong style="color:var(--accent3)">${totalUniq.toFixed(2)} TB</strong> &nbsp;·&nbsp;
+
+      Nesne: <strong style="color:var(--text)">${totalObjs.toLocaleString('tr-TR')}</strong>
+</span>`;
+
+  document.getElementById('host-table-wrap').innerHTML = `
+<div style="display:flex;align-items:center;justify-content:flex-end;padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);">
+
+      ${summaryHtml}
+</div>
+<table>
+<thead><tr>
+<th onclick="toggleSort('host', 'location')">Lokasyon${getSortIcon(hostSort, 'location')}</th>
+<th onclick="toggleSort('host', 'cabinet')">Kabinet${getSortIcon(hostSort, 'cabinet')}</th>
+<th onclick="toggleSort('host', 'host')">Bucket${getSortIcon(hostSort, 'host')}</th>
+<th onclick="toggleSort('host', 'os')">Account${getSortIcon(hostSort, 'os')}</th>
+<th style="text-align:right;" onclick="toggleSort('host', 'provTB')">Virtual (TB)${getSortIcon(hostSort, 'provTB')}</th>
+<th style="text-align:right;" onclick="toggleSort('host', 'uniqueTB')">Unique (TB)${getSortIcon(hostSort, 'uniqueTB')}</th>
+<th style="text-align:right;" onclick="toggleSort('host', 'snapTB')">Snapshot (TB)${getSortIcon(hostSort, 'snapTB')}</th>
+<th style="text-align:right;" onclick="toggleSort('host', 'dr')">DR${getSortIcon(hostSort, 'dr')}</th>
+<th style="text-align:right;" onclick="toggleSort('host', 'objCount')">Nesne Sayısı${getSortIcon(hostSort, 'objCount')}</th>
+<th title="${historyDateUsed ? 'Karsilastirma: '+historyDateUsed : 'Snapshot bulunamadi'}">Aylık Delta${historyDateUsed ? ' <span style=\"font-size:9px;color:var(--text-dim)\">('+historyDateUsed+')</span>' : ''}</th>
+</tr></thead>
+<tbody>${tbody || '<tr><td colspan="10" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody>
+</table>`;
+
+}
+
+function renderLunTable() {
+
+  const search = document.getElementById('lun-search').value.toLowerCase();
+
+  const loc = document.getElementById('lun-location').value;
+
+  const cab = document.getElementById('lun-cabinet').value;
+
+  let data = lunGroups.filter(l =>
+
+    (!search || l.name.toLowerCase().includes(search) || (l.protocols||'').toLowerCase().includes(search)) &&
+
+    (!loc || l.location===loc) &&
+
+    (!cab || l.cabinet===cab)
+
+  );
+
+  // Siralama motoru
+
+  data.sort((a, b) => {
+
+    let valA = a[lunSort.col];
+
+    let valB = b[lunSort.col];
+
+    if (typeof valA === 'string') {
+
+      return lunSort.dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+
+    } else {
+
+      return lunSort.dir === 'asc' ? valA - valB : valB - valA;
+
+    }
+
+  });
+
+  const totalVirt = data.reduce((s,l) => s + (l.capacity||0), 0);
+
+  const totalSize = data.reduce((s,l) => s + (l.sizeTB||0),   0);
+
+  const totalSnap = data.reduce((s,l) => s + (l.snapTB||0),   0);
+
+  const tbody = data.map(l => {
+
+    const fillPct = l.sizeTB > 0 ? Math.min(100, (l.capacity / l.sizeTB) * 100) : 0;
+
+    const fillColor = fillPct >= 80 ? 'var(--danger)' : fillPct >= 60 ? 'var(--warn)' : 'var(--accent3)';
+
+    return `
+<tr>
+<td>${l.location}</td>
+<td>${l.cabinet}</td>
+<td style="color:var(--text-bright);font-weight:500;">${l.name}</td>
+<td style="color:var(--text-dim);font-size:10px">${l.protocols||'—'}</td>
+<td style="text-align:right;color:var(--accent2);font-weight:500">${l.capacity.toFixed(4)}</td>
+<td style="text-align:right;color:var(--text-dim)">${l.sizeTB.toFixed(2)}</td>
+<td style="text-align:right;color:${fillColor};font-size:10px">${l.sizeTB > 0 ? '%'+fillPct.toFixed(1) : '—'}</td>
+<td style="text-align:right;color:var(--text-dim)">${l.snapTB.toFixed(4)}</td>
+</tr>`;
+
+  }).join('');
+
+  const summaryHtml = `
+<span style="font-size:11px;color:var(--text-dim)">
+
+      ${data.length} file system &nbsp;·&nbsp;
+
+      Virtual: <strong style="color:var(--accent2)">${totalVirt.toFixed(2)} TB</strong> &nbsp;·&nbsp;
+
+      Size (Quota): <strong style="color:var(--text)">${totalSize.toFixed(2)} TB</strong> &nbsp;·&nbsp;
+
+      Snapshot: <strong style="color:var(--accent3)">${totalSnap.toFixed(2)} TB</strong>
+</span>`;
+
+  document.getElementById('lun-table-wrap').innerHTML = `
+<div style="display:flex;align-items:center;justify-content:flex-end;padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);">
+
+      ${summaryHtml}
+</div>
+<table>
+<thead><tr>
+<th onclick="toggleSort('lun', 'location')">Lokasyon${getSortIcon(lunSort, 'location')}</th>
+<th onclick="toggleSort('lun', 'cabinet')">Kabinet${getSortIcon(lunSort, 'cabinet')}</th>
+<th onclick="toggleSort('lun', 'name')">File System${getSortIcon(lunSort, 'name')}</th>
+<th onclick="toggleSort('lun', 'protocols')">Protokol${getSortIcon(lunSort, 'protocols')}</th>
+<th style="text-align:right;" onclick="toggleSort('lun', 'capacity')">Virtual (TB)${getSortIcon(lunSort, 'capacity')}</th>
+<th style="text-align:right;" onclick="toggleSort('lun', 'sizeTB')">Size (TB)${getSortIcon(lunSort, 'sizeTB')}</th>
+<th style="text-align:right;">Doluluk</th>
+<th style="text-align:right;" onclick="toggleSort('lun', 'snapTB')">Snapshot (TB)${getSortIcon(lunSort, 'snapTB')}</th>
+</tr></thead>
+<tbody>${tbody || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody>
+</table>`;
+
+}
+
+async function loadFbReplData() {
+
+  const text = await (async () => {
+
+    try { return await fetchCSVText(CSV_FB_REPL); }
+
+    catch { return ''; }
+
+  })();
+
+  if(!text) return;
+
+  fbReplData = parseCSV(text).filter(r => {
+
+    const y = (r['Yerel Bucket'] || '').trim();
+
+    // CSV içindeki başlık satırlarının (Name, Direction vb.) kaymasını engellemek için filtreleme
+
+    return y !== '' && y.toLowerCase() !== 'yerel bucket' && y.toLowerCase() !== 'name' && (r['Hedef'] || '').toLowerCase() !== 'remote';
+
+  }).map(r => ({
+
+    lokasyon: r['Lokasyon']      || '',
+
+    kabinet:  r['Kabinet']        || '',
+
+    yerel:    r['Yerel Bucket']   || '',
+
+    uzak:     r['Uzak Bucket']    || '',
+
+    hedef:    r['Hedef']          || '',
+
+    yon:      r['Yon']            || '',
+
+    durum:    (r['Durum'] || '').trim(),
+
+    lag:      r['Gecikme (Lag)']  || '',
+
+  }));
+
+}
+
+function renderFbRepl() {
+
+  const el = document.getElementById('fb-repl-table-wrap');
+
+  if(!el) return;
+
+  if (fbReplData.length === 0) {
+
+    const summ = document.getElementById('fb-repl-summary');
+
+    if(summ) summ.innerHTML = '';
+
+    el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">Replikasyon verisi yok</div>';
+
+    return;
+
+  }
+
+  const search = (document.getElementById('fb-repl-search').value   || '').toLowerCase();
+
+  const statF  =  document.getElementById('fb-repl-status').value   || '';
+
+  let data = fbReplData.filter(r =>
+
+    (!search || r.yerel.toLowerCase().includes(search) || r.uzak.toLowerCase().includes(search) || r.hedef.toLowerCase().includes(search)) &&
+
+    (!statF  || r.durum === statF)
+
+  );
+
+  // Sıralama motoru
+
+  data.sort((a, b) => {
+
+    let valA = a[replSort.col];
+
+    let valB = b[replSort.col];
+
+    return replSort.dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+
+  });
+
+  // Özet kartlar için durum sayımları (Büyük-küçük harf veya Türkçe karakter toleransı için normalleştirildi)
+
+  const replying  = fbReplData.filter(r => r.durum.toLowerCase() === 'replike ediliyor').length;
+
+  const paused    = fbReplData.filter(r => r.durum.toLowerCase() === 'duraklatildi' || r.durum.toLowerCase() === 'duraklatıldı').length;
+
+  const unhealthy = fbReplData.filter(r => r.durum.toLowerCase() === 'sagliksiz' || r.durum.toLowerCase() === 'sağlıksız').length;
+
+  const summ = document.getElementById('fb-repl-summary');
+
+  if(summ) {
+
+    summ.innerHTML = `
+<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);padding:12px 16px">
+<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Toplam Link</div>
+<div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text-bright)">${fbReplData.length}</div>
+</div>
+<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent3);padding:12px 16px">
+<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Replike Ediliyor</div>
+<div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent3)">${replying}</div>
+<div style="font-size:10px;color:var(--text-dim);margin-top:3px">${paused} duraklatılmış</div>
+</div>
+<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${unhealthy>0?'var(--danger)':'var(--border)'};padding:12px 16px">
+<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Sağlıksız</div>
+<div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:${unhealthy>0?'var(--danger)':'var(--text-dim)'}">${unhealthy}</div>
+
+        ${unhealthy>0?'<div style="font-size:10px;color:var(--danger);margin-top:3px">⚠ Kontrol gerekiyor</div>':''}
+</div>`;
+
+  }
+
+  const rows = data.map(r => {
+
+    const isRep = r.durum.toLowerCase() === 'replike ediliyor';
+
+    const isUnhe = r.durum.toLowerCase() === 'sagliksiz' || r.durum.toLowerCase() === 'sağlıksız';
+
+    const isPau = r.durum.toLowerCase() === 'duraklatildi' || r.durum.toLowerCase() === 'duraklatıldı';
+
+    const sc = isRep ? 'var(--accent3)' : isUnhe ? 'var(--danger)' : isPau ? 'var(--warn)' : 'var(--text-dim)';
+
+    const lagColor = r.lag && r.lag.includes('saat') ? 'var(--warn)' : 'var(--text-dim)';
+
+    return `<tr>
+<td>${r.kabinet}</td>
+<td style="color:var(--text-bright);font-weight:500;">${r.yerel}</td>
+<td style="color:var(--accent2)">${r.uzak}</td>
+<td>${r.hedef}</td>
+<td>${r.yon}</td>
+<td><span style="color:${sc};font-size:10px">${r.durum}</span></td>
+<td style="color:${lagColor}">${r.lag||'—'}</td>
+</tr>`;
+
+  }).join('');
+
+  el.innerHTML = `<div style="padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim)">${data.length} filtrelenmiş replikasyon linki</div>
+<table><thead><tr>
+<th onclick="toggleSort('repl', 'kabinet')">Kabinet${getSortIcon(replSort, 'kabinet')}</th>
+<th onclick="toggleSort('repl', 'yerel')">Yerel Bucket${getSortIcon(replSort, 'yerel')}</th>
+<th onclick="toggleSort('repl', 'uzak')">Uzak Bucket${getSortIcon(replSort, 'uzak')}</th>
+<th onclick="toggleSort('repl', 'hedef')">Hedef${getSortIcon(replSort, 'hedef')}</th>
+<th onclick="toggleSort('repl', 'yon')">Yön${getSortIcon(replSort, 'yon')}</th>
+<th onclick="toggleSort('repl', 'durum')">Durum${getSortIcon(replSort, 'durum')}</th>
+<th onclick="toggleSort('repl', 'lag')">Gecikme${getSortIcon(replSort, 'lag')}</th>
+</tr></thead><tbody>${rows || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody></table>`;
+
+}
+
+function renderHostFilterChips(opts) {
+
+  const box = document.getElementById('hostFilterChips');
+
+  if (!box) return;
+
+  const chips = [];
+
+  if (opts.label)    chips.push({ key:'label', val:opts.label });
+
+  if (opts.location) chips.push({ key:'Lokasyon', val:opts.location });
+
+  if (opts.cabinet)  chips.push({ key:'Kabinet',  val:opts.cabinet   });
+
+  if (chips.length === 0) {
+
+    box.innerHTML = ''; box.style.display = 'none';
+
+    return;
+
+  }
+
+  box.style.display = 'flex';
+
+  box.innerHTML = chips.map(c =>
+
+    `<span class="filter-chip">${c.key === 'label' ? `<strong>${c.val}</strong>` : `${c.key}: <strong>${c.val}</strong>`}</span>`
+
+  ).join('') + `<button class="filter-chip-clear" onclick="clearHostFilters()">Temizle</button>`;
+
+}
+
+loadCSVs();
+
+renderFreshnessBadge('data-fresh-badge', [CSV_DASHBOARD, CSV_HOSTS]);
+</script>
+</body>
+</html>
+ 

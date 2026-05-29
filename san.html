@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brocade SAN · Storage Portal</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<style>
+  :root {
+    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
+    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
+    --speed8:#e87a4b; --speed16:#e8b84b; --speed32:#4be8a0; --speed64:#4b9fe8;
+    --danger:#e84b4b; --warn:#e8844b;
+    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image: linear-gradient(rgba(30,45,68,.3) 1px,transparent 1px), linear-gradient(90deg,rgba(30,45,68,.3) 1px,transparent 1px);
+    background-size:40px 40px; pointer-events:none; z-index:0;
+  }
+
+  .shell { position:relative; z-index:1; max-width:1500px; margin:0 auto; padding:24px; }
+  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
+  .back-link:hover { color:var(--accent2); }
+
+  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:center; gap:14px; }
+  .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
+  @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
+  .brand-icon svg { width:22px; height:22px; stroke:var(--accent); fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+  .brand-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text-bright); letter-spacing:-.5px; }
+  .brand-sub { font-size:10px; color:var(--text-dim); letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
+  .header-meta { text-align:right; font-size:11px; color:var(--text-dim); line-height:1.8; }
+  .live-dot { display:inline-block; width:6px; height:6px; background:var(--accent3); border-radius:50%; margin-right:6px; animation:blink 2s infinite; vertical-align:middle; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .status-bar {
+    display:flex; align-items:center; gap:14px;
+    padding:12px 18px; background:var(--surface);
+    border:1px solid var(--border); margin-bottom:24px;
+    position:relative; overflow:hidden;
+  }
+  .status-bar::before {
+    content:''; position:absolute; top:0; left:0;
+    width:3px; height:100%; background:var(--accent2);
+  }
+  .status-bar.ok::before    { background:var(--accent3); }
+  .status-bar.error::before { background:var(--danger); }
+  .status-dot { width:8px; height:8px; border-radius:50%; background:var(--text-dim); flex-shrink:0; transition:.3s; }
+  .status-dot.loading { background:var(--accent2); animation:pulse 1.2s infinite; box-shadow:0 0 8px var(--accent2); }
+  .status-dot.ok      { background:var(--accent3); box-shadow:0 0 8px var(--accent3); }
+  .status-dot.error   { background:var(--danger);  box-shadow:0 0 8px var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .status-text { flex:1; font-size:11px; letter-spacing:1px; color:var(--text-dim); }
+  .status-text.ok    { color:var(--accent3); }
+  .status-text.error { color:var(--danger); }
+
+  /* ALARM */
+  .alarm-bar {
+    display:none;
+    align-items:center; gap:12px;
+    padding:12px 18px;
+    background:rgba(232,75,75,.1); border:1px solid rgba(232,75,75,.3);
+    border-left:3px solid var(--danger);
+    margin-bottom:24px;
+    font-size:11px; color:var(--danger); letter-spacing:1px;
+    text-transform:uppercase;
+  }
+  .alarm-bar.show { display:flex; }
+  .alarm-bar.warn {
+    background:rgba(232,132,75,.1); border-color:rgba(232,132,75,.3);
+    border-left-color:var(--warn); color:var(--warn);
+  }
+  .alarm-icon { font-size:16px; }
+  .alarm-pills { display:flex; gap:8px; flex-wrap:wrap; margin-left:auto; }
+  .alarm-pill {
+    background:rgba(255,255,255,.05); border:1px solid currentColor;
+    padding:2px 8px; font-size:10px;
+    transition:background .2s, transform .15s;
+  }
+  .alarm-pill-clickable { cursor:pointer; }
+  .alarm-pill-clickable:hover {
+    background:rgba(255,255,255,.12);
+    transform:translateY(-1px);
+  }
+
+  /* KPI ROW */
+  .kpi-row {
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+    gap:12px; margin-bottom:28px;
+  }
+  .kpi {
+    background:var(--surface); border:1px solid var(--border);
+    padding:14px 16px; position:relative; overflow:hidden;
+    transition:border-color .2s, transform .15s;
+  }
+  .kpi-clickable { cursor:pointer; }
+  .kpi-clickable:hover {
+    border-color:var(--accent2);
+    transform:translateY(-1px);
+  }
+  .kpi::before {
+    content:''; position:absolute; top:0; left:0;
+    width:2px; height:100%; background:var(--accent2);
+  }
+  .kpi.warn::before   { background:var(--warn); }
+  .kpi.danger::before { background:var(--danger); }
+  .kpi.green::before  { background:var(--accent3); }
+  .kpi-label { font-size:9px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px; }
+  .kpi-value { font-size:24px; font-weight:500; color:var(--text-bright); line-height:1; }
+  .kpi-sub { font-size:10px; color:var(--text-dim); margin-top:4px; letter-spacing:.5px; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family:'Syne',sans-serif;
+    font-size:11px; font-weight:700; color:var(--text-dim);
+    letter-spacing:3px; text-transform:uppercase;
+    margin:32px 0 16px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-title::after {
+    content:''; flex:1; height:1px;
+    background:linear-gradient(to right, var(--border), transparent);
+  }
+
+  /* DIRECTOR GRID */
+  .director-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(420px, 1fr));
+    gap:16px;
+  }
+  .director-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-left:3px solid var(--accent2);
+    overflow:hidden;
+    transition:border-color .2s;
+  }
+  .director-card.warn   { border-left-color:var(--warn); }
+  .director-card.danger { border-left-color:var(--danger); }
+  .director-card:hover { border-color:var(--accent2); }
+
+  .dir-header {
+    padding:14px 16px;
+    background:var(--surface2);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:8px;
+  }
+  .dir-name {
+    font-family:'Syne',sans-serif;
+    font-size:15px; font-weight:700;
+    color:var(--text-bright); letter-spacing:.5px;
+  }
+  .dir-meta {
+    font-size:10px; color:var(--text-dim);
+    margin-top:2px; letter-spacing:.5px;
+  }
+  .dir-badges { display:flex; gap:6px; }
+  .badge {
+    font-size:9px; padding:2px 8px;
+    border:1px solid currentColor;
+    text-transform:uppercase; letter-spacing:1px;
+    max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    display:inline-block; vertical-align:middle;
+  }
+  .badge.fabric-a { color:var(--accent2); border-color:rgba(75,159,232,.4); }
+  .badge.fabric-b { color:var(--accent3); border-color:rgba(75,232,160,.4); }
+  .badge.ok       { color:var(--accent3); }
+  .badge.warn     { color:var(--warn);    }
+  .badge.danger   { color:var(--danger);  }
+
+  .dir-body { padding:16px; }
+
+  /* Fill bar */
+  .fill-row {
+    display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .fill-label { font-size:9px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; min-width:46px; }
+  .fill-track {
+    flex:1; height:8px; background:var(--grid);
+    overflow:hidden; position:relative;
+  }
+  .fill-inner {
+    height:100%; transition:width .6s ease;
+  }
+  .fill-inner.ok    { background:linear-gradient(to right, #2b6b40, var(--accent3)); }
+  .fill-inner.warn  { background:linear-gradient(to right, #8c4a00, var(--warn)); }
+  .fill-inner.crit  { background:linear-gradient(to right, #6b1a1a, var(--danger)); }
+  .fill-pct {
+    font-size:11px; color:var(--text); min-width:42px; text-align:right;
+    font-weight:500;
+  }
+
+  /* Speed distribution bar (like OS dist) */
+  .speed-section { margin-bottom:14px; }
+  .speed-bars {
+    display:flex; gap:2px; height:18px;
+    background:var(--grid);
+    margin-bottom:8px;
+  }
+  .speed-seg {
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; color:rgba(0,0,0,.65); font-weight:700;
+    min-width:0; transition:flex .5s;
+    overflow:hidden;
+  }
+  .speed-seg.s8  { background:var(--speed8); }
+  .speed-seg.s16 { background:var(--speed16); }
+  .speed-seg.s32 { background:var(--speed32); }
+  .speed-seg.s64 { background:var(--speed64); }
+  .speed-legend {
+    display:flex; flex-wrap:wrap; gap:8px;
+    font-size:10px; color:var(--text-dim);
+  }
+  .speed-legend-item { display:flex; align-items:center; gap:5px; }
+  .speed-dot { width:8px; height:8px; flex-shrink:0; }
+  .speed-dot.s8  { background:var(--speed8); }
+  .speed-dot.s16 { background:var(--speed16); }
+  .speed-dot.s32 { background:var(--speed32); }
+  .speed-dot.s64 { background:var(--speed64); }
+
+  /* Port stats grid */
+  .stat-grid {
+    display:grid; grid-template-columns:repeat(3, 1fr);
+    gap:8px; margin-bottom:14px;
+  }
+  .stat-cell {
+    background:var(--grid); border:1px solid var(--border);
+    padding:8px 10px; text-align:center;
+  }
+  .stat-cell .v { font-size:18px; color:var(--text-bright); font-weight:500; line-height:1; }
+  .stat-cell .v.green { color:var(--accent3); }
+  .stat-cell .v.blue  { color:var(--accent2); }
+  .stat-cell .l { font-size:9px; color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; margin-top:4px; }
+
+  /* Dir footer */
+  .dir-footer {
+    padding:10px 16px;
+    border-top:1px solid var(--border);
+    background:var(--surface2);
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    font-size:10px; color:var(--text-dim); letter-spacing:.5px;
+  }
+  .dir-footer .key { color:var(--text-dim); }
+  .dir-footer .val { color:var(--text); }
+
+  /* Director alerts (pill) */
+  .dir-alerts {
+    display:flex; gap:6px; flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .alert-tag {
+    font-size:9px; padding:2px 7px;
+    border:1px solid; letter-spacing:1px;
+    text-transform:uppercase;
+    transition:transform .15s, background .2s;
+  }
+  .alert-tag-clickable { cursor:pointer; }
+  .alert-tag-clickable:hover {
+    transform:translateY(-1px);
+    background:rgba(255,255,255,.06);
+  }
+  .alert-tag.warn   { color:var(--warn);   border-color:rgba(232,132,75,.5); background:rgba(232,132,75,.08); }
+  .alert-tag.danger { color:var(--danger); border-color:rgba(232,75,75,.5);  background:rgba(232,75,75,.08); }
+  
+  .director-card { cursor:pointer; }
+
+  /* PORT TABLE */
+  .filter-bar {
+    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center;
+  }
+  
+  /* Active filter chips - alarm tiklamasi ile aktif olur */
+  .active-filter-chips {
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    background:rgba(232,184,75,.08);
+    border:1px solid rgba(232,184,75,.25);
+    border-left:3px solid var(--accent);
+    padding:10px 14px; margin-bottom:14px;
+  }
+  .filter-chip {
+    background:var(--surface2); border:1px solid var(--border);
+    color:var(--text-dim); font-size:10px;
+    padding:3px 10px; letter-spacing:.5px;
+  }
+  .filter-chip strong { color:var(--accent); margin-left:4px; }
+  .filter-chip-clear {
+    background:transparent; border:1px solid var(--text-dim);
+    color:var(--text-dim); font-family:'JetBrains Mono',monospace;
+    font-size:10px; padding:3px 10px; cursor:pointer;
+    letter-spacing:1px; text-transform:uppercase;
+    margin-left:auto; transition:all .2s;
+  }
+  .filter-chip-clear:hover { color:var(--danger); border-color:var(--danger); }
+  .filter-input, .filter-select {
+    background:var(--surface); border:1px solid var(--border);
+    color:var(--text); font-family:'JetBrains Mono',monospace;
+    font-size:11px; padding:6px 10px;
+  }
+  .filter-input { min-width:200px; }
+  .filter-input:focus, .filter-select:focus { outline:none; border-color:var(--accent2); }
+
+  .table-wrap { background:var(--surface); border:1px solid var(--border); max-height:60vh; overflow:auto; }
+  table { width:100%; border-collapse:collapse; font-size:11px; }
+  thead th {
+    position:sticky; top:0;
+    background:var(--surface2); border-bottom:1px solid var(--border);
+    padding:9px 12px; text-align:left; font-size:9px;
+    letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim);
+    font-weight:500; cursor:pointer; user-select:none;
+  }
+  tbody tr { border-bottom:1px solid rgba(30,45,68,.6); transition:background .15s; }
+  tbody tr:hover { background:var(--surface2); }
+  tbody tr.row-err { background:rgba(232,75,75,.04); border-left:2px solid rgba(232,75,75,.35); }
+  tbody tr.row-err:hover { background:rgba(232,75,75,.08); }
+  tbody td { padding:7px 12px; }
+
+  /* Alias - kısa, hover'da full */
+  .td-alias { color:var(--text); max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* WWN kısa */
+  .td-wwn { white-space:nowrap; }
+  .td-wwn-val { font-family:monospace; color:var(--accent3); font-size:10px; letter-spacing:.5px; }
+
+  /* Rol renkleri */
+  .td-role-host    { color:var(--purple); }
+  .td-role-storage { color:var(--accent2); }
+  .td-role-isl     { color:var(--text-dim); }
+  .td-role-free    { color:var(--text-dim); font-style:italic; }
+
+  /* Hata badge'leri - tek sütunda, ne olduğu açık */
+  .err-badge {
+    display:inline-block; font-size:9px; padding:2px 7px;
+    border:1px solid; border-radius:2px;
+    font-weight:600; letter-spacing:.5px;
+    white-space:nowrap; margin-right:3px;
+  }
+  .err-enc  { color:var(--warn);   border-color:rgba(232,132,75,.5); background:rgba(232,132,75,.10); }
+  .err-crc  { color:var(--danger); border-color:rgba(232,75,75,.5);  background:rgba(232,75,75,.10); }
+  .err-disc-alarm   { color:var(--danger); border-color:rgba(232,75,75,.5);  background:rgba(232,75,75,.10); }
+  .err-disc-warning { color:var(--accent); border-color:rgba(232,184,75,.5); background:rgba(232,184,75,.10); }
+  .err-disc { color:var(--accent); border-color:rgba(232,184,75,.5); background:rgba(232,184,75,.10); }
+  .err-sfp  { color:var(--danger); border-color:rgba(232,75,75,.5);  background:rgba(232,75,75,.08); }
+
+  .td-speed {
+    display:inline-block; padding:1px 7px; font-size:10px;
+    font-weight:500;
+  }
+  .td-speed.s8  { background:rgba(232,122,75,.15); color:var(--speed8); }
+  .td-speed.s16 { background:rgba(232,184,75,.15); color:var(--speed16); }
+  .td-speed.s32 { background:rgba(75,232,160,.15); color:var(--speed32); }
+  .td-speed.s64 { background:rgba(75,159,232,.15); color:var(--speed64); }
+  .td-state {
+    display:inline-block; padding:1px 7px; font-size:10px;
+  }
+  .td-state.online  { background:rgba(75,232,160,.15); color:var(--accent3); }
+  .td-state.offline { background:rgba(232,75,75,.15);  color:var(--danger); }
+  .td-state.nolight { background:rgba(90,112,144,.15); color:var(--text-dim); }
+
+  .center-state { text-align:center; padding:60px 20px; color:var(--text-dim); }
+  .center-state .icon { font-size:32px; margin-bottom:14px; opacity:.6; }
+  .center-state p { font-size:12px; line-height:2; letter-spacing:.5px; }
+
+  /* TAB BAR */
+  .tab-bar {
+    display:flex; gap:0; margin-bottom:18px;
+    border-bottom:1px solid var(--border);
+  }
+  .tab-btn {
+    background:transparent; border:none; color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    padding:10px 18px; cursor:pointer;
+    letter-spacing:1.5px; text-transform:uppercase;
+    border-bottom:2px solid transparent;
+    transition:all .2s;
+  }
+  .tab-btn:hover { color:var(--text); }
+  .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+  .tab-page { display:none; }
+  .tab-page.active { display:block; }
+
+  .dash-footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+
+  /* ── CHARTS ── */
+  .charts-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:18px;
+  }
+  .chart-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-left:3px solid var(--border);
+    padding:18px;
+  }
+  .chart-card.cc-gold   { border-left-color:var(--accent); }
+  .chart-card.cc-blue   { border-left-color:var(--accent2); }
+  .chart-card.cc-green  { border-left-color:var(--accent3); }
+  .chart-card.cc-purple { border-left-color:var(--purple); }
+  .chart-card.cc-warn   { border-left-color:var(--warn); }
+  .chart-card.cc-danger { border-left-color:var(--danger); }
+  .chart-card.span2 { grid-column:span 2; }
+  .chart-card.span3 { grid-column:1/-1; }
+
+  .chart-title {
+    font-family:'Syne',sans-serif; font-size:11px; font-weight:700;
+    color:var(--text-bright); letter-spacing:.5px; text-transform:uppercase;
+    margin-bottom:16px;
+  }
+  .chart-sub { font-size:9px; color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; margin-top:2px; }
+
+  /* Donut */
+  .donut-wrap { display:flex; align-items:center; gap:18px; }
+  .donut-legend { flex:1; display:flex; flex-direction:column; gap:6px; }
+  .donut-row { display:flex; align-items:center; gap:8px; font-size:11px; }
+  .donut-swatch { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+  .donut-label { flex:1; color:var(--text-dim); }
+  .donut-val { font-family:'JetBrains Mono',monospace; color:var(--text); font-size:11px; font-weight:500; }
+  .donut-pct { font-size:10px; color:var(--text-dim); margin-left:4px; }
+
+  /* Yatay bar (director bazlı) */
+  .hbar-list { display:flex; flex-direction:column; gap:7px; }
+  .hbar-row { display:flex; align-items:center; gap:10px; }
+  .hbar-label {
+    font-size:10px; color:var(--text-dim);
+    width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    flex-shrink:0;
+  }
+  .hbar-track { flex:1; background:var(--grid); height:10px; overflow:hidden; }
+  .hbar-fill  { height:100%; transition:width .6s ease; }
+  .hbar-val   { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-dim); min-width:50px; text-align:right; }
+
+  /* Stacked speed bar */
+  .sbar-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .sbar-label { font-size:10px; color:var(--text-dim); width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; }
+  .sbar-track { flex:1; display:flex; height:10px; gap:1px; }
+  .sbar-seg { height:100%; min-width:1px; }
+  .sbar-seg.s8  { background:var(--speed8); }
+  .sbar-seg.s16 { background:var(--speed16); }
+  .sbar-seg.s32 { background:var(--speed32); }
+  .sbar-seg.s64 { background:var(--speed64); }
+  .sbar-info { font-size:9px; min-width:90px; text-align:right; color:var(--text-dim); }
+
+  /* Error bar */
+  .errbar-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .errbar-label { font-size:10px; color:var(--text-dim); width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; }
+  .errbar-track { flex:1; background:var(--grid); height:10px; overflow:hidden; }
+  .errbar-fill  { height:100%; background:var(--danger); }
+  .errbar-val   { font-size:10px; color:var(--danger); font-family:'JetBrains Mono',monospace; min-width:30px; text-align:right; }
+
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <a href="./index.html" class="back-link">&larr; Portala Don</a>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="6" width="18" height="4" rx="1"/>
+          <rect x="3" y="14" width="18" height="4" rx="1"/>
+          <circle cx="7" cy="8" r=".5" fill="currentColor"/>
+          <circle cx="11" cy="8" r=".5" fill="currentColor"/>
+          <circle cx="7" cy="16" r=".5" fill="currentColor"/>
+          <circle cx="11" cy="16" r=".5" fill="currentColor"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">Brocade SAN Fabric</div>
+        <div class="brand-sub">Director Fleet Dashboard</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div><span class="live-dot"></span>FABRIC MONITOR</div>
+      <div id="clock">--:--:--</div>
+      <div id="header-count" style="color:var(--text);">-</div>
+    </div>
+  </header>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar" id="statusBar">
+    <div class="status-dot loading" id="statusDot"></div>
+    <span class="status-text" id="statusText">CSV'ler yukleniyor...</span>
+  </div>
+
+  <!-- ALARM BAR -->
+  <div class="alarm-bar" id="alarmBar">
+    <span class="alarm-icon">!</span>
+    <span id="alarmText">-</span>
+    <div class="alarm-pills" id="alarmPills"></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="overview" onclick="setTab('overview', event)">Director'lar</button>
+    <button class="tab-btn" data-tab="ports" onclick="setTab('ports', event)">Port Analizi</button>
+    <button class="tab-btn" data-tab="charts" onclick="setTab('charts', event)">Grafikler</button>
+    <button class="tab-btn" data-tab="zoneaudit" onclick="setTab('zoneaudit', event)">Zone Audit</button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <section class="tab-page active" id="tab-overview">
+    <div class="kpi-row" id="kpiRow"></div>
+    <div class="section-title" id="dirSectionTitle">Director'lar</div>
+    <div class="director-grid" id="dirGrid">
+      <div class="center-state" style="grid-column:1/-1">
+        <div class="icon">&#9203;</div>
+        <p>Veri yukleniyor...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PORTS TAB -->
+  <section class="tab-page" id="tab-ports">
+    <!-- Active filter chips -->
+    <div class="active-filter-chips" id="activeFilterChips" class="sp-hidden"></div>
+    
+    <div class="filter-bar">
+      <input class="filter-input" id="portSearch" placeholder="Switch / alias / WWN ara..." oninput="renderPortTable()">
+      <select class="filter-select" id="filterDir" onchange="renderPortTable()">
+        <option value="">Tum Director'lar</option>
+      </select>
+      <select class="filter-select" id="filterSpeed" onchange="renderPortTable()">
+        <option value="">Tum Hizlar</option>
+        <option>8G</option><option>16G</option><option>32G</option><option>64G</option>
+      </select>
+      <select class="filter-select" id="filterState" onchange="renderPortTable()">
+        <option value="">Tum Durumlar</option>
+        <option>Online</option><option>No_Light</option><option>No_Module</option>
+      </select>
+      <select class="filter-select" id="filterRole" onchange="renderPortTable()">
+        <option value="">Tum Roller</option>
+        <option>Host</option><option>Storage</option><option>ISL</option><option>Free</option>
+      </select>
+      <select class="filter-select" id="filterError" onchange="renderPortTable()">
+        <option value="">Hata Durumu</option>
+        <option value="errors">Sadece hatali portlar</option>
+      </select>
+      <span id="portCount" style="margin-left:auto;font-size:11px;color:var(--text-dim)"></span>
+    </div>
+    <div class="table-wrap">
+      <table id="portTable">
+        <thead><tr>
+          <th>Director</th>
+          <th>Port</th>
+          <th>Alias</th>
+          <th>Hız</th>
+          <th>Durum</th>
+          <th>Rol</th>
+          <th>WWN</th>
+          <th>Hata</th>
+        </tr></thead>
+        <tbody id="portTbody">
+          <tr><td colspan="8"><div class="center-state"><div class="icon">&#9203;</div><p>Veri yukleniyor...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CHARTS TAB -->
+  <section class="tab-page" id="tab-charts">
+    <div class="charts-grid" id="chartsGrid">
+      <div class="center-state" style="grid-column:1/-1">
+        <div class="icon">&#9203;</div>
+        <p>Veri yukleniyor...</p>
+      </div>
+    </div>
+  </section>
+
+
+  <div id="tab-zoneaudit" class="tab-content" class="sp-hidden">
+    <div class="section-title" style="padding:24px 0 12px">Zone Audit — Orphan &amp; Ghost Tespiti</div>
+
+    <div id="za-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px"></div>
+
+    <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <div class="search-box">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="WWN, alias, zone, switch ara..." id="za-search" oninput="renderZoneAudit()"
+          style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 36px 8px 12px;outline:none;width:100%">
+      </div>
+      <select id="za-type" onchange="renderZoneAudit()"
+        style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none">
+        <option value="">Tüm Sorunlar</option>
+        <option value="Orphan HBA">Orphan HBA</option>
+        <option value="Ghost Zone Uyesi">Ghost Zone Üyesi</option>
+      </select>
+      <select id="za-fab" onchange="renderZoneAudit()"
+        style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none">
+        <option value="">Tüm Fabric</option>
+        <option value="A">Fabric A</option>
+        <option value="B">Fabric B</option>
+      </select>
+    </div>
+
+    <div id="za-table-wrap"></div>
+  </div>
+
+  <div class="dash-footer">
+    <span>BROCADE SAN FLEET DASHBOARD</span>
+    <span>POWERSHELL AUTOMATION v2.0</span>
+  </div>
+</div>
+
+<script>
+const CSV_DASH     = './San/SAN_Director_Dashboard.csv';
+const CSV_PORTS    = './San/SAN_Director_Ports.csv';
+const CSV_HOSTS    = './San/SAN_Fabric_Hosts.csv';
+const CSV_ZONEAUDIT= './San/SAN_ZoneAudit.csv';
+
+let directors   = [];
+let ports       = [];
+let fabricHosts = [];
+let zoneAudit   = [];
+
+/* CLOCK */
+(function(){
+  function tick(){
+    document.getElementById('clock').textContent =
+      new Date().toLocaleDateString('tr-TR') + ' · ' + new Date().toLocaleTimeString('tr-TR');
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+/* CSV PARSER */
+
+
+function setStatus(state, msg) {
+  const bar = document.getElementById('statusBar');
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  bar.className = 'status-bar ' + (state === 'ok' ? 'ok' : state === 'error' ? 'error' : '');
+  dot.className = 'status-dot ' + state;
+  txt.className = 'status-text ' + (state === 'error' ? 'error' : state === 'ok' ? 'ok' : '');
+  txt.textContent = msg;
+}
+
+/* TABS */
+function setTab(name, ev) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const tabEl = document.getElementById('tab-' + name);
+  if (tabEl) {
+    if (tabEl.classList.contains('tab-page')) tabEl.classList.add('active');
+    else tabEl.style.display = 'block';
+  }
+  if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
+  else document.querySelector(`.tab-btn[data-tab="${name}"]`)?.classList.add('active');
+  if (name === 'charts'    && directors.length > 0) renderCharts();
+  if (name === 'zoneaudit' && zoneAudit.length === 0) loadZoneAudit();
+  else if (name === 'zoneaudit') renderZoneAudit();
+}
+
+/* ════════════════════════════════════════════════════════════
+   ZONE AUDIT
+════════════════════════════════════════════════════════════ */
+async function loadZoneAudit() {
+  try {
+    const zText = await fetchCSVText(CSV_ZONEAUDIT);
+    zoneAudit = parseCSV(zText).filter(r => (r['Sorun']||'').trim() !== '');
+    renderZoneAudit();
+  } catch { renderZoneAudit(); }
+}
+
+function renderZoneAudit() {
+  const el = document.getElementById('za-table-wrap');
+  const sumEl = document.getElementById('za-summary');
+  if (!el) return;
+
+  if (zoneAudit.length === 0) {
+    sumEl.innerHTML = '';
+    el.innerHTML = spEmptyState({
+      type: 'no-data',
+      title: 'Zone Audit verisi yok',
+      message: 'SAN taraması yapıldığında orphan HBA ve ghost zone üyeleri otomatik tespit edilip burada listelenecek.',
+      hint: 'StorageReport.ps1 -OnlySAN'
+    });
+    return;
+  }
+
+  const search = (document.getElementById('za-search')?.value || '').toLowerCase();
+  const typeF  =  document.getElementById('za-type')?.value || '';
+  const fabF   =  document.getElementById('za-fab')?.value  || '';
+
+  let data = zoneAudit.filter(r =>
+    (!search || r['WWN'].toLowerCase().includes(search) ||
+                (r['Alias']||'').toLowerCase().includes(search) ||
+                (r['Zone']||'').toLowerCase().includes(search)  ||
+                r['SwitchName'].toLowerCase().includes(search)) &&
+    (!typeF || r['Sorun'] === typeF) &&
+    (!fabF  || r['Fabric'] === fabF)
+  );
+
+  const orphans = zoneAudit.filter(r => r['Sorun'] === 'Orphan HBA').length;
+  const ghosts  = zoneAudit.filter(r => r['Sorun'] === 'Ghost Zone Uyesi').length;
+  const fabA    = zoneAudit.filter(r => r['Fabric'] === 'A').length;
+  const fabB    = zoneAudit.filter(r => r['Fabric'] === 'B').length;
+
+  sumEl.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--danger);padding:12px 16px">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Orphan HBA</div>
+      <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:${orphans>0?'var(--danger)':'var(--accent3)'}">${orphans}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Fabric'te var, zone yok</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--warn);padding:12px 16px">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Ghost Zone Üyesi</div>
+      <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:${ghosts>0?'var(--warn)':'var(--accent3)'}">${ghosts}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Zone var, fabric yok</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);padding:12px 16px">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Fabric Dağılım</div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright)">A: ${fabA} &nbsp; B: ${fabB}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">${zoneAudit.length} toplam sorun</div>
+    </div>`;
+
+  if (data.length === 0) {
+    el.innerHTML = spEmptyState({
+      type: 'all-good',
+      title: 'Sorun bulunamadı',
+      message: 'Seçili filtrede orphan HBA veya ghost zone üyesi yok. Fabric temiz görünüyor.'
+    });
+    return;
+  }
+
+  const rows = data.map(r => {
+    const isOrphan = r['Sorun'] === 'Orphan HBA';
+    const sorunColor = isOrphan ? 'var(--danger)' : 'var(--warn)';
+    const fabColor   = r['Fabric'] === 'A' ? 'var(--accent3)' : 'var(--accent2)';
+    return `<tr>
+      <td><span style="color:${sorunColor};font-size:10px;padding:1px 6px;border:1px solid ${sorunColor}40">${esc(r['Sorun'])}</span></td>
+      <td style="color:${fabColor};font-weight:500">${esc(r['Fabric'])}</td>
+      <td class="sp-dim-sm">${esc(r['SwitchName'])}</td>
+      <td style="font-family:monospace;font-size:10px;color:var(--text-bright)">${esc(r['WWN'])}</td>
+      <td style="color:var(--accent2)">${esc(r['Alias']||'—')}</td>
+      <td style="color:var(--text-dim);font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r['Zone']||'—')}</td>
+      <td style="font-size:10px;color:var(--text-dim)">${esc(r['ActiveCfg']||'')}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between">
+      <span>${data.length} sorun</span>
+      <span class="sp-dim-sm">Orphan: zone olmayan fabric üyesi · Ghost: fabric görünmeyen zone üyesi</span>
+    </div>
+    <div style="overflow:auto;max-height:480px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr>
+          <th style="background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Sorun</th>
+          <th style="background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Fabric</th>
+          <th style="background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Switch</th>
+          <th style="background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">WWN</th>
+          <th style="background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Alias</th>
+          <th style="background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Zone(lar)</th>
+          <th style="background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Aktif Cfg</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ========================================================
+   DRILL-DOWN: alarm/KPI tikla -> port filter aktiv
+   ======================================================== */
+function applyPortFilter(opts) {
+  // opts: { switch?, speed?, state?, role?, error?, search? }
+  // Once tum filtreleri sifirla
+  document.getElementById('portSearch').value = opts.search || '';
+  document.getElementById('filterDir').value   = opts.switch || '';
+  document.getElementById('filterSpeed').value = opts.speed  || '';
+  document.getElementById('filterState').value = opts.state  || '';
+  document.getElementById('filterRole').value  = opts.role   || '';
+  
+  // Error filter (yeni)
+  if (opts.error) {
+    document.getElementById('filterError').value = opts.error;
+  } else {
+    document.getElementById('filterError').value = '';
+  }
+  
+  // Aktif filtre rozetlerini guncelle
+  renderActiveFilterChips(opts);
+  
+  // Port Analizi tab'ina gec
+  setTab('ports');
+  
+  // Tablo render
+  renderPortTable();
+  
+  // Sayfanin tepesine yumusakca kay
+  window.scrollTo({ top: 200, behavior: 'smooth' });
+}
+
+function renderActiveFilterChips(opts) {
+  const chipBox = document.getElementById('activeFilterChips');
+  if (!chipBox) return;
+  const chips = [];
+  if (opts.label)   chips.push({ key:'label',  val:opts.label });
+  if (opts.switch)  chips.push({ key:'Director', val:opts.switch });
+  if (opts.speed)   chips.push({ key:'Hiz', val:opts.speed });
+  if (opts.state)   chips.push({ key:'Durum', val:opts.state });
+  if (opts.role)    chips.push({ key:'Rol', val:opts.role });
+  if (opts.error)   chips.push({ key:'Filtre', val:'Hatali portlar' });
+  
+  if (chips.length === 0) {
+    chipBox.innerHTML = '';
+    chipBox.style.display = 'none';
+    return;
+  }
+  
+  chipBox.style.display = 'flex';
+  chipBox.innerHTML = chips.map(c =>
+    `<span class="filter-chip">${c.key === 'label' ? `<strong>${c.val}</strong>` : `${c.key}: <strong>${c.val}</strong>`}</span>`
+  ).join('') + `<button class="filter-chip-clear" onclick="clearFilters()">Temizle</button>`;
+}
+
+function clearFilters() {
+  document.getElementById('portSearch').value = '';
+  document.getElementById('filterDir').value   = '';
+  document.getElementById('filterSpeed').value = '';
+  document.getElementById('filterState').value = '';
+  document.getElementById('filterRole').value  = '';
+  const errSel = document.getElementById('filterError');
+  if (errSel) errSel.value = '';
+  renderActiveFilterChips({});
+  renderPortTable();
+}
+
+/* LOAD */
+async function loadData() {
+  setStatus('loading', 'CSV\'ler yukleniyor...');
+  const results = await Promise.allSettled([
+    fetchCSVText(CSV_DASH),
+    fetchCSVText(CSV_PORTS),
+    fetchCSVText(CSV_HOSTS),
+  ]);
+
+  const errors = [];
+
+  if (results[0].status === 'fulfilled') {
+    directors = parseCSV(results[0].value).map(r => ({
+      lokasyon:   r['Lokasyon'],
+      fabric:     r['Fabric'],
+      name:       r['SwitchName'],
+      ip:         r['IP'],
+      status:     r['Status'],
+      model:      r['Model'],
+      firmware:   r['Firmware'],
+      total:      parseInt(r['TotalPorts'])   || 0,
+      online:     parseInt(r['OnlinePorts'])  || 0,
+      free:       parseInt(r['FreePorts'])    || 0,
+      host:       parseInt(r['HostPorts'])    || 0,
+      storage:    parseInt(r['StoragePorts']) || 0,
+      isl:        parseInt(r['ISLPorts'])     || 0,
+      s8:         parseInt(r['Speed8G'])      || 0,
+      s16:        parseInt(r['Speed16G'])     || 0,
+      s32:        parseInt(r['Speed32G'])     || 0,
+      s64:        parseInt(r['Speed64G'])     || 0,
+      errPorts:   parseInt(r['ErrorPorts'])   || 0,
+      uptime:     r['Uptime'],
+      activeCfg:  r['ActiveCfg'] || '',
+    }));
+  } else errors.push(`Dashboard: ${results[0].reason}`);
+
+  if (results[1].status === 'fulfilled') {
+    ports = parseCSV(results[1].value).map(r => ({
+      lokasyon: r['Lokasyon'],
+      fabric:   r['Fabric'],
+      switch:   r['SwitchName'],
+      idx:      parseInt(r['PortIndex']) || 0,
+      slot:     r['Slot'],
+      port:     r['Port'],
+      speed:    r['Speed'],
+      state:    r['State'],
+      role:     r['Role'],
+      wwn:      r['PortWWN'],
+      alias:    r['Alias'],
+      enc:      r['EncOut'],
+      crc:      r['CRC'],
+      disc:     r['DiscC3'],
+      discLevel:r['DiscC3Level'] || '',
+      sfp:      r['SFP'] || '',
+    }));
+  } else errors.push(`Ports: ${results[1].reason}`);
+
+  if (results[2].status === 'fulfilled') {
+    fabricHosts = parseCSV(results[2].value);
+  } else errors.push(`Hosts: ${results[2].reason}`);
+
+  if (directors.length === 0) {
+    // Ham hata (HTTP 404 / TypeError) kullanıcıya gösterilmez —
+    // sakin, yönlendirici dil. Teknik detay sadece konsola.
+    if (errors.length) console.warn('[san.html] CSV yükleme:', errors.join(' | '));
+    setStatus('error', 'Veri bekleniyor');
+    document.getElementById('dirGrid').innerHTML =
+      '<div style="grid-column:1/-1">' +
+      spEmptyState({
+        type: 'error',
+        title: 'SAN verisi henüz toplanmadı',
+        message: 'Brocade switch taraması yapıldıktan sonra director envanteri, port analizi ve zone audit burada görünecek.',
+        hint: 'StorageReport.ps1 -OnlySAN'
+      }) + '</div>';
+    return;
+  }
+
+  const okCount  = directors.filter(d => d.status === 'OK').length;
+  const errCount = directors.filter(d => d.status !== 'OK').length;
+  const totalPorts  = directors.reduce((s, d) => s + d.total, 0);
+  const onlinePorts = directors.reduce((s, d) => s + d.online, 0);
+  setStatus('ok', `${okCount}/${directors.length} director OK · ${totalPorts} port · ${onlinePorts} online · ${ports.length} port detay · ${fabricHosts.length} host WWN`);
+  document.getElementById('header-count').textContent = `${directors.length} director · ${totalPorts} port`;
+
+  renderKPIs();
+  renderAlarms();
+  renderDirectorCards();
+  populatePortFilter();
+  renderPortTable();
+}
+
+/* ========================================================
+   KPI ROW
+   ======================================================== */
+function renderKPIs() {
+  const total   = directors.reduce((s,d) => s+d.total, 0);
+  const online  = directors.reduce((s,d) => s+d.online, 0);
+  const free    = total - online;
+  const hostP   = directors.reduce((s,d) => s+d.host, 0);
+  const storage = directors.reduce((s,d) => s+d.storage, 0);
+  const isl     = directors.reduce((s,d) => s+d.isl, 0);
+  const s8      = directors.reduce((s,d) => s+d.s8, 0);
+  const s16     = directors.reduce((s,d) => s+d.s16, 0);
+  const s32     = directors.reduce((s,d) => s+d.s32, 0);
+  const s64     = directors.reduce((s,d) => s+d.s64, 0);
+  const errPorts= directors.reduce((s,d) => s+d.errPorts, 0);
+
+  const pct = total > 0 ? Math.round(online / total * 100) : 0;
+  const pctCls = pct >= 85 ? 'danger' : pct >= 70 ? 'warn' : 'green';
+
+  // Her KPI'nin tikladiginda yonlendirecegi filter
+  const kpis = [
+    { lbl:'Total Port',   val:total,    sub:'tum director',    cls:'',     filter:{ label:'Tum Portlar' } },
+    { lbl:'Online',       val:online,   sub:`%${pct} doluluk`, cls:pctCls, filter:{ label:'Online Portlar', state:'Online' } },
+    { lbl:'Free',         val:free,     sub:'kullanilabilir',  cls:'',     filter:{ label:'Free Portlar',   state:'No_Light' } },
+    { lbl:'Host Port',    val:hostP,    sub:'initiator',       cls:'',     filter:{ label:'Host Portlar',    role:'Host' } },
+    { lbl:'Storage Port', val:storage,  sub:'target',          cls:'',     filter:{ label:'Storage Portlar', role:'Storage' } },
+    { lbl:'ISL Port',     val:isl,      sub:'inter-switch',    cls:'',     filter:{ label:'ISL Portlar',     role:'ISL' } },
+    { lbl:'8G Port',      val:s8,       sub:'eski hiz',        cls:s8>0?'danger':'', filter:{ label:'8G Portlar',  speed:'8G', state:'Online' } },
+    { lbl:'16G Port',     val:s16,      sub:'orta hiz',        cls:s16>0?'warn':'',  filter:{ label:'16G Portlar', speed:'16G', state:'Online' } },
+    { lbl:'32G Port',     val:s32,      sub:'standart',        cls:'green',          filter:{ label:'32G Portlar', speed:'32G', state:'Online' } },
+    { lbl:'64G Port',     val:s64,      sub:'yuksek hiz',      cls:'green',          filter:{ label:'64G Portlar', speed:'64G', state:'Online' } },
+    { lbl:'Hata Port',    val:errPorts, sub:'CRC/Enc/Disc',    cls:errPorts>0?'danger':'green', filter:{ label:'Hatali Portlar', error:'errors' } },
+  ];
+
+  document.getElementById('kpiRow').innerHTML = kpis.map((k, i) =>
+    `<div class="kpi ${k.cls} kpi-clickable" onclick="kpiClick(${i})">
+       <div class="kpi-label">${k.lbl}</div>
+       <div class="kpi-value">${k.val.toLocaleString('tr-TR')}</div>
+       <div class="kpi-sub">${k.sub}</div>
+     </div>`
+  ).join('');
+
+  // Filtre objelerini global'e koy ki kpiClick erisebilsin
+  window._kpiFilters = kpis.map(k => k.filter);
+}
+
+function kpiClick(idx) {
+  const f = window._kpiFilters && window._kpiFilters[idx];
+  if (!f) return;
+  applyPortFilter(f);
+}
+
+/* ========================================================
+   ALARMS  (8G alarm, 16G host portu uyari)
+   ======================================================== */
+function renderAlarms() {
+  const bar  = document.getElementById('alarmBar');
+  const pills= document.getElementById('alarmPills');
+  const txt  = document.getElementById('alarmText');
+  const items = [];
+
+  // 8G port alarmi
+  const s8Dirs = directors.filter(d => d.s8 > 0);
+  if (s8Dirs.length > 0) {
+    const totalS8 = s8Dirs.reduce((s,d) => s+d.s8, 0);
+    items.push({
+      severity:'danger',
+      msg:`${totalS8} adet 8G port (${s8Dirs.length} director)`,
+      filter:{ label:'8G Portlar', speed:'8G', state:'Online' }
+    });
+  }
+
+  // 16G host portu uyari
+  const s16Hosts = ports.filter(p => p.speed === '16G' && p.role === 'Host' && p.state === 'Online').length;
+  if (s16Hosts > 0) {
+    items.push({
+      severity:'warn',
+      msg:`${s16Hosts} host port 16G hizinda`,
+      filter:{ label:'16G Host Portlar', speed:'16G', role:'Host', state:'Online' }
+    });
+  }
+
+  // Hata portlari
+  const errDirs = directors.filter(d => d.errPorts > 0);
+  if (errDirs.length > 0) {
+    const totalErr = errDirs.reduce((s,d) => s+d.errPorts, 0);
+    items.push({
+      severity:'danger',
+      msg:`${totalErr} portta hata (${errDirs.length} director)`,
+      filter:{ label:'Hatali Portlar', error:'errors' }
+    });
+  }
+
+  // Unreachable director
+  const unreach = directors.filter(d => d.status !== 'OK');
+  if (unreach.length > 0) {
+    items.push({
+      severity:'danger',
+      msg:`${unreach.length} director ulasilamiyor`,
+      tooltip:unreach.map(d=>d.name).join(', '),
+      filter:null   // Bu icin filter yok, sadece info
+    });
+  }
+
+  // Doluluk
+  const total  = directors.reduce((s,d) => s+d.total, 0);
+  const online = directors.reduce((s,d) => s+d.online, 0);
+  const pct = total > 0 ? Math.round(online / total * 100) : 0;
+  if (pct >= 85) {
+    items.push({
+      severity:'danger',
+      msg:`Port doluluk %${pct} (kritik)`,
+      filter:{ label:'Online Portlar', state:'Online' }
+    });
+  } else if (pct >= 70) {
+    items.push({
+      severity:'warn',
+      msg:`Port doluluk %${pct} (uyari)`,
+      filter:{ label:'Online Portlar', state:'Online' }
+    });
+  }
+
+  if (items.length === 0) {
+    bar.classList.remove('show');
+    return;
+  }
+
+  const hasDanger = items.some(i => i.severity === 'danger');
+  bar.className = 'alarm-bar show ' + (hasDanger ? '' : 'warn');
+  txt.textContent = hasDanger ? 'Kritik alarm tespit edildi - tikla' : 'Uyari mevcut - tikla';
+  
+  // Pill'leri global'e koy
+  window._alarmFilters = items.map(i => i.filter);
+  
+  pills.innerHTML = items.map((i, idx) => {
+    const color = i.severity === 'danger' ? 'var(--danger)' : 'var(--warn)';
+    const clickable = i.filter ? `class="alarm-pill alarm-pill-clickable" onclick="alarmClick(${idx})"` : `class="alarm-pill"`;
+    const tip = i.tooltip ? ` title="${i.tooltip.replace(/"/g,'&quot;')}"` : '';
+    return `<span ${clickable} style="color:${color}"${tip}>${i.msg}</span>`;
+  }).join('');
+}
+
+function alarmClick(idx) {
+  const f = window._alarmFilters && window._alarmFilters[idx];
+  if (!f) return;
+  applyPortFilter(f);
+}
+
+/* ========================================================
+   DIRECTOR CARDS
+   ======================================================== */
+function renderDirectorCards() {
+  const grouped = {};
+  directors.forEach(d => {
+    if (!grouped[d.lokasyon]) grouped[d.lokasyon] = [];
+    grouped[d.lokasyon].push(d);
+  });
+
+  const grid = document.getElementById('dirGrid');
+  grid.innerHTML = '';
+
+  const sectionTitle = document.getElementById('dirSectionTitle');
+  sectionTitle.innerHTML = `Director'lar <span style="font-size:10px;color:var(--text-dim);margin-left:8px">(${directors.length})</span>`;
+
+  // Lokasyon sırası sabit — her lokasyon kendi başlıklı bloğunda
+  const locOrder = ['Istanbul', 'Ankara', 'Kos', 'KristalKule'];
+  const locColors = { Istanbul:'var(--accent2)', Ankara:'var(--accent3)', Kos:'var(--accent)', KristalKule:'var(--purple)' };
+
+  const renderLoc = (loc) => {
+    if (!grouped[loc] || grouped[loc].length === 0) return;
+    grouped[loc].sort((a,b) => a.fabric.localeCompare(b.fabric) || a.name.localeCompare(b.name));
+
+    // Lokasyon başlığı
+    const hdr = document.createElement('div');
+    const col = locColors[loc] || 'var(--text-dim)';
+    const okCount = grouped[loc].filter(d=>d.status==='OK').length;
+    hdr.style.cssText = `grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:8px 0 4px;margin-top:6px`;
+    hdr.innerHTML = `
+      <div style="width:3px;height:20px;background:${col}"></div>
+      <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:${col};letter-spacing:.5px">${loc}</span>
+      <span style="font-size:10px;color:var(--text-dim)">${okCount}/${grouped[loc].length} director</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>`;
+    grid.appendChild(hdr);
+
+    grouped[loc].forEach(d => grid.appendChild(buildDirectorCard(d)));
+  };
+
+  locOrder.forEach(renderLoc);
+
+  // Bilinmeyen lokasyonlar
+  for (const loc of Object.keys(grouped)) {
+    if (!locOrder.includes(loc)) renderLoc(loc);
+  }
+}
+
+function buildDirectorCard(d) {
+  const card = document.createElement('div');
+
+  // Status check
+  if (d.status !== 'OK') {
+    card.className = 'director-card danger';
+    const fabLabel1 = d.activeCfg || `Fabric ${d.fabric}`;
+    card.innerHTML = `
+      <div class="dir-header">
+        <div>
+          <div class="dir-name">${d.name}</div>
+          <div class="dir-meta">${d.lokasyon} / ${fabLabel1}  ·  ${d.ip}</div>
+        </div>
+        <div class="dir-badges">
+          <span class="badge fabric-${d.fabric.toLowerCase()}" title="Fabric ${d.fabric}">${d.activeCfg ? d.activeCfg.substring(0,16) : 'F'+d.fabric}</span>
+          <span class="badge danger">${d.status}</span>
+        </div>
+      </div>
+      <div class="dir-body">
+        <div class="center-state" style="padding:30px 10px">
+          <p style="color:var(--danger)">Director ulasilamadi</p>
+          <p style="font-size:10px;margin-top:8px">${d.status === 'NO_CRED' ? 'Setup-SAN-Credentials.ps1 calistir' : 'Network / SSH kontrol et'}</p>
+        </div>
+      </div>`;
+    return card;
+  }
+
+  const pct = d.total > 0 ? Math.round(d.online / d.total * 100) : 0;
+  const fillCls = pct >= 85 ? 'crit' : pct >= 70 ? 'warn' : 'ok';
+
+  // Speed segments (sadece online port)
+  const segs = [
+    { cls:'s8',  v:d.s8  },
+    { cls:'s16', v:d.s16 },
+    { cls:'s32', v:d.s32 },
+    { cls:'s64', v:d.s64 },
+  ].filter(s => s.v > 0);
+  const speedBars = segs.length > 0
+    ? segs.map(s => `<div class="speed-seg ${s.cls}" style="flex:${s.v}" title="${s.cls.replace('s','').toUpperCase()}G: ${s.v} port">${s.v >= 3 ? s.v : ''}</div>`).join('')
+    : `<div style="flex:1;background:var(--grid);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-dim);letter-spacing:1px">PORT YOK</div>`;
+
+  const speedLegend = [
+    { cls:'s8',  v:d.s8,  label:'8G'  },
+    { cls:'s16', v:d.s16, label:'16G' },
+    { cls:'s32', v:d.s32, label:'32G' },
+    { cls:'s64', v:d.s64, label:'64G' },
+  ].filter(s => s.v > 0)
+   .map(s => `<div class="speed-legend-item"><div class="speed-dot ${s.cls}"></div><span>${s.label}: ${s.v}</span></div>`)
+   .join('');
+
+  // Alerts
+  const alerts = [];
+  if (d.s8 > 0) {
+    alerts.push(`<span class="alert-tag danger alert-tag-clickable" onclick="event.stopPropagation();applyPortFilter({label:'8G - ${d.name}', switch:'${d.name}', speed:'8G', state:'Online'})">${d.s8} adet 8G</span>`);
+  }
+  if (d.errPorts > 0) {
+    alerts.push(`<span class="alert-tag danger alert-tag-clickable" onclick="event.stopPropagation();applyPortFilter({label:'Hata - ${d.name}', switch:'${d.name}', error:'errors'})">${d.errPorts} hata</span>`);
+  }
+  // 16G host portu sayisi
+  const sw16Host = ports.filter(p => p.switch === d.name && p.speed === '16G' && p.role === 'Host' && p.state === 'Online').length;
+  if (sw16Host > 0) {
+    alerts.push(`<span class="alert-tag warn alert-tag-clickable" onclick="event.stopPropagation();applyPortFilter({label:'16G Host - ${d.name}', switch:'${d.name}', speed:'16G', role:'Host', state:'Online'})">${sw16Host} adet 16G host</span>`);
+  }
+  if (d.s8 > 0 || d.s16 > 0) {
+    const hasModern = d.s32 > 0 || d.s64 > 0;
+    if (hasModern) {
+      alerts.push(`<span class="alert-tag warn alert-tag-clickable" onclick="event.stopPropagation();applyPortFilter({label:'Karisik Hiz - ${d.name}', switch:'${d.name}', state:'Online'})">karisik hiz</span>`);
+    }
+  }
+
+  const cardCls = (d.s8 > 0 || d.errPorts > 0) ? 'danger' : (sw16Host > 0 ? 'warn' : '');
+  card.className = 'director-card ' + cardCls;
+  card.onclick = function(e) {
+    // Eger alert tag'a tiklandiysa onun handler'i calissin, kartin degil
+    if (e.target.closest('.alert-tag-clickable')) return;
+    applyPortFilter({ label: d.name + ' Portlari', switch: d.name });
+  };
+
+  // Determine badge class and label based on actual health
+  let statusBadgeCls, statusBadgeLabel;
+  if (d.errPorts > 0 || d.s8 > 0) {
+    statusBadgeCls   = 'danger';
+    statusBadgeLabel = 'CRITICAL';
+  } else if (sw16Host > 0) {
+    statusBadgeCls   = 'warn';
+    statusBadgeLabel = 'WARN';
+  } else {
+    statusBadgeCls   = 'ok';
+    statusBadgeLabel = 'OK';
+  }
+
+  card.innerHTML = `
+    <div class="dir-header">
+      <div>
+        <div class="dir-name">${d.name}</div>
+        <div class="dir-meta">${d.lokasyon} · ${d.ip} · ${d.model || '-'}</div>
+      </div>
+      <div class="dir-badges">
+        <span class="badge fabric-${d.fabric.toLowerCase()}" title="Fabric ${d.fabric}${d.activeCfg ? ' · ' + d.activeCfg : ''}">${d.activeCfg || ('Fabric ' + d.fabric)}</span>
+        <span class="badge ${statusBadgeCls}" title="Status: ${d.status}${d.errPorts > 0 ? ' · ' + d.errPorts + ' error port' : ''}${d.s8 > 0 ? ' · ' + d.s8 + ' × 8G' : ''}">${statusBadgeLabel}</span>
+      </div>
+    </div>
+    <div class="dir-body">
+      <div class="fill-row">
+        <span class="fill-label">PORT</span>
+        <div class="fill-track"><div class="fill-inner ${fillCls}" style="width:${pct}%"></div></div>
+        <span class="fill-pct">%${pct}</span>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-cell"><div class="v green">${d.online}</div><div class="l">Online</div></div>
+        <div class="stat-cell"><div class="v">${d.free}</div><div class="l">Free</div></div>
+        <div class="stat-cell"><div class="v blue">${d.total}</div><div class="l">Total</div></div>
+      </div>
+
+      <div class="speed-section">
+        <div class="speed-bars">${speedBars}</div>
+        <div class="speed-legend">${speedLegend || '<span style="color:var(--text-dim)">Online port yok</span>'}</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-cell"><div class="v">${d.host}</div><div class="l">Host</div></div>
+        <div class="stat-cell"><div class="v">${d.storage}</div><div class="l">Storage</div></div>
+        <div class="stat-cell"><div class="v">${d.isl}</div><div class="l">ISL</div></div>
+      </div>
+
+      ${alerts.length > 0 ? `<div class="dir-alerts">${alerts.join('')}</div>` : ''}
+    </div>
+    <div class="dir-footer">
+      <span><span class="key">FOS:</span> <span class="val">${d.firmware}</span></span>
+      <span><span class="key">UP:</span> <span class="val">${d.uptime || '-'}</span></span>
+      ${d.activeCfg ? `<span title="Aktif CFG"><span class="key">CFG:</span> <span class="val" style="color:var(--accent2)">${d.activeCfg}</span></span>` : ''}
+    </div>`;
+  return card;
+}
+
+/* ========================================================
+   PORT TABLE
+   ======================================================== */
+function populatePortFilter() {
+  const sel = document.getElementById('filterDir');
+  directors.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.name; o.textContent = d.name;
+    sel.appendChild(o);
+  });
+}
+
+/* ──────────────────────────────────────────────────────────
+   PORT TABLE HELPERS
+   ────────────────────────────────────────────────────────── */
+
+/**
+ * Alias temizle:
+ * "SYMMETRIX::000297600649::SAF-11d a::FC::5978_0711+::EMUL B90F0000..."
+ * →  "EMC-600649  SAF-11d a"
+ *
+ * Kısa alias'lar olduğu gibi döner.
+ */
+function cleanAlias(raw) {
+  if (!raw) return '<span style="color:var(--text-dim)">—</span>';
+  const s = raw.trim();
+  if (s.length === 0) return '<span style="color:var(--text-dim)">—</span>';
+
+  // EMUL ile başlayan gereksiz kısmı at (:: sonrası kalan ilk kolon)
+  // Brocade nsshow formatı: VENDOR::SN::PORT::TYPE::FW::EMUL...
+  if (s.includes('::')) {
+    const parts = s.split('::');
+    // [0] VENDOR  [1] Array SN  [2] Port label  [3] FC type  [4..] FW+EMUL (gereksiz)
+    const vendor = (parts[0] || '').trim();
+    const sn     = (parts[1] || '').trim();
+    const port   = (parts[2] || '').trim();
+
+    // Vendor kısaltma
+    const vmap = { SYMMETRIX:'EMC', DORADO:'HW-D', OCEANSTOR:'HW', NETAPP:'NTF', HITACHI:'HIT', PURE:'PURE', 'IBM':'IBM' };
+    let vShort = vendor;
+    for (const [k, v] of Object.entries(vmap)) {
+      if (vendor.toUpperCase().includes(k)) { vShort = v; break; }
+    }
+
+    // SN'i kısalt: son 6 karakter yeterli
+    const snShort = sn.length > 6 ? sn.slice(-6) : sn;
+
+    // Port label + vendor-sn
+    const label = [snShort ? `${vShort}-${snShort}` : vShort, port].filter(Boolean).join('  ');
+    return `<span title="${escH(s)}">${escH(label)}</span>`;
+  }
+
+  // Kısa alias — olduğu gibi
+  return `<span>${escH(s)}</span>`;
+}
+
+/**
+ * WWN kısa format:
+ * "50:00:09:75:98:0a:26:8a" → "50:00..26:8a"
+ */
+function shortWwn(wwn) {
+  if (!wwn) return '<span style="color:var(--text-dim)">—</span>';
+  const w = wwn.trim();
+  if (w.length < 10) return escH(w);
+  // kolon formatındaysa: ilk 2 grup + .. + son 2 grup
+  const parts = w.split(':');
+  if (parts.length === 8) {
+    const short = `${parts[0]}:${parts[1]}..${parts[6]}:${parts[7]}`;
+    return `<span class="td-wwn-val" title="${escH(w)}">${short}</span>`;
+  }
+  // ham hex (16 karakter): ilk 4 + .. + son 4
+  if (w.length === 16) {
+    return `<span class="td-wwn-val" title="${escH(w)}">${w.slice(0,4)}..${w.slice(12)}</span>`;
+  }
+  return `<span title="${escH(w)}">${escH(w.slice(0,12))}…</span>`;
+}
+
+/**
+ * Hata badge:
+ * DiscC3 >= 75 → alarm (kırmızı), 1-74 → warning (sarı)
+ * SFP modval   → alarm (kırmızı SFP badge)
+ */
+function buildErrBadge(enc, crc, disc, discLevel, sfp) {
+  const toNum = v => { const n = parseInt(String(v||'0').replace(/[^\d]/g,'')); return isNaN(n) ? 0 : n; };
+  const eN = toNum(enc), cN = toNum(crc), dN = toNum(disc);
+  const hasSfp = sfp && sfp !== '';
+  if (eN === 0 && cN === 0 && dN === 0 && !hasSfp) return '<span class="sp-dim-sm">—</span>';
+
+  const badges = [];
+  if (eN > 0) badges.push(`<span class="err-badge err-enc" title="Encoding Out hatası">EncOut: ${eN.toLocaleString()}</span>`);
+  if (cN > 0) badges.push(`<span class="err-badge err-crc" title="CRC hatası">CRC: ${cN.toLocaleString()}</span>`);
+  if (dN > 0) {
+    const lvl   = discLevel || (dN >= 75 ? 'alarm' : 'warning');
+    const cls   = lvl === 'alarm' ? 'err-disc-alarm' : 'err-disc-warning';
+    const title = lvl === 'alarm' ? `DiscC3 ALARM (${dN} ≥ 75)` : `DiscC3 UYARI (${dN})`;
+    badges.push(`<span class="err-badge ${cls}" title="${title}">DiscC3: ${dN.toLocaleString()}</span>`);
+  }
+  if (hasSfp) {
+    const sfpTitle = sfp === 'alarm' ? 'SFP Modval ALARM' : 'SFP Uyarı';
+    badges.push(`<span class="err-badge err-sfp" title="${sfpTitle}">⚡ SFP ${sfp.toUpperCase()}</span>`);
+  }
+  return badges.join(' ');
+}
+
+function escH(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderPortTable() {
+  const q     = document.getElementById('portSearch').value.toLowerCase();
+  const dir   = document.getElementById('filterDir').value;
+  const speed = document.getElementById('filterSpeed').value;
+  const state = document.getElementById('filterState').value;
+  const role  = document.getElementById('filterRole').value;
+  const errF  = document.getElementById('filterError').value;
+
+  const rows = ports.filter(p => {
+    if (dir   && p.switch !== dir)   return false;
+    if (speed && p.speed  !== speed) return false;
+    if (state && p.state  !== state) return false;
+    if (role  && p.role   !== role)  return false;
+    if (errF === 'errors') {
+      const hasErr = (p.crc && p.crc !== '0') || (p.enc && p.enc !== '0') || (p.disc && p.disc !== '0') || p.sfp === 'alarm';
+      if (!hasErr) return false;
+    }
+    if (q) {
+      const blob = `${p.switch} ${p.alias} ${p.wwn}`.toLowerCase();
+      if (!blob.includes(q)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('portCount').textContent = `${rows.length.toLocaleString('tr-TR')} port`;
+
+  const tbody = document.getElementById('portTbody');
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="center-state"><div class="icon">&#9906;</div><p>Eslesen port yok</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.slice(0, 2000).map(p => {
+    const spdCls = ({'8G':'s8','16G':'s16','32G':'s32','64G':'s64'})[p.speed] || '';
+    const stCls  = p.state === 'Online' ? 'online'
+                 : (p.state === 'No_Light' || p.state === 'No_Module') ? 'nolight' : 'offline';
+
+    // Alias: VENDOR::SN::PORT::... formatini kirp, sadece anlamli kismi goster
+    const aliasClean = cleanAlias(p.alias);
+
+    // WWN: kisa format  50:00:09:75:98:0a:26:8a -> 50:00..26:8a
+    const wwnShort = shortWwn(p.wwn);
+
+    // Hata: CRC / EncOut / DiscC3 - sadece sifir olmayanlari badge olarak goster
+    const errBadge = buildErrBadge(p.enc, p.crc, p.disc, p.discLevel, p.sfp);
+
+    return `<tr class="${errBadge ? 'row-err' : ''}">
+      <td style="color:var(--text-dim)">${p.switch}</td>
+      <td style="font-family:monospace;color:var(--text)">${p.slot}/${p.port}</td>
+      <td class="td-alias" title="${p.alias || ''}">${aliasClean}</td>
+      <td>${p.speed && p.speed !== '-' ? `<span class="td-speed ${spdCls}">${p.speed}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td><span class="td-state ${stCls}">${p.state}</span></td>
+      <td class="td-role-${(p.role||'free').toLowerCase().replace('/','')}">${p.role || '—'}</td>
+      <td class="td-wwn" title="${p.wwn || ''}">${wwnShort}</td>
+      <td>${errBadge}</td>
+    </tr>`;
+  }).join('');
+
+  if (rows.length > 2000) {
+    tbody.innerHTML += `<tr><td colspan="8" style="text-align:center;padding:14px;color:var(--text-dim);font-size:10px">${rows.length - 2000} port daha · filtre kullan</td></tr>`;
+  }
+}
+
+/* ================================================================
+   CHARTS
+   ================================================================ */
+
+let chartsBuilt = false;
+
+function renderCharts() {
+  if (chartsBuilt) return;
+  chartsBuilt = true;
+
+  const grid = document.getElementById('chartsGrid');
+  grid.innerHTML = '';
+
+  // Toplam sayılar
+  const total   = directors.reduce((s,d)=>s+d.total,0);
+  const online  = directors.reduce((s,d)=>s+d.online,0);
+  const free    = total - online;
+  const s8      = directors.reduce((s,d)=>s+d.s8,0);
+  const s16     = directors.reduce((s,d)=>s+d.s16,0);
+  const s32     = directors.reduce((s,d)=>s+d.s32,0);
+  const s64     = directors.reduce((s,d)=>s+d.s64,0);
+  const hostP   = directors.reduce((s,d)=>s+d.host,0);
+  const storP   = directors.reduce((s,d)=>s+d.storage,0);
+  const islP    = directors.reduce((s,d)=>s+d.isl,0);
+  const errDirs = directors.filter(d=>d.errPorts>0);
+
+  /* ── 1. Port Doluluk Donut ── */
+  const pct = total>0 ? Math.round(online/total*100) : 0;
+  grid.appendChild(makeDonutCard({
+    id:'donut-fill', title:'Port Doluluk', sub:`${pct}% dolu · ${total} toplam`,
+    cls:'cc-blue',
+    segments:[
+      {label:'Online', val:online, color:'var(--accent3)'},
+      {label:'Free',   val:free,   color:'var(--border)'},
+    ]
+  }));
+
+  /* ── 2. Hız Dağılımı Donut ── */
+  grid.appendChild(makeDonutCard({
+    id:'donut-speed', title:'Hız Dağılımı', sub:`${online} online port`,
+    cls:'cc-gold',
+    segments:[
+      {label:'8G',  val:s8,  color:'var(--speed8)'},
+      {label:'16G', val:s16, color:'var(--speed16)'},
+      {label:'32G', val:s32, color:'var(--speed32)'},
+      {label:'64G', val:s64, color:'var(--speed64)'},
+    ]
+  }));
+
+  /* ── 3. Rol Dağılımı Donut ── */
+  grid.appendChild(makeDonutCard({
+    id:'donut-role', title:'Rol Dağılımı', sub:`online portlar`,
+    cls:'cc-purple',
+    segments:[
+      {label:'Host',    val:hostP, color:'var(--purple)'},
+      {label:'Storage', val:storP, color:'var(--accent2)'},
+      {label:'ISL',     val:islP,  color:'var(--accent)'},
+    ]
+  }));
+
+  /* ── 4. Director bazlı Port Doluluk ── */
+  const sorted4 = [...directors].filter(d=>d.status==='OK').sort((a,b)=>{
+    const pa = a.total>0?a.online/a.total:0;
+    const pb = b.total>0?b.online/b.total:0;
+    return pb - pa;
+  });
+  const card4 = makeCard('cc-blue span2', 'Director Port Doluluk', 'online / toplam');
+  const hList4 = document.createElement('div');
+  hList4.className = 'hbar-list';
+  sorted4.forEach(d => {
+    const pct2 = d.total>0 ? Math.round(d.online/d.total*100) : 0;
+    const col  = pct2>=85?'var(--danger)':pct2>=70?'var(--warn)':'var(--accent3)';
+    hList4.innerHTML += `<div class="hbar-row">
+      <div class="hbar-label" title="${d.name}">${d.name}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${pct2}%;background:${col}"></div></div>
+      <div class="hbar-val">${d.online}/${d.total} &nbsp;<span style="color:${col}">${pct2}%</span></div>
+    </div>`;
+  });
+  card4.appendChild(hList4);
+  grid.appendChild(card4);
+
+  /* ── 5. Hatalı Director ── */
+  const card5 = makeCard('cc-danger', 'Hata Port Sayısı', 'director bazlı');
+  if (errDirs.length === 0) {
+    card5.innerHTML += '<div style="color:var(--accent3);font-size:12px;padding:20px 0;text-align:center">&#10003; Hata Tespit Edilmedi</div>';
+  } else {
+    const eList = document.createElement('div');
+    eList.className = 'hbar-list';
+    const maxErr = Math.max(...errDirs.map(d=>d.errPorts));
+    errDirs.sort((a,b)=>b.errPorts-a.errPorts).forEach(d => {
+      eList.innerHTML += `<div class="errbar-row">
+        <div class="errbar-label" title="${d.name}">${d.name}</div>
+        <div class="errbar-track"><div class="errbar-fill" style="width:${Math.round(d.errPorts/maxErr*100)}%"></div></div>
+        <div class="errbar-val">${d.errPorts}</div>
+      </div>`;
+    });
+    card5.appendChild(eList);
+  }
+  grid.appendChild(card5);
+
+  /* ── 6. Director bazlı Hız Dağılımı (stacked) ── */
+  const card6 = makeCard('cc-gold span3', 'Director Bazlı Hız Dağılımı', '8G / 16G / 32G / 64G — sadece online portlar');
+  const sList = document.createElement('div');
+  const maxOnline = Math.max(...directors.map(d=>d.online), 1);
+  directors.filter(d=>d.status==='OK').sort((a,b)=>a.lokasyon.localeCompare(b.lokasyon)||a.name.localeCompare(b.name))
+    .forEach(d => {
+      const tot = d.online || 1;
+      const segs = [
+        {cls:'s8',  v:d.s8},
+        {cls:'s16', v:d.s16},
+        {cls:'s32', v:d.s32},
+        {cls:'s64', v:d.s64},
+      ].map(s=>`<div class="sbar-seg ${s.cls}" style="flex:${s.v||0};min-width:${s.v?1:0}px" title="${s.cls.replace('s','').toUpperCase()}G: ${s.v}"></div>`).join('');
+
+      const infoparts = [];
+      if (d.s8)  infoparts.push(`<span style="color:var(--speed8)">${d.s8}×8G</span>`);
+      if (d.s16) infoparts.push(`<span style="color:var(--speed16)">${d.s16}×16G</span>`);
+      if (d.s32) infoparts.push(`<span style="color:var(--speed32)">${d.s32}×32G</span>`);
+      if (d.s64) infoparts.push(`<span style="color:var(--speed64)">${d.s64}×64G</span>`);
+
+      sList.innerHTML += `<div class="sbar-row">
+        <div class="sbar-label" title="${d.name} [${d.lokasyon}]">${d.name}</div>
+        <div class="sbar-track">${segs||'<div style="flex:1;background:var(--grid)"></div>'}</div>
+        <div class="sbar-info">${infoparts.join(' ')}</div>
+      </div>`;
+    });
+  card6.appendChild(sList);
+  grid.appendChild(card6);
+}
+
+/* ── DONUT HELPER ── */
+function makeDonutCard({id, title, sub, cls, segments}) {
+  const card = makeCard(cls, title, sub);
+  const wrap = document.createElement('div');
+  wrap.className = 'donut-wrap';
+
+  const total = segments.reduce((s,x)=>s+x.val, 0) || 1;
+  const R=42, cx=55, cy=55, sw=16;
+  let angle = -Math.PI/2;
+
+  const svgEl = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svgEl.setAttribute('width','110'); svgEl.setAttribute('height','110');
+  svgEl.setAttribute('viewBox','0 0 110 110');
+
+  segments.forEach(seg => {
+    if (!seg.val) return;
+    const a = (seg.val/total)*2*Math.PI;
+    const x1=cx+R*Math.cos(angle), y1=cy+R*Math.sin(angle);
+    const x2=cx+R*Math.cos(angle+a), y2=cy+R*Math.sin(angle+a);
+    const large = a>Math.PI?1:0;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${cx},${cy} L${x1},${y1} A${R},${R} 0 ${large},1 ${x2},${y2} Z`);
+    // CSS değişkeni SVG'de direkt çalışmaz, inline style ile geç
+    path.setAttribute('style',`fill:${seg.color};opacity:.9`);
+    svgEl.appendChild(path);
+    angle += a;
+  });
+  // Donut deliği
+  const hole = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  hole.setAttribute('cx',cx); hole.setAttribute('cy',cy);
+  hole.setAttribute('r',R-sw); hole.setAttribute('fill','#0d1420');
+  svgEl.appendChild(hole);
+  // Merkez metin
+  const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+  txt.setAttribute('x',cx); txt.setAttribute('y',cy+4);
+  txt.setAttribute('text-anchor','middle');
+  txt.setAttribute('fill','#e8f2ff');
+  txt.setAttribute('font-family','JetBrains Mono, monospace');
+  txt.setAttribute('font-size','11');
+  txt.textContent = total.toLocaleString('tr-TR');
+  svgEl.appendChild(txt);
+
+  wrap.appendChild(svgEl);
+
+  const legend = document.createElement('div');
+  legend.className = 'donut-legend';
+  segments.forEach(seg => {
+    const pct = Math.round(seg.val/total*100);
+    legend.innerHTML += `<div class="donut-row">
+      <div class="donut-swatch" style="background:${seg.color}"></div>
+      <span class="donut-label">${seg.label}</span>
+      <span class="donut-val">${seg.val.toLocaleString('tr-TR')}</span>
+      <span class="donut-pct">${pct}%</span>
+    </div>`;
+  });
+  wrap.appendChild(legend);
+  card.appendChild(wrap);
+  return card;
+}
+
+function makeCard(cls, title, sub) {
+  const card = document.createElement('div');
+  card.className = `chart-card ${cls}`;
+  card.innerHTML = `<div class="chart-title">${title}${sub?`<div class="chart-sub">${sub}</div>`:''}</div>`;
+  return card;
+}
+
+loadData();
+
+/* Veri tazeliği rozeti */
+renderFreshnessBadge('data-fresh-badge', ['./San/SAN_Director_Dashboard.csv', './San/SAN_Director_Ports.csv']);
+
+</script>
+</body>
+</html>

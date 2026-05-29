@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<link rel="stylesheet" href="./storage-styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trend Analizi · Storage Portal</title>
+<style>
+
+:root{
+
+  --bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d44;
+
+  --accent:#e8b84b;--accent2:#4b9fe8;--accent3:#4be8a0;
+
+  --danger:#e84b4b;--warn:#e8844b;--purple:#c084fc;
+
+  --text:#c8d8f0;--text-dim:#5a7090;--text-bright:#e8f2ff;--grid:#0f1928;
+
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
+
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.22) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
+
+.back-link{display:inline-block;margin-bottom:14px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;}
+
+.back-link:hover{color:var(--accent2);}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+
+.brand{display:flex;align-items:center;gap:14px;}
+
+.brand-icon{width:42px;height:42px;border:2px solid var(--accent3);display:grid;place-items:center;}
+
+.brand-icon svg{width:22px;height:22px;stroke:var(--accent3);fill:none;stroke-width:1.5;stroke-linecap:round;}
+
+.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
+
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+
+/* KONTROL BARI */
+
+.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+
+.ctrl-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);white-space:nowrap;}
+
+.sbtn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:6px 12px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+
+.sbtn.active{color:var(--accent);border-color:var(--accent);background:rgba(232,184,75,.08);}
+
+.sbtn.a2.active{color:var(--accent2);border-color:var(--accent2);background:rgba(75,159,232,.08);}
+
+.sbtn.a3.active{color:var(--accent3);border-color:var(--accent3);background:rgba(75,232,160,.08);}
+
+.sbtn.aw.active{color:var(--warn);border-color:var(--warn);background:rgba(232,132,75,.08);}
+
+.sbtn.ap.active{color:var(--purple);border-color:var(--purple);background:rgba(192,132,252,.08);}
+
+.sbtn.ar.active{color:var(--danger);border-color:var(--danger);background:rgba(232,75,75,.08);}
+
+.sbtn.ac.active{color:#00b4d8;border-color:#00b4d8;background:rgba(0,180,216,.08);}
+
+.sbtn:hover:not(.active){border-color:var(--text-dim);color:var(--text);}
+
+.badge-cnt{font-size:9px;padding:1px 5px;background:var(--surface2);border:1px solid var(--border);margin-left:4px;}
+
+/* DELTA BANT */
+
+.delta-band{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+
+.dc{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--border);padding:12px 16px;}
+
+.dc.up  {border-left-color:var(--danger);}
+
+.dc.down{border-left-color:var(--accent3);}
+
+.dc.info{border-left-color:var(--accent2);}
+
+.dc.flat{border-left-color:var(--text-dim);}
+
+.dc-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+
+.dc-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
+
+.dc-sub{font-size:10px;color:var(--text-dim);margin-top:3px;}
+
+.dc-d  {font-size:11px;font-weight:600;margin-top:4px;}
+
+/* CHART */
+
+.chart-wrap{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:20px;}
+
+.chart-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+
+.chart-ttl{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text-bright);}
+
+.chart-sub{font-size:10px;color:var(--text-dim);margin-top:3px;}
+
+.chart-legend{display:flex;gap:14px;font-size:10px;color:var(--text-dim);}
+
+.leg-dot{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:5px;}
+
+/* TABLE */
+
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);overflow:auto;max-height:380px;margin-bottom:20px;}
+
+table{width:100%;border-collapse:collapse;font-size:11px;}
+
+thead{position:sticky;top:0;z-index:2;}
+
+th{background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+
+td{padding:7px 10px;border-bottom:1px solid rgba(30,45,68,.5);}
+
+tr:hover td{background:rgba(255,255,255,.02);}
+
+.tu{color:var(--danger);font-weight:500;}
+
+.td{color:var(--accent3);font-weight:500;}
+
+/* EMPTY */
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:58vh;text-align:center;color:var(--text-dim);}
+
+.empty .ico{font-size:36px;margin-bottom:12px;}
+
+/* LOADING BAR */
+
+.loading-bar{background:var(--surface);border:1px solid var(--border);padding:14px 18px;margin-bottom:16px;font-size:11px;color:var(--text-dim);}
+
+.loading-bar progress{width:100%;height:4px;margin-top:8px;appearance:none;}
+
+.loading-bar progress::-webkit-progress-bar{background:var(--grid);}
+
+.loading-bar progress::-webkit-progress-value{background:var(--accent2);}
+
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
+</style>
+</head>
+<body>
+<div class="shell">
+<a href="./index.html" class="back-link">&larr; Portala Don</a>
+<header>
+<div class="brand">
+<div class="brand-icon">
+<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+</div>
+<div>
+<div class="brand-title">Trend Analizi</div>
+<div class="brand-sub">30 Günlük Kapasite & Host Değişim Takibi</div>
+</div>
+</div>
+<div style="text-align:right;font-size:11px;color:var(--text-dim);line-height:2">
+<div id="dateRange">—</div>
+<div id="dataInfo" style="font-size:10px">Yükleniyor...</div>
+</div>
+</header>
+<!-- VENDOR -->
+<div class="ctrl-row">
+<span class="ctrl-label">Vendor</span>
+<button class="sbtn active"    data-action="vendor" data-v="huawei">Huawei   <span class="badge-cnt" id="bc-huawei">—</span></button>
+<button class="sbtn a2"        data-action="vendor" data-v="pmax">PowerMax <span class="badge-cnt" id="bc-pmax">—</span></button>
+<button class="sbtn a3"        data-action="vendor" data-v="purefa">Pure FA  <span class="badge-cnt" id="bc-purefa">—</span></button>
+<button class="sbtn ap"        data-action="vendor" data-v="purefb">Pure FB  <span class="badge-cnt" id="bc-purefb">—</span></button>
+<button class="sbtn ac"        data-action="vendor" data-v="netapp">NetApp   <span class="badge-cnt" id="bc-netapp">—</span></button>
+<button class="sbtn aw"        data-action="vendor" data-v="ecs">ECS      <span class="badge-cnt" id="bc-ecs">—</span></button>
+<button class="sbtn ar"        data-action="vendor" data-v="san">SAN      <span class="badge-cnt" id="bc-san">—</span></button>
+</div>
+<!-- KABİNET -->
+<div class="ctrl-row" id="cabRow" style="display:none">
+<span class="ctrl-label">Kabinet</span>
+<div id="cabBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+</div>
+<!-- METRİK -->
+<div class="ctrl-row" id="metRow" style="display:none">
+<span class="ctrl-label">Metrik</span>
+<div id="metBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+</div>
+<!-- LOADING -->
+<div class="loading-bar" id="loadBar" style="display:none">
+<span id="loadMsg">Yükleniyor...</span>
+<progress id="loadProg" max="30" value="0"></progress>
+</div>
+<!-- DELTA -->
+<div class="delta-band" id="deltaBand" style="display:none"></div>
+<!-- CHART -->
+<div class="chart-wrap" id="chartWrap" style="display:none">
+<div class="chart-hdr">
+<div>
+<div class="chart-ttl" id="chartTtl"></div>
+<div class="chart-sub" id="chartSub"></div>
+</div>
+<div class="chart-legend" id="chartLeg"></div>
+</div>
+<canvas id="cv" height="260"></canvas>
+</div>
+<!-- TABLO -->
+<div id="tblWrap" style="display:none">
+<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Günlük Değerler (Yeniden Eskiye)</div>
+<div class="tbl-wrap"><div id="tblInner"></div></div>
+</div>
+<!-- EMPTY -->
+<div class="empty" id="emptyMsg">
+<div style="color:var(--accent3);opacity:0.55;margin-bottom:14px">
+<svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3.5-4 3 3L20 6"/></svg>
+</div>
+<div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text-bright)">Trend için vendor seçin</div>
+<p style="font-size:12px;color:var(--text-dim);max-width:400px;line-height:1.6;margin-top:6px">Yukarıdan bir vendor seçtiğinizde 30 günlük kapasite ve host değişim grafikleri burada görünecek.</p>
+<div style="font-size:10px;color:var(--text-dim);opacity:0.7;margin-top:12px;font-family:'JetBrains Mono',monospace;padding:5px 10px;border:1px solid var(--border)">Her tarama _history/ klasörüne snapshot ekler</div>
+</div>
+<div id="tooltip" style="position:fixed;display:none;background:var(--surface2);border:1px solid var(--border);color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 12px;pointer-events:none;z-index:999;white-space:nowrap;"></div>
+<script src="./storage-utils.js"></script>
+<script>
+
+/* ══════════════════════════════════════════════
+
+   VENDOR KONFİG
+
+══════════════════════════════════════════════ */
+
+const VCFG = {
+
+  huawei: {
+
+    label:'Huawei', color:'#e8b84b', cls:'',
+
+    hist:'./Hw/_history/Dorado_Dashboard_{D}.csv',
+
+    cabCol:'Kabinet',
+
+    metrics:[
+
+      {id:'used',  lbl:'Kullanılan (TB)', col:'Used (TB)',     clr:'#4b9fe8', unit:'TB', type:'area'},
+
+      {id:'total', lbl:'Toplam (TB)',      col:'Total (TB)',    clr:'#e8b84b', unit:'TB', type:'line'},
+
+      {id:'pct',   lbl:'Doluluk %',        col:'Doluluk (%)',  clr:'#e8844b', unit:'%',  type:'area'},
+
+      {id:'dr',    lbl:'Data Reduction',   col:'Data Reduction',clr:'#4be8a0',unit:'x',  type:'line'},
+
+      {id:'hosts', lbl:'Host Sayısı',      col:'Host Sayisi',  clr:'#c084fc', unit:'',   type:'bar' },
+
+    ],
+
+    skipRows: r => ['===','---'].includes(r.Lokasyon) || /^(TOPLAM|GENEL)/i.test(r.Kabinet||''),
+
+  },
+
+  pmax:{
+
+    label:'PowerMax', color:'#4b9fe8', cls:'a2',
+
+    hist:'./Pmax/_history/PmaxPoolDash_{D}.csv',
+
+    cabCol:'Array ID',
+
+    metrics:[
+
+      {id:'used',  lbl:'Kullanılan (TB)', col:'Used (TB)',    clr:'#4b9fe8', unit:'TB', type:'area'},
+
+      {id:'total', lbl:'Toplam (TB)',      col:'Total (TB)',   clr:'#e8b84b', unit:'TB', type:'line'},
+
+      {id:'pct',   lbl:'Doluluk %',        col:'Doluluk (%)', clr:'#e8844b', unit:'%',  type:'area'},
+
+      {id:'dr',    lbl:'Data Reduction',   col:'Data Reduction',clr:'#4be8a0',unit:'x', type:'line'},
+
+      {id:'hosts', lbl:'Host Sayısı',      col:'Host Sayisi', clr:'#c084fc', unit:'',   type:'bar' },
+
+    ],
+
+    skipRows: r => ['===','---'].includes(r.Lokasyon) || /^(TOPLAM|GENEL)/i.test(r['Array ID']||''),
+
+  },
+
+  purefa:{
+
+    label:'Pure FA', color:'#4be8a0', cls:'a3',
+
+    hist:'./Pure/_history/Pure_Dashboard_{D}.csv',
+
+    cabCol:'Kabinet',
+
+    metrics:[
+
+      {id:'used',  lbl:'Kullanılan (TB)', col:'Used (TB)',    clr:'#4b9fe8', unit:'TB', type:'area'},
+
+      {id:'total', lbl:'Toplam (TB)',      col:'Total (TB)',   clr:'#e8b84b', unit:'TB', type:'line'},
+
+      {id:'pct',   lbl:'Doluluk %',        col:'Doluluk (%)', clr:'#e8844b', unit:'%',  type:'area'},
+
+      {id:'dr',    lbl:'Data Reduction',   col:'Data Reduction',clr:'#4be8a0',unit:'x', type:'line'},
+
+      {id:'hosts', lbl:'Host Sayısı',      col:'Host Sayisi', clr:'#c084fc', unit:'',   type:'bar' },
+
+    ],
+
+    skipRows: r => ['===','---'].includes(r.Lokasyon) || /^(TOPLAM|GENEL)/i.test(r.Kabinet||''),
+
+  },
+
+  purefb:{
+
+    label:'Pure FB', color:'#c084fc', cls:'ap',
+
+    hist:'./Pure/_history/FB_Dashboard_{D}.csv',
+
+    cabCol:'Kabinet',
+
+    metrics:[
+
+      {id:'used',  lbl:'Kullanılan (TB)', col:'Used (TB)',   clr:'#4b9fe8', unit:'TB', type:'area'},
+
+      {id:'total', lbl:'Toplam (TB)',      col:'Total (TB)',  clr:'#e8b84b', unit:'TB', type:'line'},
+
+      {id:'pct',   lbl:'Doluluk %',        col:'Doluluk (%)',clr:'#e8844b', unit:'%',  type:'area'},
+
+      {id:'hosts', lbl:'Bucket Sayısı',    col:'Host Sayisi',clr:'#c084fc', unit:'',   type:'bar' },
+
+    ],
+
+    skipRows: r => ['===','---'].includes(r.Lokasyon) || /^(TOPLAM|GENEL)/i.test(r.Kabinet||''),
+
+  },
+
+  netapp:{
+
+    label:'NetApp', color:'#00b4d8', cls:'ac',
+
+    hist:'./NetApp/_history/NetApp_Dashboard_{D}.csv',
+
+    cabCol:'Kabinet',
+
+    metrics:[
+
+      {id:'used',  lbl:'Kullanılan (TB)', col:'Used (TB)',   clr:'#4b9fe8', unit:'TB', type:'area'},
+
+      {id:'total', lbl:'Toplam (TB)',      col:'Total (TB)',  clr:'#e8b84b', unit:'TB', type:'line'},
+
+      {id:'pct',   lbl:'Doluluk %',        col:'Doluluk (%)',clr:'#e8844b', unit:'%',  type:'area'},
+
+      {id:'dr',    lbl:'Data Reduction',   col:'Data Reduction',clr:'#4be8a0',unit:'x',type:'line'},
+
+    ],
+
+    skipRows: r => ['===','---'].includes(r.Lokasyon) || /^(TOPLAM|GENEL)/i.test(r.Kabinet||''),
+
+  },
+
+  ecs:{
+
+    label:'ECS', color:'#e8844b', cls:'aw',
+
+    hist:'./Ecs/_history/ECS_Dashboard_{D}.csv',
+
+    cabCol: null,
+
+    metrics:[
+
+      {id:'used',  lbl:'Kullanılan (GiB)', col:'Used (GiB)',  clr:'#4b9fe8', unit:'GiB', type:'area'},
+
+      {id:'total', lbl:'Toplam (GiB)',      col:'Total (GiB)', clr:'#e8b84b', unit:'GiB', type:'line'},
+
+      {id:'pct',   lbl:'Doluluk %',         col:'Doluluk (%)', clr:'#e8844b', unit:'%',   type:'area'},
+
+      {id:'hosts', lbl:'Bucket Sayısı',     col:'Bucket Sayisi',clr:'#c084fc',unit:'',    type:'bar' },
+
+    ],
+
+    skipRows: () => false,
+
+  },
+
+  san:{
+
+    label:'SAN', color:'#e84b4b', cls:'ar',
+
+    hist:'./San/_history/SAN_Director_Dashboard_{D}.csv',
+
+    cabCol:'SwitchName',
+
+    metrics:[
+
+      {id:'online',   lbl:'Online Port',   col:'OnlinePorts',  clr:'#4be8a0', unit:'', type:'area'},
+
+      {id:'isl',      lbl:'ISL Port',      col:'ISLPorts',     clr:'#4b9fe8', unit:'', type:'line'},
+
+      {id:'host',     lbl:'Host Port',     col:'HostPorts',    clr:'#c084fc', unit:'', type:'bar' },
+
+      {id:'storage',  lbl:'Storage Port',  col:'StoragePorts', clr:'#e8b84b', unit:'', type:'bar' },
+
+      {id:'err',      lbl:'Hatalı Port',   col:'ErrorPorts',   clr:'#e84b4b', unit:'', type:'bar' },
+
+    ],
+
+    skipRows: r => r.Status === 'UNREACHABLE',
+
+  },
+
+};
+
+/* ══════════════════════════════════════════════
+
+   STATE
+
+══════════════════════════════════════════════ */
+
+let S = {
+
+  vendor : 'huawei',
+
+  cab    : null,
+
+  metric : null,
+
+  data   : {},
+
+};
+
+/* ══════════════════════════════════════════════
+
+   YARDIMCI
+
+══════════════════════════════════════════════ */
+
+// HTML escape — kabinet adlarında özel karakter olabilir
+
+/* CSV parser — RFC4180 uyumlu (escaped quote "" destekli) */
+
+const parseCSV = txt => {
+
+  if (!txt || !txt.trim()) return [];
+
+  const lines = txt.split(/\r?\n/).filter(l => l.trim());
+
+  if (lines.length < 2) return [];
+
+  const hdrs = splitCSV(lines[0]);
+
+  return lines.slice(1).map(l => {
+
+    const v = splitCSV(l), r = {};
+
+    hdrs.forEach((h, i) => r[h] = (v[i]||'').trim());
+
+    return r;
+
+  });
+
+};
+
+const splitCSV = l => {
+
+  const r=[]; let c='', q=false;
+
+  for (let i=0;i<l.length;i++) {
+
+    const ch = l[i];
+
+    if (ch==='"') {
+
+      if (q && l[i+1]==='"') { c+='"'; i++; continue; }
+
+      q=!q; continue;
+
+    }
+
+    if (ch===',' && !q) { r.push(c); c=''; continue; }
+
+    c+=ch;
+
+  }
+
+  r.push(c); return r;
+
+};
+
+const toN = v => { const n=parseFloat(String(v||'').replace(',','.')); return isNaN(n)?0:n; };
+
+const fmt = (v,u,d=2) => v===null?'—':`${v.toFixed(d)}${u?' '+u:''}`;
+
+/* 30 günlük tarih dizisi — YEREL saat (UTC değil) */
+
+const dates30 = () => {
+
+  const d=[]; const now=new Date();
+
+  for(let i=29;i>=0;i--){
+
+    const dt=new Date(now);
+
+    dt.setDate(dt.getDate()-i);
+
+    const y=dt.getFullYear();
+
+    const m=String(dt.getMonth()+1).padStart(2,'0');
+
+    const day=String(dt.getDate()).padStart(2,'0');
+
+    d.push(`${y}-${m}-${day}`);
+
+  }
+
+  return d;
+
+};
+
+/* ══════════════════════════════════════════════
+
+   VENDOR YÜKLE
+
+══════════════════════════════════════════════ */
+
+async function loadVendor(vid) {
+
+  if (S.data[vid]) return;
+
+  const cfg = VCFG[vid];
+
+  if (!cfg) {
+
+    console.error(`Bilinmeyen vendor: ${vid}`);
+
+    return;
+
+  }
+
+  const dates = dates30();
+
+  S.data[vid] = [];
+
+  const loadBar = document.getElementById('loadBar');
+
+  const loadProg = document.getElementById('loadProg');
+
+  const loadMsg = document.getElementById('loadMsg');
+
+  loadBar.style.display='block';
+
+  loadProg.max = dates.length;
+
+  loadProg.value = 0;
+
+  let done = 0;
+
+  const tasks = dates.map(d => () =>
+
+    fetchCSVText(cfg.hist.replace('{D}',d))
+
+      .catch(()=>'')
+
+      .then(txt => {
+
+        done++;
+
+        loadProg.value = done;
+
+        loadMsg.textContent = `Yükleniyor: ${d} (${done}/${dates.length})`;
+
+        const rows = parseCSV(txt).filter(r => !cfg.skipRows(r));
+
+        if (rows.length) S.data[vid].push({date:d, rows});
+
+      })
+
+  );
+
+  // Paralel, batch=6
+
+  for(let i=0;i<tasks.length;i+=6){
+
+    await Promise.all(tasks.slice(i,i+6).map(fn=>fn()));
+
+  }
+
+  S.data[vid].sort((a,b)=>a.date.localeCompare(b.date));
+
+  loadBar.style.display='none';
+
+  document.getElementById(`bc-${vid}`).textContent = `${S.data[vid].length}g`;
+
+  if(S.data[vid].length){
+
+    const f=S.data[vid][0].date, l=S.data[vid][S.data[vid].length-1].date;
+
+    document.getElementById('dateRange').textContent=`${f} → ${l}`;
+
+    document.getElementById('dataInfo').textContent=`${S.data[vid].length} günlük snapshot`;
+
+  } else {
+
+    document.getElementById('dateRange').textContent='—';
+
+    document.getElementById('dataInfo').textContent='Veri yok';
+
+  }
+
+}
+
+/* ══════════════════════════════════════════════
+
+   VENDOR SEÇ
+
+══════════════════════════════════════════════ */
+
+async function pickVendor(btn) {
+
+  const vid = btn.dataset.v;
+
+  if (S.vendor===vid && S.data[vid]) return;
+
+  S.vendor=vid; S.cab=null; S.metric=null;
+
+  document.querySelectorAll('[data-v]').forEach(b=>{b.classList.remove('active');});
+
+  btn.classList.add('active');
+
+  hide();
+
+  await loadVendor(vid);
+
+  buildCabRow(vid);
+
+  buildMetRow(vid);
+
+}
+
+/* ══════════════════════════════════════════════
+
+   KABİNET
+
+══════════════════════════════════════════════ */
+
+function buildCabRow(vid){
+
+  const cfg=VCFG[vid]; const data=S.data[vid]||[];
+
+  const cabRow=document.getElementById('cabRow');
+
+  if(!cfg.cabCol || data.length===0){cabRow.style.display='none';return;}
+
+  const cabs=[...new Set(data.flatMap(d=>d.rows.map(r=>r[cfg.cabCol])).filter(c=>c&&c!=='TOPLAM'))].sort();
+
+  const bb=document.getElementById('cabBtns');
+
+  if (cabs.length<=1) {
+
+    cabRow.style.display='none';
+
+    return;
+
+  }
+
+  bb.innerHTML = `<button class="sbtn active" data-action="cab" data-cab="">Tüm Kabinetler</button>` +
+
+    cabs.map(c=>`<button class="sbtn" data-action="cab" data-cab="${esc(c)}">${esc(c)}</button>`).join('');
+
+  cabRow.style.display='flex';
+
+}
+
+function pickCab(cab,btn){
+
+  S.cab = cab || null;
+
+  document.querySelectorAll('#cabBtns .sbtn').forEach(b=>b.classList.remove('active'));
+
+  btn.classList.add('active');
+
+  if(S.metric) render();
+
+}
+
+/* ══════════════════════════════════════════════
+
+   METRİK
+
+══════════════════════════════════════════════ */
+
+function buildMetRow(vid){
+
+  const cfg=VCFG[vid];
+
+  const bb=document.getElementById('metBtns');
+
+  bb.innerHTML=cfg.metrics.map(m=>`<button class="sbtn" data-action="met" data-m="${esc(m.id)}">${esc(m.lbl)}</button>`).join('');
+
+  document.getElementById('metRow').style.display='flex';
+
+  pickMet(cfg.metrics[0].id, bb.firstElementChild);
+
+}
+
+function pickMet(mid,btn){
+
+  S.metric=mid;
+
+  document.querySelectorAll('#metBtns .sbtn').forEach(b=>b.classList.remove('active'));
+
+  if(btn) btn.classList.add('active');
+
+  render();
+
+}
+
+/* ══════════════════════════════════════════════
+
+   SERİ OLUŞTUR
+
+══════════════════════════════════════════════ */
+
+function buildSeries(){
+
+  const cfg=VCFG[S.vendor]; const data=S.data[S.vendor]||[];
+
+  const m=cfg.metrics.find(x=>x.id===S.metric);
+
+  if(!m||data.length===0) return null;
+
+  const pts=data.map(d=>{
+
+    let rows=d.rows;
+
+    if(S.cab && cfg.cabCol) rows=rows.filter(r=>r[cfg.cabCol]===S.cab);
+
+    if(!rows.length) return {date:d.date, val:null};
+
+    let val;
+
+    if(m.id==='pct'||m.id==='dr'){
+
+      const ns=rows.map(r=>toN(r[m.col])).filter(n=>n>0);
+
+      val=ns.length?ns.reduce((a,b)=>a+b,0)/ns.length:0;
+
+    } else {
+
+      val=rows.reduce((s,r)=>s+toN(r[m.col]),0);
+
+    }
+
+    return {date:d.date, val:Math.round(val*100)/100};
+
+  });
+
+  return {cfg,m,pts};
+
+}
+
+/* ══════════════════════════════════════════════
+
+   REGRESYON & PROJEKSİYON
+
+══════════════════════════════════════════════ */
+
+function linearRegression(pts) {
+
+  const n = pts.length;
+
+  if (n < 3) return null;
+
+  let sumX=0, sumY=0, sumXY=0, sumXX=0;
+
+  pts.forEach((p,i)=>{ sumX+=i; sumY+=p.val; sumXY+=i*p.val; sumXX+=i*i; });
+
+  const denom = n*sumXX - sumX*sumX;
+
+  if (denom === 0) return null;
+
+  const slope = (n*sumXY - sumX*sumY) / denom;
+
+  const intercept = (sumY - slope*sumX) / n;
+
+  return { slope, intercept };
+
+}
+
+/* ══════════════════════════════════════════════
+
+   DELTA BANT
+
+══════════════════════════════════════════════ */
+
+function renderDelta(ser){
+
+  const pts=ser.pts.filter(p=>p.val!==null);
+
+  const band=document.getElementById('deltaBand');
+
+  if(pts.length<2){band.style.display='none';return;}
+
+  const last=pts[pts.length-1], first=pts[0], u=ser.m.unit;
+
+  const prev7=pts.length>=8?pts[pts.length-8]:pts[0];
+
+  const delta30=last.val-first.val, pct30=first.val>0?delta30/first.val*100:0;
+
+  const delta7=last.val-prev7.val,  pct7=prev7.val>0?delta7/prev7.val*100:0;
+
+  const maxV=Math.max(...pts.map(p=>p.val)), minV=Math.min(...pts.map(p=>p.val));
+
+  const dir=(v)=>v>0.01?'up':v<-0.01?'down':'flat';
+
+  const arr=(v)=>v>0.01?'▲':v<-0.01?'▼':'—';
+
+  const clr=(v)=>v>0.01?'var(--danger)':v<-0.01?'var(--accent3)':'var(--text-dim)';
+
+  const reg = linearRegression(pts);
+
+  let projHtml = '';
+
+  if (reg && reg.slope > 0 && ser.m.id === 'pct' && last.val < 100) {
+
+    const daysLeft = Math.round((100 - last.val) / reg.slope);
+
+    if (daysLeft > 0 && daysLeft < 730) {
+
+      const projDate = new Date();
+
+      projDate.setDate(projDate.getDate() + daysLeft);
+
+      const projStr = projDate.toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric'});
+
+      const urgColor = daysLeft < 30 ? 'var(--danger)' : daysLeft < 90 ? 'var(--warn)' : 'var(--accent3)';
+
+      const urgText  = daysLeft < 30 ? '⚠ ACİL' : daysLeft < 90 ? '⚠ Dikkat' : '';
+
+      projHtml = `<div class="dc ${daysLeft<90?'up':'flat'}">
+<div class="dc-lbl">Projeksiyon ${urgText}</div>
+<div class="dc-val" style="color:${urgColor};font-size:17px">${daysLeft} gün</div>
+<div class="dc-d" style="color:${urgColor}">Mevcut hızla %100'e ulaşır</div>
+<div class="dc-sub">${projStr} civarı</div>
+</div>`;
+
+    }
+
+  } else if (reg && reg.slope > 0 && (ser.m.id === 'used' || ser.m.id === 'total')) {
+
+    const dailyGB = reg.slope * 1024;
+
+    if (dailyGB > 0.1) {
+
+      const monthly = reg.slope * 30;
+
+      projHtml = `<div class="dc flat">
+<div class="dc-lbl">Büyüme Hızı</div>
+<div class="dc-val" style="font-size:16px">${monthly.toFixed(2)} ${u}/ay</div>
+<div class="dc-sub">Günlük: ${dailyGB.toFixed(1)} GB · Lineer trend</div>
+</div>`;
+
+    }
+
+  }
+
+  const gridCols = projHtml ? '4' : '3';
+
+  band.style.gridTemplateColumns = `repeat(${gridCols},1fr)`;
+
+  band.style.display='grid';
+
+  band.innerHTML=`
+<div class="dc info"><div class="dc-lbl">Güncel Değer</div><div class="dc-val">${fmt(last.val,u)}</div><div class="dc-sub">${last.date}</div></div>
+<div class="dc ${dir(delta30)}">
+<div class="dc-lbl">30 Günlük Değişim</div>
+<div class="dc-val">${arr(delta30)} ${fmt(Math.abs(delta30),u)}</div>
+<div class="dc-d" style="color:${clr(delta30)}">${arr(delta30)} ${Math.abs(pct30).toFixed(1)}%</div>
+<div class="dc-sub">${first.date} → ${last.date}</div>
+</div>
+<div class="dc ${dir(delta7)}">
+<div class="dc-lbl">Son 7 Gün</div>
+<div class="dc-val">${arr(delta7)} ${fmt(Math.abs(delta7),u)}</div>
+<div class="dc-d" style="color:${clr(delta7)}">${arr(delta7)} ${Math.abs(pct7).toFixed(1)}%</div>
+<div class="dc-sub">Haftalık değişim</div>
+</div>
+
+    ${projHtml || `<div class="dc flat"><div class="dc-lbl">30 Gün Aralık</div><div class="dc-val">${fmt(maxV,u)}</div><div class="dc-sub">Maks · Min: ${fmt(minV,u)}</div></div>`}`;
+
+}
+
+/* ══════════════════════════════════════════════
+
+   CANVAS GRAFİK
+
+══════════════════════════════════════════════ */
+
+function drawChart(ser){
+
+  const pts=ser.pts.filter(p=>p.val!==null);
+
+  if(!pts.length) return;
+
+  const cv=document.getElementById('cv');
+
+  const dpr=window.devicePixelRatio||1;
+
+  const W=cv.parentElement.clientWidth-40, H=260;
+
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+
+  cv.width=W*dpr; cv.height=H*dpr;
+
+  const ctx=cv.getContext('2d');
+
+  ctx.setTransform(dpr,0,0,dpr,0,0);  // reset + scale (önceki scale birikmesin)
+
+  const P={t:20,r:20,b:36,l:60};
+
+  const cW=W-P.l-P.r, cH=H-P.t-P.b;
+
+  const vals=pts.map(p=>p.val);
+
+  const rawMax=Math.max(...vals);
+
+  const rawMin=Math.min(...vals);
+
+  const maxV= rawMax*1.08 || 1;
+
+  const minV= Math.min(0, rawMin*0.95);
+
+  const rng=maxV-minV||1;
+
+  const col=ser.m.clr, u=ser.m.unit;
+
+  const cx=i=> pts.length<=1
+
+    ? P.l + cW/2
+
+    : P.l + (i/(pts.length-1))*cW;
+
+  const cy=v=>P.t+cH-((v-minV)/rng)*cH;
+
+  // Grid
+
+  ctx.strokeStyle='rgba(30,45,68,.8)'; ctx.lineWidth=1;
+
+  for(let i=0;i<=4;i++){
+
+    const y=P.t+cH-(i/4)*cH;
+
+    ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+cW,y);ctx.stroke();
+
+    ctx.fillStyle='#5a7090';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='right';
+
+    const v=minV+(rng*i/4);
+
+    ctx.fillText((v.toFixed(v<10?2:0))+(u?' '+u:''),P.l-5,y+3);
+
+  }
+
+  // X etiketleri
+
+  ctx.fillStyle='#5a7090';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='center';
+
+  pts.forEach((p,i)=>{
+
+    if(i%7===0||i===pts.length-1){
+
+      ctx.fillText(p.date.slice(5),cx(i),H-P.b+13);
+
+    }
+
+  });
+
+  // Bar (önce çizilsin, sonra çizgi üstüne gelsin)
+
+  if(ser.m.type==='bar'){
+
+    const slot = pts.length<=1 ? cW : cW/(pts.length-1);
+
+    const bw = Math.max(3, slot*0.6);
+
+    pts.forEach((p,i)=>{
+
+      const bh=((p.val-minV)/rng)*cH;
+
+      ctx.fillStyle=col+'99';
+
+      ctx.fillRect(cx(i)-bw/2, P.t+cH-bh, bw, bh);
+
+    });
+
+  }
+
+  // Area
+
+  if(ser.m.type==='area'){
+
+    const g=ctx.createLinearGradient(0,P.t,0,P.t+cH);
+
+    g.addColorStop(0,col+'55');g.addColorStop(1,col+'05');
+
+    ctx.beginPath();ctx.moveTo(cx(0),cy(pts[0].val));
+
+    for(let i=1;i<pts.length;i++) ctx.lineTo(cx(i),cy(pts[i].val));
+
+    ctx.lineTo(cx(pts.length-1),P.t+cH);ctx.lineTo(cx(0),P.t+cH);
+
+    ctx.closePath();ctx.fillStyle=g;ctx.fill();
+
+  }
+
+  // Çizgi (bar dışındakiler için)
+
+  if(ser.m.type!=='bar'){
+
+    ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.lineJoin='round';
+
+    ctx.moveTo(cx(0),cy(pts[0].val));
+
+    for(let i=1;i<pts.length;i++) ctx.lineTo(cx(i),cy(pts[i].val));
+
+    ctx.stroke();
+
+    // Son nokta
+
+    const lx=cx(pts.length-1),ly=cy(pts[pts.length-1].val);
+
+    ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+
+  }
+
+  cv._pts=pts;cv._cx=cx;cv._cy=cy;cv._m=ser.m;cv._P=P;cv._cW=cW;cv._W=W;cv._H=H;
+
+}
+
+// Hover
+
+const cvEl = document.getElementById('cv');
+
+cvEl.addEventListener('mousemove',ev=>{
+
+  const cv=ev.currentTarget;
+
+  if(!cv._pts || !cv._pts.length) return;
+
+  const r=cv.getBoundingClientRect();
+
+  const mx=ev.clientX-r.left-cv._P.l;
+
+  let idx = cv._pts.length<=1 ? 0 : Math.round((mx/cv._cW)*(cv._pts.length-1));
+
+  idx = Math.max(0, Math.min(cv._pts.length-1, idx));
+
+  const p=cv._pts[idx];
+
+  const tip=document.getElementById('tooltip');
+
+  tip.textContent=`${p.date}  ${p.val.toFixed(2)}${cv._m.unit?' '+cv._m.unit:''}`;
+
+  tip.style.display='block';
+
+  // Ekran kenarı kontrolü
+
+  const tipW = tip.offsetWidth, tipH = tip.offsetHeight;
+
+  let left = ev.clientX + 12, top = ev.clientY - 12;
+
+  if (left + tipW > window.innerWidth - 8) left = ev.clientX - tipW - 12;
+
+  if (top < 8) top = 8;
+
+  tip.style.left=left+'px';
+
+  tip.style.top=top+'px';
+
+});
+
+cvEl.addEventListener('mouseleave',()=>{
+
+  document.getElementById('tooltip').style.display='none';
+
+});
+
+// Resize handler — pencere boyutu değişirse grafiği yeniden çiz
+
+let resizeTimer;
+
+window.addEventListener('resize',()=>{
+
+  clearTimeout(resizeTimer);
+
+  resizeTimer = setTimeout(()=>{
+
+    if (S.metric) render();
+
+  }, 150);
+
+});
+
+/* ══════════════════════════════════════════════
+
+   TABLO
+
+══════════════════════════════════════════════ */
+
+function renderTable(ser){
+
+  const pts=ser.pts.filter(p=>p.val!==null).slice().reverse();
+
+  const u=ser.m.unit;
+
+  const rows=pts.map((p,i)=>{
+
+    const prev=pts[i+1];
+
+    const d=prev?p.val-prev.val:null;
+
+    let dcls='',dtxt='—';
+
+    if(d!==null&&Math.abs(d)>0.001){
+
+      dcls=d>0?'tu':'td';
+
+      dtxt=`${d>0?'▲':'▼'} ${Math.abs(d).toFixed(2)}${u?' '+u:''}`;
+
+    }
+
+    return `<tr><td style="color:var(--text-dim);font-size:10px">${p.date}</td><td style="color:var(--text-bright);font-weight:500">${p.val.toFixed(2)}${u?' '+u:''}</td><td class="${dcls}">${dtxt}</td></tr>`;
+
+  }).join('');
+
+  document.getElementById('tblInner').innerHTML=`<table><thead><tr><th>Tarih</th><th>${esc(ser.m.lbl)}</th><th>Önceki Güne Göre</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+  document.getElementById('tblWrap').style.display='block';
+
+}
+
+/* ══════════════════════════════════════════════
+
+   RENDER
+
+══════════════════════════════════════════════ */
+
+function render(){
+
+  const ser=buildSeries();
+
+  if(!ser||!ser.pts.some(p=>p.val!==null)){
+
+    hide();
+
+    const d=S.data[S.vendor]||[];
+
+    document.getElementById('emptyMsg').innerHTML = d.length===0
+
+      ? `<div class="ico">📂</div><p>Henüz history verisi yok</p><p style="font-size:10px;margin-top:8px;color:var(--text-dim)">Script çalıştıkça _history/ klasörü dolacak</p>`
+
+      : `<div class="ico">🔍</div><p>Seçilen metrik için veri yok</p>`;
+
+    document.getElementById('emptyMsg').style.display='flex';
+
+    return;
+
+  }
+
+  document.getElementById('emptyMsg').style.display='none';
+
+  renderDelta(ser);
+
+  document.getElementById('chartTtl').textContent=`${VCFG[S.vendor].label} — ${ser.m.lbl}`;
+
+  document.getElementById('chartSub').textContent=S.cab||'Tüm Kabinetler';
+
+  document.getElementById('chartWrap').style.display='block';
+
+  drawChart(ser);
+
+  renderTable(ser);
+
+}
+
+function hide(){
+
+  ['deltaBand','chartWrap','tblWrap'].forEach(id=>document.getElementById(id).style.display='none');
+
+}
+
+/* ══════════════════════════════════════════════
+
+   EVENT DELEGATION — tüm butonlar tek listener
+
+══════════════════════════════════════════════ */
+
+document.addEventListener('click', ev => {
+
+  const btn = ev.target.closest('[data-action]');
+
+  if (!btn) return;
+
+  const action = btn.dataset.action;
+
+  try {
+
+    if (action === 'vendor') pickVendor(btn);
+
+    else if (action === 'cab') pickCab(btn.dataset.cab || null, btn);
+
+    else if (action === 'met') pickMet(btn.dataset.m, btn);
+
+  } catch(e) {
+
+    console.error(`[${action}] handler error:`, e);
+
+  }
+
+});
+
+/* ══════════════════════════════════════════════
+
+   BAŞLAT
+
+══════════════════════════════════════════════ */
+
+(async()=>{
+
+  try {
+
+    await loadVendor('huawei');
+
+    buildCabRow('huawei');
+
+    buildMetRow('huawei');
+
+  } catch(e) {
+
+    console.error('Init error:', e);
+
+    document.getElementById('loadBar').style.display='none';
+
+    document.getElementById('dataInfo').textContent = 'Yükleme hatası: ' + (e.message||e);
+
+    document.getElementById('dateRange').textContent = '—';
+
+    document.getElementById('emptyMsg').innerHTML = `<div class="ico">⚠️</div><p>Yükleme hatası</p><p style="font-size:10px;margin-top:8px;color:var(--text-dim)">${esc(e.message||e)}</p>`;
+
+    document.getElementById('emptyMsg').style.display='flex';
+
+  }
+
+})();
+</script>
+</body>
+</html>
+ 
