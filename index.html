@@ -543,12 +543,6 @@
     <div id="contract-banner-items" style="display:flex;flex-wrap:wrap;gap:8px"></div>
   </div>
 
-  <!-- ========== MULTI-SITE COMPARISON ========== -->
-  <div id="site-panel" style="display:none;margin-bottom:18px">
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Site Karşılaştırması</div>
-    <div id="site-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
-  </div>
-
   <!-- ========== LAYER OZET BANDI (SAN / NAS / S3) ========== -->
   <div class="layer-grid">
     <a href="./cabinet-finder-v2.html" class="layer-card layer-san">
@@ -1074,35 +1068,53 @@
     </a>
 
     <a href="./portgroups.html" class="app-card type-app">
-          <div class="app-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="7" width="20" height="10" rx="1"/><path d="M6 11h12M6 13h12"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
-          </div>
-          <div class="app-card-content">
-            <div class="app-card-name">Port Group Mapping</div>
-            <div class="app-card-desc">Huawei OceanStor ve PowerMax target port gruplarını kabinet bazında görselleştirin.</div>
-            <div class="app-card-tags"><span class="feature-tag">Huawei</span><span class="feature-tag">PowerMax</span></div>
-          </div>
-        </a>
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Port Group Mapping</div>
+          <div class="app-card-sub">Huawei · PowerMax Target Ports</div>
+        </div>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Huawei OceanStor ve PowerMax target port gruplarını kabinet bazında görselleştirin.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Huawei</span>
+          <span class="feature-tag">PowerMax</span>
+          <span class="feature-tag">FC Port</span>
+        </div>
+      </div>
+    </a>
         <a href="./executive.html" class="app-card type-app">
-          <div class="app-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>
-          </div>
-          <div class="app-card-content">
-            <div class="app-card-name">Executive Summary</div>
-            <div class="app-card-desc">Yönetici özeti — Health Score, kapasite, kritik alarmlar ve kontrat takibi. Yazdırmaya hazır.</div>
-            <div class="app-card-tags"><span class="feature-tag">Print</span><span class="feature-tag">Health Score</span></div>
-          </div>
-        </a>
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Executive Summary</div>
+          <div class="app-card-sub">Health Score · Yönetici Özeti</div>
+        </div>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Yönetici özeti — Health Score, kapasite, kritik alarmlar ve kontrat takibi. Yazdırmaya hazır.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Print</span>
+          <span class="feature-tag">Health Score</span>
+          <span class="feature-tag">KPI</span>
+        </div>
+      </div>
+    </a>
         <a href="./hostsearch.html" class="app-card type-app">
-          <div class="app-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
-          </div>
-          <div class="app-card-content">
-            <div class="app-card-name">Cross-Vendor Host Search</div>
-            <div class="app-card-desc">Huawei, PowerMax, Pure FA ve SAN Fabric kayıtlarını tek aramada tarayın — host adı, WWN veya OS tipiyle.</div>
-            <div class="app-card-tags"><span class="feature-tag">Multi-Vendor</span><span class="feature-tag">WWN</span></div>
-          </div>
-        </a>
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">Cross-Vendor Host Search</div>
+          <div class="app-card-sub">Tüm Vendor Host Araması</div>
+        </div>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-desc">Huawei, PowerMax, Pure FA ve SAN Fabric kayıtlarını tek aramada tarayın — host adı, WWN veya OS tipiyle.</div>
+        <div class="feature-list">
+          <span class="feature-tag">Multi-Vendor</span>
+          <span class="feature-tag">WWN Search</span>
+          <span class="feature-tag">Host Lookup</span>
+        </div>
+      </div>
+    </a>
         <a href="./hostwwnfinder.html" class="app-card type-app">
       <div class="app-card-header">
         <div>
@@ -1283,15 +1295,6 @@ const STAT = {
 };
 const LOG = [];
 
-function addToSite(lokasyon, cap, used, free, hosts) {
-  const site = (lokasyon || 'Bilinmiyor').trim() || 'Bilinmiyor';
-  if (!STAT.bySite[site]) STAT.bySite[site] = {cap:0,used:0,free:0,cabs:0,hosts:0};
-  STAT.bySite[site].cap   += cap;
-  STAT.bySite[site].used  += used;
-  STAT.bySite[site].free  += free;
-  STAT.bySite[site].cabs  += 1;
-  STAT.bySite[site].hosts += hosts;
-}
 
 /* ──────────────────────────────────────────────────────────────
    PROCESS  -  Huawei
@@ -1315,7 +1318,6 @@ function processHuawei(rows) {
     STAT.hwUsed += u;
     STAT.hwFree += f;
     STAT.hwHosts += h;
-    addToSite(r['Lokasyon'], t, u, f, h);
 
     if (p >= 65) {
       STAT.hwAlarms++;
@@ -1350,7 +1352,6 @@ function processPowerMax(rows) {
     STAT.pmUsed += u;
     STAT.pmFree += f;
     STAT.pmHosts += h;
-    addToSite(r['Lokasyon'], t, u, f, h);
 
     if (p >= 65) {
       STAT.pmAlarms++;
@@ -1382,7 +1383,6 @@ function processPure(rows) {
     STAT.puUsed += u;
     STAT.puFree += f;
     STAT.puHosts += h;
-    addToSite(r['Lokasyon'], t, u, f, h);
 
     if (p >= 65) {
       STAT.puAlarms++;
@@ -1412,7 +1412,6 @@ function processNetApp(rows) {
     STAT.naCap  += t;
     STAT.naUsed += u;
     STAT.naFree += f;
-    addToSite(r['Lokasyon'], t, u, f, h);
     if (p >= 80) {
       STAT.naAlarms++;
       STAT.alarmList.push({ vendor:'NetApp', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'critical' });
@@ -1551,7 +1550,6 @@ async function main() {
   ldStep('Dashboard hazırlanıyor...', 90);
   render();
   loadLayerStats();
-  renderSiteComparison();
   // Hide loading overlay
   setTimeout(() => {
     const ov = document.getElementById('app-loading');
@@ -2047,38 +2045,6 @@ document.getElementById('btn-export-report').addEventListener('click', () => {
     assetInventory: typeof ASSET_INVENTORY !== 'undefined' ? ASSET_INVENTORY : []
   });
 });
-
-/* ── MULTI-SITE COMPARISON ────────────────────────────────────────── */
-function renderSiteComparison() {
-  const panel = document.getElementById('site-panel');
-  const grid  = document.getElementById('site-grid');
-  if (!panel || !grid) return;
-
-  const sites = Object.entries(STAT.bySite).sort((a,b) => b[1].cap - a[1].cap);
-  if (sites.length < 2) return;   // single site — not useful to compare
-
-  panel.style.display = 'block';
-
-  grid.innerHTML = sites.map(([site, s]) => {
-    const pct = s.cap > 0 ? (s.used / s.cap * 100) : 0;
-    const col = pct >= 80 ? 'var(--danger)' : pct >= 70 ? 'var(--warn)' : 'var(--accent3)';
-    const barW = Math.min(100, pct).toFixed(1);
-    return `<div style="background:var(--surface);border:1px solid var(--border);padding:14px 16px">
-      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-bright);margin-bottom:8px">${esc(site)}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;color:var(--text-dim);margin-bottom:10px">
-        <span>Kapasite</span><span style="color:var(--text-bright);text-align:right">${s.cap.toFixed(1)} TB</span>
-        <span>Kullanılan</span><span style="color:${col};text-align:right">${s.used.toFixed(1)} TB</span>
-        <span>Kabinet</span><span style="color:var(--text-bright);text-align:right">${s.cabs}</span>
-        <span>Host</span><span style="color:var(--text-bright);text-align:right">${s.hosts}</span>
-      </div>
-      <div style="height:6px;background:var(--surface2);border:1px solid var(--border)">
-        <div style="height:100%;width:${barW}%;background:${col};opacity:.7"></div>
-      </div>
-      <div style="font-size:9px;color:${col};margin-top:4px;text-align:right">${pct.toFixed(1)}% dolu</div>
-    </div>`;
-  }).join('');
-}
-
 
 /* ── CONTRACT EXPIRY BANNER ──────────────────────────────────────── */
 function loadContractBanner() {
