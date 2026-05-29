@@ -76,6 +76,13 @@
 
   --grid:#0f1928;
 
+  /* SPA layout tokens (portal.html) */
+  --surface3:#141f30;
+  --border2:#243550;
+  --sidebar-w:240px;
+  --topbar-h:52px;
+  --tabbar-h:34px;
+
   --c-host:#4be8a0;
 
   --c-hba:#4b9fe8;

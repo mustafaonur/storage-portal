@@ -2,23 +2,17 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Anomali Dedektörü · Storage Portal</title>
 <link rel="stylesheet" href="./storage-styles.css">
 <script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
 <style>
-:root{
-  --bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d44;
-  --accent:#e8b84b;--accent2:#4b9fe8;--accent3:#4be8a0;
-  --danger:#e84b4b;--warn:#e8844b;--purple:#c084fc;
-  --text:#c8d8f0;--text-dim:#5a7090;--text-bright:#e8f2ff;--grid:#0f1928;
-}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
 .shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:20px;}
-.back-link{display:inline-block;margin-bottom:12px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;}
-.back-link:hover{color:var(--accent2);}
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
 .brand{display:flex;align-items:center;gap:12px;}
 .brand-icon{width:40px;height:40px;border:2px solid var(--warn);display:grid;place-items:center;}
@@ -189,7 +183,7 @@ let CACHE = {};  // vendorId -> [{date, rows}]
 async function loadVendor(vid){
   if(CACHE[vid]) return CACHE[vid];
   const cfg=VC[vid];
-  const dates=dateRangeBack(30);
+  const dates=dateRangeBackFormatted(30);
   const out=[];
   const lb=document.getElementById('loadbar'), lbi=document.getElementById('loadbar-i');
   lb.classList.add('show');
@@ -306,7 +300,9 @@ async function runDetection(){
   document.getElementById('s-total').textContent=allResults.length;
 
   if(allResults.length===0){
-    listEl.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg><div class="e-ttl">Yeterli veri yok</div><div class="e-msg">Anomali tespiti için her kabinette en az 8 günlük _history snapshot gerekir. StorageReport.ps1 düzenli çalıştıkça veri birikecek.</div></div>';
+    const _datesWithData = Object.keys(byDate).sort();
+    const _gapHtml = gapWarningHtml(_datesWithData);
+    listEl.innerHTML=_gapHtml+'<div class="empty"><svg viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg><div class="e-ttl">Yeterli veri yok</div><div class="e-msg">Anomali tespiti için her kabinette en az 8 günlük _history snapshot gerekir. StorageReport.ps1 düzenli çalıştıkça veri birikecek.</div></div>';
     document.getElementById('anom-info').textContent='';
     return;
   }
@@ -315,11 +311,11 @@ async function runDetection(){
   document.getElementById('anom-info').textContent=`${anom.length} anomali · ${watch.length} izlenecek · ${ok.length} normal`;
 
   if(shown.length===0){
-    listEl.innerHTML='<div class="empty good"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9"/></svg><div class="e-ttl">Anomali yok</div><div class="e-msg">'+allResults.length+' kabinetin tümü beklenen büyüme aralığında. Son 7 günün istatistiksel sınırları içinde, sıra dışı sıçrama tespit edilmedi.</div></div>';
+    listEl.innerHTML=_gapHtml+'<div class="empty good"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9"/></svg><div class="e-ttl">Anomali yok</div><div class="e-msg">'+allResults.length+' kabinetin tümü beklenen büyüme aralığında. Son 7 günün istatistiksel sınırları içinde, sıra dışı sıçrama tespit edilmedi.</div></div>';
     return;
   }
 
-  listEl.innerHTML=shown.map(r=>{
+  listEl.innerHTML=_gapHtml+shown.map(r=>{
     const isCrit=r.level==='anom';
     const dir = r.todayDelta>=0?'+':'';
     const sparkMax=Math.max(...r.deltaSeries.map(Math.abs),0.001);
@@ -367,6 +363,35 @@ function exportAnomCSV(){
 function reloadAll(){ CACHE={}; runDetection(); }
 
 runDetection();
+
+  StorageNav.init({ title: "Anomaly", section: "analytics" });
+
+/* ── HISTORY GAP DETECTOR (shared logic, duplicated for standalone use) ── */
+function detectHistoryGaps(dates) {
+  // dates: sorted array of 'YYYY-MM-DD' strings that had data
+  if (!dates || dates.length < 2) return [];
+  const sorted = [...dates].sort();
+  const gaps = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i-1]);
+    const curr = new Date(sorted[i]);
+    const diffDays = Math.round((curr - prev) / 86400000);
+    if (diffDays > 1) {
+      gaps.push({ from: sorted[i-1], to: sorted[i], days: diffDays - 1 });
+    }
+  }
+  return gaps;
+}
+
+function gapWarningHtml(datesWithData) {
+  const gaps = detectHistoryGaps(datesWithData);
+  if (!gaps.length) return '';
+  const total = gaps.reduce((s,g) => s + g.days, 0);
+  return '<div style="font-size:10px;color:var(--warn);margin:6px 0;padding:6px 10px;border-left:2px solid var(--warn)">' +
+    '⚠ ' + esc(String(total)) + ' eksik tarama günü — Anomali analizi yanıltıcı olabilir: ' +
+    gaps.map(g => esc(g.from) + '→' + esc(g.to) + '(' + g.days + 'g)').join(', ') +
+    '</div>';
+}
 </script>
 </body>
 </html>

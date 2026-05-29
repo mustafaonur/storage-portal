@@ -4371,7 +4371,8 @@ function Write-CSVAndPublish {
         $o = [ordered]@{}
         
         # 1. Tarih kolonu (History istenmisse ve yoksa basa ekle)
-        $hasTarih = $_ | Get-Member -Name 'Tarih' -ErrorAction SilentlyContinue
+        # Get-Member causes ETS type-sharing false positives in PS5.1 — use PSObject.Properties instead
+        $hasTarih = $_.PSObject.Properties['Tarih'] -ne $null
         if ($WithHistory -and -not $hasTarih) {
             $o['Tarih'] = $today
         }
@@ -4660,3 +4661,63 @@ if ($vendorDash.Count -gt 0) {
 }
 
 Write-Host ""
+# ── LAST-RUN STATUS JSON ─────────────────────────────────────────────────────
+# Writes last-run.json to the local base directory so the portal index page
+# can display "Last scan: 2h ago · 0 errors" without any server dependency.
+# Schema is additive — new keys can be appended without breaking older readers.
+try {
+    $endTime  = Get-Date
+    $errors   = @()
+
+    # Collect per-vendor row counts and any HATA rows
+    $vendorResults = @{}
+    $vendorCheck = @{
+        Huawei   = if ($runHuawei   -and $hw)  { $hw.Dashboard  } else { $null }
+        PowerMax = if ($runPowerMax -and $pm)  { $pm.Dashboard  } else { $null }
+        PureFA   = if ($runPure     -and $pf)  { $pf.Dashboard  } else { $null }
+        PureFB   = if ($runPureFB   -and $fb)  { $fb.Dashboard  } else { $null }
+        NetApp   = if ($runNetApp   -and $na)  { $na.Dashboard  } else { $null }
+        ECS      = if ($runECS      -and $ecs) { $ecs.Dashboard } else { $null }
+    }
+    foreach ($vk in $vendorCheck.Keys) {
+        $rows = $vendorCheck[$vk]
+        if (-not $rows) { continue }
+        $rowArr   = @($rows)
+        $errCount = ($rowArr | Where-Object { $_.'Total (TB)' -eq 'HATA' -or $_.Durum -like 'HATA*' }).Count
+        $vendorResults[$vk] = @{ rows = $rowArr.Count; errors = $errCount }
+        if ($errCount -gt 0) { $errors += "$vk`: $errCount kabinet hatasi" }
+    }
+
+    $lastRunObj = [ordered]@{
+        timestamp      = $endTime.ToString('yyyy-MM-ddTHH:mm:ss')
+        durationSec    = [math]::Round($duration.TotalSeconds, 1)
+        errorCount     = $errors.Count
+        errors         = $errors
+        vendors        = $vendorResults
+        runFlags       = [ordered]@{
+            huawei   = [bool]$runHuawei
+            powermax = [bool]$runPowerMax
+            pureFA   = [bool]$runPure
+            pureFB   = [bool]$runPureFB
+            netapp   = [bool]$runNetApp
+            ecs      = [bool]$runECS
+            san      = [bool]$runSAN
+        }
+        scriptVersion  = '1.0'
+    }
+
+    $jsonPath = Join-Path $LocalBase 'last-run.json'
+    $lastRunObj | ConvertTo-Json -Depth 4 | Set-Content -Path $jsonPath -Encoding UTF8 -Force
+
+    # Also publish to remote share if not suppressed
+    if (-not $NoPublish) {
+        $remoteJsonPath = Join-Path $paths.remoteBase 'last-run.json' -ErrorAction SilentlyContinue
+        if ($remoteJsonPath) {
+            Copy-Item -Path $jsonPath -Destination $remoteJsonPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    Write-Step "  last-run.json yazildi: $jsonPath" DarkGray
+} catch {
+    Write-Step "  UYARI: last-run.json yazilamadi: $($_.Exception.Message)" DarkYellow
+}

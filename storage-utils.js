@@ -58,29 +58,44 @@ function parseCSV(text) {
    SAYI PARSE (Türkçe/İngilizce uyumlu)
 ════════════════════════════════════════════════════════════ */
 function toN(v) {
-  if (v === undefined || v === null) return 0;
-  let s = String(v).trim();
-  if (!s || s === '-' || s.toUpperCase() === 'HATA') return 0;
-  
-  // Olası negatif sayı boşluklarını temizle (- 150 -> -150)
-  if (s.startsWith('-')) {
-    s = '-' + s.substring(1).trim();
-  }
+  if (v === undefined || v === null) return 0;
+  let s = String(v).trim();
+  if (!s || s === '-' || s.toUpperCase() === 'HATA') return 0;
 
-  if (s.includes('.') && s.includes(',')) {
-    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
-      s = s.replace(/\./g, '').replace(',', '.');
-    } else {
-      s = s.replace(/,/g, '');
-    }
-  } else if (s.includes(',')) {
-    s = s.replace(',', '.');
-  }
-  
-  // Sadece rakamlar, nokta ve eksi işaretini koru
-  s = s.replace(/[^\d.\-]/g, '');
-  const parsed = parseFloat(s);
-  return isNaN(parsed) ? 0 : parsed;
+  // Normalize negative sign (e.g. "- 150" → "-150")
+  const neg = s.startsWith('-');
+  if (neg) s = s.substring(1).trim();
+
+  const hasDot   = s.includes('.');
+  const hasComma = s.includes(',');
+
+  if (hasDot && hasComma) {
+    // Both present — last one is the decimal separator
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      // Turkish/German: 1.234,56 → 1234.56
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      // English: 1,234.56 → 1234.56
+      s = s.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    const parts = s.split(',');
+    // Ambiguous single comma: treat as decimal separator
+    // (covers "1,5" and "1,234" — decimal is safer than dropping precision)
+    s = s.replace(',', '.');
+  } else if (hasDot) {
+    const parts = s.split('.');
+    if (parts.length > 2) {
+      // Multiple dots = thousand separators: "1.234.567" → "1234567"
+      s = s.replace(/\./g, '');
+    }
+    // Single dot: keep (standard decimal point)
+  }
+
+  s = s.replace(/[^\d.]/g, '');
+  const n = parseFloat(s);
+  if (isNaN(n)) return 0;
+  return neg ? -n : n;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -220,10 +235,10 @@ async function renderFreshnessBadge(containerId, csvUrls, useOldest = false) {
     ? new Date(Math.min(...valid.map(d => d.getTime())))
     : new Date(Math.max(...valid.map(d => d.getTime())));
   const f = freshnessText(target);
-  el.innerHTML = `<span title="Son güncelleme: ${f.stamp}"
+  el.innerHTML = `<span title="Son güncelleme: ${esc(f.stamp)}"
     style="font-size:10px;color:${f.color};display:inline-flex;align-items:center;gap:5px">
     <span style="width:6px;height:6px;border-radius:50%;background:${f.color};display:inline-block"></span>
-    Veri: ${f.text}</span>`;
+    Veri: ${esc(f.text)}</span>`;
 }
 
 function spEmptyState(opts = {}) {
@@ -273,26 +288,24 @@ function toast(msg, ms) {
   t._toastT = setTimeout(() => t.classList.add('sp-hidden'), ms || 2200);
 }
 
-function dateRangeBack(n) {
-   const d = [], now = new Date();
-   for (let i = n - 1; i >= 0; i--) {
-     const dt = new Date(now);
-     dt.setDate(dt.getDate() - i);
-     d.push(dt.toISOString().slice(0, 10).replace(/-/g, ''));
-   }
-   return d;
+/**
+ * dateRangeBack(n, format)
+ * format: 'YYYY-MM-DD' (default) | 'YYYYMMDD'
+ * Returns last n days oldest→newest.
+ */
+function dateRangeBack(n, format = 'YYYY-MM-DD') {
+  const d = [], now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const dt = new Date(now);
+    dt.setDate(dt.getDate() - i);
+    const iso = dt.toISOString().slice(0, 10);
+    d.push(format === 'YYYYMMDD' ? iso.replace(/-/g, '') : iso);
+  }
+  return d;
 }
 
-// Alternative date range format: YYYY-MM-DD (used by trend.html)
-function dateRangeBackFormatted(n) {
-   const d = [], now = new Date();
-   for (let i = n - 1; i >= 0; i--) {
-     const dt = new Date(now);
-     dt.setDate(dt.getDate() - i);
-     d.push(dt.toISOString().slice(0, 10));
-   }
-   return d;
-}
+// Backward-compat alias used by trend.html and others
+const dateRangeBackFormatted = (n) => dateRangeBack(n, 'YYYY-MM-DD');
 
 /* ════════════════════════════════════════════════════════════
    EŞİKLER & KABİN YARDIMCILARI
@@ -376,19 +389,26 @@ const fetchOne = fetchCSVParsed;
  * urlTemplate: './Hw/_history/Dorado_Dashboard_{D}.csv'  ({D} = YYYY-MM-DD)
  * Son N günün history dosyalarını paralel arar, bulunanları döner.
  */
-async function fetchHistory(urlTemplate, days = 30) {
+async function fetchHistory(urlTemplate, days = 30, concurrency = 5) {
   const today = new Date();
   const dates = Array.from({ length: days }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - i - 1);
-    return d.toISOString().slice(0, 10).replace(/-/g, '');
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD — matches _history file names
   });
+
   const result = {};
-  await Promise.all(dates.map(async date => {
-    const url = urlTemplate.replace('{D}', date);
-    const text = await fetchCSVText(url).catch(() => '');
-    if (text) result[date] = parseCSV(text);
-  }));
+
+  // Batch fetches to avoid overwhelming UNC file shares with 30 simultaneous requests
+  for (let i = 0; i < dates.length; i += concurrency) {
+    const chunk = dates.slice(i, i + concurrency);
+    await Promise.allSettled(chunk.map(async date => {
+      const url = urlTemplate.replace('{D}', date);
+      const text = await fetchCSVText(url).catch(() => '');
+      if (text) result[date] = parseCSV(text);
+    }));
+  }
+
   return result;
 }
 
@@ -436,8 +456,12 @@ async function checkPortalFreshness(vendorUrls = []) {
   }
 }
 
-// Global detection for index landing
-if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
+// Global detection for index landing — handles file://, UNC paths, and dev servers
+function _isIndexPage() {
+  const p = window.location.pathname.replace(/\\\\/g, '/');
+  return p.endsWith('index.html') || p.endsWith('/') || p === '';
+}
+if (_isIndexPage()) {
   window.addEventListener('DOMContentLoaded', () => {
     const allVendors = [
       './Hw/Dorado_Dashboard.csv',
@@ -454,14 +478,102 @@ if (window.location.pathname.endsWith('index.html') || window.location.pathname.
 
 function showStaleBanner(freshness) {
   if (document.getElementById('stale-data-banner')) return;
-  
+
   const banner = document.createElement('div');
   banner.id = 'stale-data-banner';
   banner.className = 'stale-banner';
-  banner.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span>DİKKAT: Veriler güncel olmayabilir. Son güncelleme: ${freshness.text} (${freshness.stamp})</span>
-    <div class="stale-banner-close" onclick="this.parentElement.remove()">✕</div>
-  `;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.innerHTML = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>';
+
+  const msg = document.createElement('span');
+  msg.textContent = `DİKKAT: Veriler güncel olmayabilir. Son güncelleme: ${esc(freshness.text)} (${esc(freshness.stamp)})`;
+
+  const closeBtn = document.createElement('div');
+  closeBtn.className = 'stale-banner-close';
+  closeBtn.textContent = '✕';
+  closeBtn.addEventListener('click', () => banner.remove());
+
+  banner.append(svg, msg, closeBtn);
   document.body.prepend(banner);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PERFORMANCE HELPERS
+════════════════════════════════════════════════════════════ */
+
+/**
+ * debounce(fn, ms) — delays fn until ms milliseconds after last call.
+ * Use on search/filter inputs to avoid per-keystroke full table rebuilds.
+ */
+function debounce(fn, ms = 180) {
+  let t;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
+/**
+ * renderTableRows(tbodyEl, rows, rowBuilderFn)
+ * Clears tbody and re-renders rows via DocumentFragment to minimise reflows.
+ * rowBuilderFn(row, index) must return an HTMLElement (<tr>).
+ * Rows > LAZY_THRESHOLD are rendered in a requestAnimationFrame to avoid
+ * blocking the main thread on initial paint.
+ */
+const LAZY_THRESHOLD = 200;
+
+function renderTableRows(tbodyEl, rows, rowBuilderFn) {
+  if (!tbodyEl) return;
+  tbodyEl.innerHTML = '';
+
+  const frag = document.createDocumentFragment();
+  const total = rows.length;
+
+  if (total <= LAZY_THRESHOLD) {
+    rows.forEach((r, i) => frag.appendChild(rowBuilderFn(r, i)));
+    tbodyEl.appendChild(frag);
+    return;
+  }
+
+  // Large dataset: render first chunk synchronously, rest in rAF
+  const CHUNK = 100;
+  rows.slice(0, CHUNK).forEach((r, i) => frag.appendChild(rowBuilderFn(r, i)));
+  tbodyEl.appendChild(frag);
+
+  let offset = CHUNK;
+  function renderChunk() {
+    if (offset >= total) return;
+    const f2 = document.createDocumentFragment();
+    rows.slice(offset, offset + CHUNK).forEach((r, i) => f2.appendChild(rowBuilderFn(r, offset + i)));
+    tbodyEl.appendChild(f2);
+    offset += CHUNK;
+    requestAnimationFrame(renderChunk);
+  }
+  requestAnimationFrame(renderChunk);
+}
+
+/**
+ * buildTr(cells) — builds a <tr> from an array of {text, cls, title, html} descriptors.
+ * Always escapes text content. Use html only for pre-sanitized badge strings.
+ */
+function buildTr(cells, rowClass) {
+  const tr = document.createElement('tr');
+  if (rowClass) tr.className = rowClass;
+  cells.forEach(cell => {
+    const td = document.createElement('td');
+    if (cell.cls) td.className = cell.cls;
+    if (cell.title) td.title = cell.title;
+    if (cell.html !== undefined) {
+      td.innerHTML = cell.html; // caller is responsible for sanitization
+    } else {
+      td.textContent = cell.text != null ? String(cell.text) : '';
+    }
+    tr.appendChild(td);
+  });
+  return tr;
 }

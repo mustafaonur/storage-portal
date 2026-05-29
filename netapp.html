@@ -2,19 +2,15 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NetApp ONTAP Dashboard</title>
 <link rel="stylesheet" href="./storage-styles.css">
 <script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
 <link href="https://protect2.fireeye.com/v1/url?k=988847e2-fbdfd59c-988974f8-74fe486eb94f-43fd20c105957608&q=1&e=2cab7cbe-08cd-4570-85d3-2ca44ae232fa&u=https%3A%2F%2Furldefense.com%2Fv3%2F__https%3A%2F%2Ffonts.googleapis.com%2Fcss2%3Ffamily%3DJetBrains%2AMono%3Awght%40300%3B400%3B500%3B700%26family%3DSyne%3Awght%40400%3B600%3B700%3B800%26display%3Dswap__%3BKw%21%21LI3htEUvy8-3%21sKMU7uyQSSEQ6i8toZNa8SXomAW0tDfQ1MprkmqdWpO0GX3tevyEOp9hC025niwGhVPyqtbbQTGArLrLVtAQfZMVVdLQzn2shX4oMA%24" rel="stylesheet">
 <style>
-  :root {
-    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
-    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
-    --danger:#e84b4b; --purple:#c084fc; --warn:#e8844b;
-    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
   body::before {
     content:''; position:fixed; inset:0;
@@ -31,10 +27,7 @@
   .loading-text { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--text-dim); animation:blink 1.5s ease-in-out infinite; }
 
   .shell { position:relative; z-index:1; max-width:1600px; margin:0 auto; padding:24px; }
-  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
-  .back-link:hover { color:var(--accent2); }
-
-  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
   .brand { display:flex; align-items:center; gap:14px; }
   .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
   @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
@@ -347,7 +340,7 @@
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="SVM ara..." id="host-search" oninput="renderHostTable()">
+        <input type="text" placeholder="SVM ara..." id="host-search" oninput="__db_renderHostTable()">
       </div>
       <select class="filter-select" id="host-location" onchange="renderHostTable()"><option value="">Tum Lokasyonlar</option></select>
       <select class="filter-select" id="host-cabinet" onchange="renderHostTable()"><option value="">Tum Kabinetler</option></select>
@@ -372,7 +365,7 @@
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Volume ara..." id="lun-search" oninput="renderLunTable()">
+        <input type="text" placeholder="Volume ara..." id="lun-search" oninput="__db_renderLunTable()">
       </div>
       <select class="filter-select" id="lun-location" onchange="renderLunTable()"><option value="">Tum Lokasyonlar</option></select>
       <select class="filter-select" id="lun-cabinet" onchange="renderLunTable()"><option value="">Tum Kabinetler</option></select>
@@ -386,7 +379,7 @@
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Aggregate, Node ara..." id="agg-search" oninput="renderAggTable()">
+        <input type="text" placeholder="Aggregate, Node ara..." id="agg-search" oninput="__db_renderAggTable()">
       </div>
       <select class="filter-select" id="agg-location" onchange="renderAggTable()"><option value="">Tum Lokasyonlar</option></select>
       <select class="filter-select" id="agg-cabinet" onchange="renderAggTable()"><option value="">Tum Cluster'lar</option></select>
@@ -413,7 +406,7 @@
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Policy adı, volume, SVM ara..." id="na-snap-search" oninput="renderNaSnap()">
+        <input type="text" placeholder="Policy adı, volume, SVM ara..." id="na-snap-search" oninput="__db_renderNaSnap()">
       </div>
       <select class="filter-select" id="na-snap-cab" onchange="renderNaSnap()"><option value="">Tüm Cluster'lar</option></select>
       <select class="filter-select" id="na-snap-svm" onchange="renderNaSnap()"><option value="">Tüm SVM'ler</option></select>
@@ -432,7 +425,7 @@
     <div class="filter-row" style="margin-bottom:14px">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Node, volume, SVM, kaynak, hedef ara..." id="mc-search" oninput="renderMc()">
+        <input type="text" placeholder="Node, volume, SVM, kaynak, hedef ara..." id="mc-search" oninput="__db_renderMc()">
       </div>
       <select class="filter-select" id="mc-cab" onchange="renderMc()"><option value="">Tüm Cluster'lar</option></select>
     </div>
@@ -1394,6 +1387,15 @@ if (typeof renderFreshnessBadge === 'function') {
 if (typeof checkPortalFreshness === 'function') {
   checkPortalFreshness(['./NetApp/NetApp_Dashboard.csv', './NetApp/NetApp_Volume.csv']);
 }
+
+  // Debounced wrappers for search inputs
+  const __db_renderHostTable = debounce(renderHostTable);
+  const __db_renderLunTable = debounce(renderLunTable);
+  const __db_renderAggTable = debounce(renderAggTable);
+  const __db_renderNaSnap = debounce(renderNaSnap);
+  const __db_renderMc = debounce(renderMc);
+
+  StorageNav.init({ title: "NetApp ONTAP", section: "vendor" });
 </script>
 </body>
 </html>

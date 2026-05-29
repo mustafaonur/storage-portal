@@ -2,18 +2,14 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Huawei Storage Dashboard</title>
 <link rel="stylesheet" href="./storage-styles.css">
 <script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
 <style>
-  :root {
-    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
-    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
-    --danger:#e84b4b; --warn:#e8844b; --purple:#c084fc;
-    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
   body::before {
     content:''; position:fixed; inset:0;
@@ -30,10 +26,7 @@
   .loading-text { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--text-dim); animation:blink 1.5s ease-in-out infinite; }
 
   .shell { position:relative; z-index:1; max-width:1600px; margin:0 auto; padding:24px; }
-  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
-  .back-link:hover { color:var(--accent2); }
-
-  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
   .brand { display:flex; align-items:center; gap:14px; }
   .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
   @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
@@ -1389,19 +1382,19 @@ function clearHostFilters() {
 
 // Event Listeners for Filters
 document.querySelectorAll('#tab-hosts .filter-select, #tab-hosts input').forEach(el => {
-  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', renderHostTable);
+  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', el.tagName === 'INPUT' ? debounce(renderHostTable) : renderHostTable);
 });
 document.querySelectorAll('#tab-luns .filter-select, #tab-luns input').forEach(el => {
-  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', renderLunTable);
+  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', el.tagName === 'INPUT' ? debounce(renderLunTable) : renderLunTable);
 });
 document.querySelectorAll('#tab-snapshots .filter-select, #tab-snapshots input').forEach(el => {
-  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', renderSnapTable);
+  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', el.tagName === 'INPUT' ? debounce(renderSnapTable) : renderSnapTable);
 });
 document.querySelectorAll('#tab-nas .filter-select, #tab-nas input').forEach(el => {
-  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', renderNasTable);
+  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', el.tagName === 'INPUT' ? debounce(renderNasTable) : renderNasTable);
 });
 document.querySelectorAll('#tab-hypermetro .filter-select, #tab-hypermetro input').forEach(el => {
-  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', renderHmTable);
+  el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', el.tagName === 'INPUT' ? debounce(renderHmTable) : renderHmTable);
 });
 
 // Modal Events
@@ -1423,6 +1416,8 @@ renderFreshnessBadge('data-fresh-badge', ['./Hw/Dorado_Dashboard.csv', './Hw/Dor
 // Stale data check
 checkPortalFreshness(['./Hw/Dorado_Dashboard.csv', './Hw/Dorado_Host.csv']);
 
+
+  StorageNav.init({ title: "Huawei Dorado", section: "vendor" });
 </script>
 </body>
 </html>

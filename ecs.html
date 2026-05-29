@@ -2,25 +2,18 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECS Dashboard · Storage Portal</title>
 <link rel="stylesheet" href="./storage-styles.css">
 <script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
 <style>
-:root {
-  --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
-  --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
-  --danger:#e84b4b; --warn:#e8844b; --purple:#c084fc;
-  --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
-}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.22) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
 
 .shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
-.back-link{display:inline-block;margin-bottom:14px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;}
-.back-link:hover{color:var(--accent2);}
-
 /* HEADER */
 header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);}
 .brand{display:flex;align-items:center;gap:14px;}
@@ -196,7 +189,7 @@ tr:hover td{background:rgba(75,159,232,.04);}
 <!-- TAB: BUCKETS -->
 <div class="tab-page active" id="tab-buckets">
   <div class="bar">
-    <input class="search-box" id="bucket-search" placeholder="Bucket ara..." oninput="renderBuckets()">
+    <input class="search-box" id="bucket-search" placeholder="Bucket ara..." oninput="__db_renderBuckets()">
     <select class="filter-sel" id="ns-filter" onchange="renderBuckets()">
       <option value="">Tüm Namespace</option>
     </select>
@@ -680,6 +673,11 @@ renderFreshnessBadge('data-fresh-badge', ['./Ecs/ECS_Dashboard.csv', './Ecs/ECS_
 // Stale data check
 checkPortalFreshness(['./Ecs/ECS_Dashboard.csv', './Ecs/ECS_Buckets.csv']);
 
+
+  // Debounced wrappers for search inputs
+  const __db_renderBuckets = debounce(renderBuckets);
+
+  StorageNav.init({ title: "Dell ECS", section: "vendor" });
 </script>
 </body>
 </html>

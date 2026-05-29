@@ -3,23 +3,11 @@
 <head>
 <link rel="stylesheet" href="./storage-styles.css">
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Topology · Storage Portal</title>
 <style>
 
-:root{
-
-  --bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d44;
-
-  --accent:#e8b84b;--accent2:#4b9fe8;--accent3:#4be8a0;
-
-  --danger:#e84b4b;--warn:#e8844b;--purple:#c084fc;
-
-  --text:#c8d8f0;--text-dim:#5a7090;--text-bright:#e8f2ff;--grid:#0f1928;
-
-  --c-host:#4be8a0;--c-hba:#4b9fe8;--c-sw:#e8b84b;--c-stor:#c084fc;
-
-}
 
 *{margin:0;padding:0;box-sizing:border-box;}
 
@@ -28,11 +16,6 @@ body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospa
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
 
 .shell{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:20px;}
-
-.back-link{display:inline-block;margin-bottom:12px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;cursor:pointer;}
-
-.back-link:hover{color:var(--accent2);}
-
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);gap:16px;flex-wrap:wrap;}
 
 .brand{display:flex;align-items:center;gap:12px;}
@@ -495,6 +478,7 @@ Drag to rotate · Scroll to zoom · Click node for details · 3D sphere visualiz
 </div>
 
 <script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
 <script>
 
 const BASE = '.';
@@ -2203,6 +2187,8 @@ function schExpandAll(val) {
 }
 
 window.addEventListener('DOMContentLoaded', loadAll);
+
+  StorageNav.init({ title: "Topology", section: "tools" });
 </script>
 </body>
 </html>

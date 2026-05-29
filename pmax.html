@@ -2,18 +2,14 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PowerMax Storage Dashboard</title>
 <link rel="stylesheet" href="./storage-styles.css">
 <script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
 <style>
-  :root {
-    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
-    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
-    --danger:#e84b4b; --purple:#c084fc; --warn:#e8844b;
-    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
   body::before {
     content:''; position:fixed; inset:0;
@@ -45,10 +41,7 @@
   .brand-sub { font-size:10px; color:var(--text-dim); letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
   .header-meta { text-align:right; font-size:11px; color:var(--text-dim); line-height:1.8; }
   .live-dot { display:inline-block; width:6px; height:6px; background:var(--accent3); border-radius:50%; margin-right:6px; animation:blink 2s ease-in-out infinite; vertical-align:middle; }
-  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
-  .back-link:hover { color:var(--accent2); }
-
-  /* TABS */
+/* TABS */
   .tabs { display:flex; gap:2px; margin-bottom:24px; border-bottom:1px solid var(--border); }
   .tab-btn { background:none; border:none; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:10px 20px; cursor:pointer; position:relative; transition:color .2s; }
   .tab-btn::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:var(--accent); transform:scaleX(0); transition:transform .2s; }
@@ -312,7 +305,7 @@
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Host ara..." id="host-search" oninput="renderHostTable()">
+        <input type="text" placeholder="Host ara..." id="host-search" oninput="__db_renderHostTable()">
       </div>
       <select class="filter-select" id="host-location" onchange="renderHostTable()"><option value="">Tum Lokasyonlar</option></select>
       <select class="filter-select" id="host-cabinet" onchange="renderHostTable()"><option value="">Tum Array'ler</option></select>
@@ -329,7 +322,7 @@
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Storage Group ara..." id="lun-search" oninput="renderLunTable()">
+        <input type="text" placeholder="Storage Group ara..." id="lun-search" oninput="__db_renderLunTable()">
       </div>
       <select class="filter-select" id="lun-location" onchange="renderLunTable()"><option value="">Tum Lokasyonlar</option></select>
       <select class="filter-select" id="lun-cabinet" onchange="renderLunTable()"><option value="">Tum Array'ler</option></select>
@@ -344,7 +337,7 @@
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Policy adı, Storage Group ara..." id="pmax-snap-search" oninput="renderPmaxSnap()">
+        <input type="text" placeholder="Policy adı, Storage Group ara..." id="pmax-snap-search" oninput="__db_renderPmaxSnap()">
       </div>
       <select class="filter-select" id="pmax-snap-cab" onchange="renderPmaxSnap()"><option value="">Tüm Diziler</option></select>
       <select class="filter-select" id="pmax-snap-status" onchange="renderPmaxSnap()">
@@ -1101,6 +1094,13 @@ renderFreshnessBadge('data-fresh-badge', ['./Pmax/PmaxPoolDash.csv', './Pmax/Pma
 // Stale data check
 checkPortalFreshness(['./Pmax/PmaxPoolDash.csv', './Pmax/PmaxPoolHost.csv']);
 
+
+  // Debounced wrappers for search inputs
+  const __db_renderHostTable = debounce(renderHostTable);
+  const __db_renderLunTable = debounce(renderLunTable);
+  const __db_renderPmaxSnap = debounce(renderPmaxSnap);
+
+  StorageNav.init({ title: "PowerMax", section: "vendor" });
 </script>
 </body>
 </html>

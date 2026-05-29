@@ -2,6 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enterprise Storage Portal</title>
 <link rel="stylesheet" href="./storage-styles.css">
@@ -11,23 +12,7 @@
   /* =========================================================
      DESIGN TOKENS  -  ortak tema (huawei.html ile uyumlu)
      ========================================================= */
-  :root {
-    --bg:#080c14;
-    --surface:#0d1420;
-    --surface2:#111b2e;
-    --border:#1e2d44;
-    --accent:#e8b84b;
-    --accent2:#4b9fe8;
-    --accent3:#4be8a0;
-    --purple:#c084fc;
-    --danger:#e84b4b;
-    --warn:#e8844b;
-    --text:#c8d8f0;
-    --text-dim:#5a7090;
-    --text-bright:#e8f2ff;
-    --grid:#0f1928;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; }
   body {
     background:var(--bg);
     color:var(--text);
@@ -500,6 +485,7 @@
     <div class="header-meta">
       <div><span class="live-dot"></span>ACTIVE MONITORING</div>
       <div id="clock">--:--:--</div>
+      <div id="last-scan-status" style="font-size:10px;color:var(--text-dim);min-height:14px">—</div>
       <div id="hdr-stat" style="color:var(--text);">-</div>
       <div id="data-fresh-badge" data-fresh-badge style="margin-top:2px"></div>
     </div>
@@ -1780,6 +1766,52 @@ renderFreshnessBadge('data-fresh-badge', [
   './San/SAN_Director_Dashboard.csv'
 ], true);  // en eski - genel sağlık göstergesi
 
+
+/* ── LAST-RUN STATUS ─────────────────────────────────────────────── */
+async function loadLastRun() {
+  const el = document.getElementById('last-scan-status');
+  if (!el) return;
+
+  try {
+    const r = await fetch('./last-run.json', { cache: 'no-store' });
+    if (!r.ok) { el.textContent = 'Tarama durumu yok'; return; }
+    const d = await r.json();
+
+    // Validate schema
+    if (!d || !d.timestamp) { el.textContent = 'last-run.json okunamadı'; return; }
+
+    const ts     = new Date(d.timestamp);
+    const now    = new Date();
+    const diffMs = now - ts;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr  = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
+
+    let age;
+    if (diffMin < 1)       age = 'az önce';
+    else if (diffMin < 60) age = diffMin + ' dk önce';
+    else if (diffHr < 24)  age = diffHr + ' saat önce';
+    else if (diffDay === 1) age = 'dün';
+    else                   age = diffDay + ' gün önce';
+
+    const errCount = d.errorCount || 0;
+    const dur      = d.durationSec ? d.durationSec + 's' : '';
+    const ageColor = diffHr > 26 ? 'var(--danger)' : diffHr > 12 ? 'var(--warn)' : 'var(--accent3)';
+    const errColor = errCount > 0 ? 'var(--warn)' : 'var(--accent3)';
+
+    el.innerHTML =
+      '<span title="Son tarama: ' + esc(ts.toLocaleString('tr-TR')) + ' · ' + esc(dur) + '">' +
+        '<span style="color:' + ageColor + '">⟳ ' + esc(age) + '</span>' +
+        (errCount > 0
+          ? ' · <span style="color:' + errColor + '">' + esc(String(errCount)) + ' hata</span>'
+          : ' · <span style="color:var(--accent3)">✓ temiz</span>') +
+      '</span>';
+  } catch (e) {
+    el.textContent = 'Tarama durumu alınamadı';
+  }
+}
+
+loadLastRun();
 </script>
 </body>
 </html>

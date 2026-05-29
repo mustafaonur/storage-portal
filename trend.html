@@ -3,21 +3,11 @@
 <head>
 <link rel="stylesheet" href="./storage-styles.css">
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trend Analizi · Storage Portal</title>
 <style>
 
-:root{
-
-  --bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d44;
-
-  --accent:#e8b84b;--accent2:#4b9fe8;--accent3:#4be8a0;
-
-  --danger:#e84b4b;--warn:#e8844b;--purple:#c084fc;
-
-  --text:#c8d8f0;--text-dim:#5a7090;--text-bright:#e8f2ff;--grid:#0f1928;
-
-}
 
 *{margin:0;padding:0;box-sizing:border-box;}
 
@@ -26,11 +16,6 @@ body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospa
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.22) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
 
 .shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
-
-.back-link{display:inline-block;margin-bottom:14px;font-size:11px;color:var(--text-dim);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s;}
-
-.back-link:hover{color:var(--accent2);}
-
 header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);}
 
 .brand{display:flex;align-items:center;gap:14px;}
@@ -96,6 +81,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 .chart-wrap{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:20px;}
 
 .chart-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.budget-line-label{font-size:9px;font-family:'JetBrains Mono',monospace;}
 
 .chart-ttl{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text-bright);}
 
@@ -158,6 +144,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <div style="text-align:right;font-size:11px;color:var(--text-dim);line-height:2">
 <div id="dateRange">—</div>
 <div id="dataInfo" style="font-size:10px">Yükleniyor...</div>
+<div id="gap-warn" style="display:none;font-size:10px;color:var(--warn);margin-top:4px;max-width:320px;line-height:1.5"></div>
 </div>
 </header>
 <!-- VENDOR -->
@@ -198,6 +185,16 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <div class="chart-legend" id="chartLeg"></div>
 </div>
 <canvas id="cv" height="260"></canvas>
+<div id="budget-bar" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+  <label style="font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Kapasite Sınırı</label>
+  <input type="number" id="budget-input" min="0" step="1" placeholder="TB veya GiB girin"
+    style="width:120px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 8px;outline:none;"
+    title="Bu değer grafige yatay referans çizgisi olarak çizilir">
+  <span id="budget-unit" style="font-size:10px;color:var(--text-dim)">TB</span>
+  <button id="budget-apply" style="font-size:10px;padding:5px 12px;background:var(--surface2);border:1px solid var(--accent2);color:var(--accent2);cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:1px">UYGULA</button>
+  <button id="budget-clear" style="font-size:10px;padding:5px 10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-family:'JetBrains Mono',monospace">✕</button>
+  <span id="budget-info" style="font-size:10px;color:var(--text-dim)"></span>
+</div>
 </div>
 <!-- TABLO -->
 <div id="tblWrap" style="display:none">
@@ -215,6 +212,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 </div>
 <div id="tooltip" style="position:fixed;display:none;background:var(--surface2);border:1px solid var(--border);color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 12px;pointer-events:none;z-index:999;white-space:nowrap;"></div>
 <script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
 <script>
 
 /* ══════════════════════════════════════════════
@@ -589,6 +587,7 @@ async function loadVendor(vid) {
     const sourceNote = historyCount === 1 ? ' (güncel CSV)' : '';
     document.getElementById('dateRange').textContent=`${f} → ${l}${sourceNote}`;
     document.getElementById('dataInfo').textContent=`${historyCount} snapshot${sourceNote}`;
+    renderGapWarning(S.data[vid]);
   } else {
     document.getElementById('dateRange').textContent='—';
     document.getElementById('dataInfo').textContent='Veri yok';
@@ -1176,6 +1175,7 @@ function render(){
   document.getElementById('chartSub').textContent=S.cab||'Tüm Kabinetler';
 
   document.getElementById('chartWrap').style.display='block';
+  updateBudgetBar();
 
   drawChart(ser);
 
@@ -1252,6 +1252,145 @@ document.addEventListener('click', ev => {
   }
 
 })();
+
+  StorageNav.init({ title: "Trend", section: "analytics" });
+
+/* ── HISTORY GAP DETECTOR ───────────────────────────────────────── */
+function detectGaps(dataPoints) {
+  // dataPoints: [{date:'YYYY-MM-DD', rows:[]}, ...] sorted ascending
+  if (!dataPoints || dataPoints.length < 2) return [];
+  const gaps = [];
+  for (let i = 1; i < dataPoints.length; i++) {
+    const prev = new Date(dataPoints[i-1].date);
+    const curr = new Date(dataPoints[i].date);
+    const diffDays = Math.round((curr - prev) / 86400000);
+    if (diffDays > 1) {
+      gaps.push({
+        from: dataPoints[i-1].date,
+        to:   dataPoints[i].date,
+        days: diffDays - 1   // missed days between the two snapshots
+      });
+    }
+  }
+  return gaps;
+}
+
+function renderGapWarning(dataPoints) {
+  const el = document.getElementById('gap-warn');
+  if (!el) return;
+  const gaps = detectGaps(dataPoints);
+  if (!gaps.length) { el.style.display = 'none'; el.textContent = ''; return; }
+
+  const totalMissed = gaps.reduce((s, g) => s + g.days, 0);
+  const parts = gaps.map(g =>
+    g.days === 1
+      ? esc(g.from) + ' → ' + esc(g.to)
+      : g.days + 'g boşluk (' + esc(g.from) + ' → ' + esc(g.to) + ')'
+  );
+
+  el.style.display = 'block';
+  el.innerHTML =
+    '⚠ ' + esc(String(totalMissed)) + ' eksik gün tespit edildi: ' +
+    parts.map(p => '<span style="color:var(--text-dim)">' + p + '</span>').join(', ') +
+    ' — Sonuçlar yanıltıcı olabilir.';
+}
+
+/* ── CAPACITY BUDGET OVERLAY ───────────────────────────────────── */
+let _budgetValue = null;   // null = no overlay
+
+function drawBudgetLine(ctx, val, P, cH, cW, minV, rng, W, H, unit) {
+  if (val === null || val === undefined) return;
+  const y = P.t + cH - ((val - minV) / rng) * cH;
+  if (y < P.t || y > P.t + cH) return;   // outside chart area
+
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = 'rgba(232,132,75,0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(P.l, y);
+  ctx.lineTo(P.l + cW, y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Label on right side
+  ctx.fillStyle = 'rgba(232,132,75,0.9)';
+  ctx.font = 'bold 9px JetBrains Mono,monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('LIMIT ' + val.toFixed(val < 10 ? 1 : 0) + (unit ? ' ' + unit : ''), P.l + cW - 2, y - 3);
+  ctx.restore();
+}
+
+// Patch drawChart to call drawBudgetLine after series is drawn
+const _origDrawChart = drawChart;
+function drawChart(ser) {
+  _origDrawChart(ser);
+  if (_budgetValue === null) return;
+
+  const cv = document.getElementById('cv');
+  if (!cv._pts || !cv._pts.length) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const vals = cv._pts.map(p => p.val);
+  const rawMax = Math.max(...vals);
+  const rawMin = Math.min(...vals);
+  const maxV   = Math.max(rawMax * 1.08, _budgetValue * 1.05) || 1;
+  const minV   = Math.min(0, rawMin * 0.95);
+  const rng    = maxV - minV || 1;
+  const P      = cv._P;
+  const cH     = cv._H - P.t - P.b;
+  const cW     = cv._W - P.l - P.r;
+
+  drawBudgetLine(ctx, _budgetValue, P, cH, cW, minV, rng, cv._W, cv._H, cv._m ? cv._m.unit : '');
+
+  // Update info
+  const last = cv._pts[cv._pts.length - 1].val;
+  const pct  = (last / _budgetValue * 100).toFixed(1);
+  const infoEl = document.getElementById('budget-info');
+  if (infoEl) {
+    const color = pct >= 90 ? 'var(--danger)' : pct >= 75 ? 'var(--warn)' : 'var(--accent3)';
+    infoEl.innerHTML = 'Son değer: <span style="color:' + color + '">' + esc(pct) + '% dolu</span>';
+  }
+}
+
+// Budget bar visibility: show when chart is visible, unit matches series
+function updateBudgetBar() {
+  const bar = document.getElementById('budget-bar');
+  if (!bar) return;
+  const chartVisible = document.getElementById('chartWrap').style.display !== 'none';
+  bar.style.display = chartVisible ? 'flex' : 'none';
+
+  // Sync unit label with current series
+  const cv = document.getElementById('cv');
+  const unitEl = document.getElementById('budget-unit');
+  if (unitEl && cv && cv._m) unitEl.textContent = cv._m.unit || 'TB';
+}
+
+document.getElementById('budget-apply').addEventListener('click', () => {
+  const raw = parseFloat(document.getElementById('budget-input').value);
+  if (isNaN(raw) || raw <= 0) {
+    _budgetValue = null;
+    document.getElementById('budget-info').textContent = 'Geçersiz değer';
+    return;
+  }
+  _budgetValue = raw;
+  // Redraw chart with overlay
+  if (S.vendor && S.metric) selectMetric(S.metric);
+});
+
+document.getElementById('budget-clear').addEventListener('click', () => {
+  _budgetValue = null;
+  document.getElementById('budget-input').value = '';
+  document.getElementById('budget-info').textContent = '';
+  if (S.vendor && S.metric) selectMetric(S.metric);
+});
+
+// Show budget bar when chart becomes visible
+const _origSelectMetric = typeof selectMetric !== 'undefined' ? selectMetric : null;
+
 </script>
 </body>
 </html>

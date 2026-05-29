@@ -2,19 +2,14 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brocade SAN · Storage Portal</title>
 <link rel="stylesheet" href="./storage-styles.css">
 <script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
 <style>
-  :root {
-    --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --border:#1e2d44;
-    --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
-    --speed8:#e87a4b; --speed16:#e8b84b; --speed32:#4be8a0; --speed64:#4b9fe8;
-    --danger:#e84b4b; --warn:#e8844b;
-    --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff; --grid:#0f1928;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
   body::before {
     content:''; position:fixed; inset:0;
@@ -23,10 +18,7 @@
   }
 
   .shell { position:relative; z-index:1; max-width:1500px; margin:0 auto; padding:24px; }
-  .back-link { display:inline-block; margin-bottom:14px; font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
-  .back-link:hover { color:var(--accent2); }
-
-  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
   .brand { display:flex; align-items:center; gap:14px; }
   .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
   @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
@@ -587,7 +579,7 @@
     <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap">
       <div class="search-box">
         <span class="search-icon">⌕</span>
-        <input type="text" placeholder="WWN, alias, zone, switch ara..." id="za-search" oninput="renderZoneAudit()"
+        <input type="text" placeholder="WWN, alias, zone, switch ara..." id="za-search" oninput="__db_renderZoneAudit()"
           style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 36px 8px 12px;outline:none;width:100%">
       </div>
       <select id="za-type" onchange="renderZoneAudit()"
@@ -1635,6 +1627,11 @@ if (typeof checkPortalFreshness === 'function') {
   checkPortalFreshness(['./San/SAN_Director_Dashboard.csv', './San/SAN_Director_Ports.csv']);
 }
 
+
+  // Debounced wrappers for search inputs
+  const __db_renderZoneAudit = debounce(renderZoneAudit);
+
+  StorageNav.init({ title: "SAN / Brocade", section: "vendor" });
 </script>
 </body>
 </html>

@@ -2,23 +2,15 @@
 <html lang="tr">
 <head>
 <link rel="stylesheet" href="./storage-styles.css">
+<script src="./nav.js" defer></script>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enterprise Storage Portal · SPA</title>
 <style>
 /* ══════════════════════════════════════════════════════════
    DESIGN TOKENS
 ══════════════════════════════════════════════════════════ */
-:root {
-  --bg:#080c14; --surface:#0d1420; --surface2:#111b2e; --surface3:#141f30;
-  --border:#1e2d44; --border2:#243550;
-  --accent:#e8b84b; --accent2:#4b9fe8; --accent3:#4be8a0;
-  --danger:#e84b4b; --warn:#e8844b; --purple:#c084fc;
-  --text:#c8d8f0; --text-dim:#5a7090; --text-bright:#e8f2ff;
-  --sidebar-w: 240px;
-  --topbar-h: 52px;
-  --tabbar-h: 34px;
-}
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; }
 body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; display:flex; flex-direction:column; }
@@ -286,7 +278,7 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 
 <!-- ── TOPBAR ── -->
 <div class="topbar">
-  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Menüyü aç/kapat">
+  <button class="sidebar-toggle" title="Menüyü aç/kapat">
     <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
 
@@ -304,7 +296,7 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   <div class="topbar-crumb" id="topbar-crumb"><span>Ana Sayfa</span></div>
 
   <!-- Quick search -->
-  <div class="topbar-search" onclick="openQL()">
+  <div class="topbar-search">
     <span class="topbar-search-icon">⌕</span>
     <input id="ql-trigger-input" placeholder="Hızlı aç... (Ctrl+K)" readonly>
   </div>
@@ -324,17 +316,17 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 <div class="shell">
 
   <!-- Sidebar backdrop (mobile) -->
-  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <!-- ── SIDEBAR ── -->
   <nav class="sidebar" id="sidebar">
 
     <div class="nav-section">
       <div class="nav-section-label">Ana</div>
-      <a class="nav-item" data-page="index" data-label="Dashboard" data-icon="🏠" onclick="navigate('index','Dashboard',this)">
+      <a class="nav-item" data-page="index" data-label="Dashboard" data-icon="🏠">
         <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
       </a>
-      <a class="nav-item" data-page="lake" data-label="Storage Lake" data-icon="🌊" onclick="navigate('lake','Storage Lake',this)">
+      <a class="nav-item" data-page="lake" data-label="Storage Lake" data-icon="🌊">
         <span class="nav-icon">🌊</span><span class="nav-label">Storage Lake</span><span class="nav-badge new">NEW</span>
       </a>
     </div>
@@ -343,16 +335,16 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 
     <div class="nav-section">
       <div class="nav-section-label">Block Storage</div>
-      <a class="nav-item" data-page="huawei" data-label="Huawei OceanStor" data-icon="🟡" onclick="navigate('huawei','Huawei OceanStor',this)">
+      <a class="nav-item" data-page="huawei" data-label="Huawei OceanStor" data-icon="🟡">
         <span class="nav-icon">🟡</span><span class="nav-label">Huawei OceanStor</span>
       </a>
-      <a class="nav-item" data-page="pmax" data-label="PowerMax" data-icon="🔵" onclick="navigate('pmax','PowerMax',this)">
+      <a class="nav-item" data-page="pmax" data-label="PowerMax" data-icon="🔵">
         <span class="nav-icon">🔵</span><span class="nav-label">PowerMax</span>
       </a>
-      <a class="nav-item" data-page="pure-fa" data-label="Pure FlashArray" data-icon="🟢" onclick="navigate('pure-fa','Pure FlashArray',this)">
+      <a class="nav-item" data-page="pure-fa" data-label="Pure FlashArray" data-icon="🟢">
         <span class="nav-icon">🟢</span><span class="nav-label">Pure FlashArray</span>
       </a>
-      <a class="nav-item" data-page="hitachi" data-label="Hitachi VSP" data-icon="⚪" onclick="navigate('hitachi','Hitachi VSP',this)">
+      <a class="nav-item" data-page="hitachi" data-label="Hitachi VSP" data-icon="⚪">
         <span class="nav-icon">⚪</span><span class="nav-label">Hitachi VSP</span>
       </a>
     </div>
@@ -361,7 +353,7 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 
     <div class="nav-section">
       <div class="nav-section-label">File / NAS</div>
-      <a class="nav-item" data-page="netapp" data-label="NetApp ONTAP" data-icon="🟣" onclick="navigate('netapp','NetApp ONTAP',this)">
+      <a class="nav-item" data-page="netapp" data-label="NetApp ONTAP" data-icon="🟣">
         <span class="nav-icon">🟣</span><span class="nav-label">NetApp ONTAP</span>
       </a>
     </div>
@@ -370,10 +362,10 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 
     <div class="nav-section">
       <div class="nav-section-label">Object Storage</div>
-      <a class="nav-item" data-page="ecs" data-label="Dell ECS" data-icon="🔴" onclick="navigate('ecs','Dell ECS',this)">
+      <a class="nav-item" data-page="ecs" data-label="Dell ECS" data-icon="🔴">
         <span class="nav-icon">🔴</span><span class="nav-label">Dell ECS</span>
       </a>
-      <a class="nav-item" data-page="pure-fb" data-label="Pure FlashBlade" data-icon="🟩" onclick="navigate('pure-fb','Pure FlashBlade',this)">
+      <a class="nav-item" data-page="pure-fb" data-label="Pure FlashBlade" data-icon="🟩">
         <span class="nav-icon">🟩</span><span class="nav-label">Pure FlashBlade</span>
       </a>
     </div>
@@ -382,19 +374,19 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 
     <div class="nav-section">
       <div class="nav-section-label">SAN</div>
-      <a class="nav-item" data-page="san" data-label="SAN Fabric" data-icon="🔶" onclick="navigate('san','SAN Fabric',this)">
+      <a class="nav-item" data-page="san" data-label="SAN Fabric" data-icon="🔶">
         <span class="nav-icon">🔶</span><span class="nav-label">SAN Fabric</span>
       </a>
-      <a class="nav-item" data-page="topology" data-label="Topology / SAN Harita" data-icon="🗺" onclick="navigate('topology','Topology',this)">
+      <a class="nav-item" data-page="topology" data-label="Topology / SAN Harita" data-icon="🗺">
         <span class="nav-icon">🗺</span><span class="nav-label">Topology / SAN Harita</span><span class="nav-badge new">vis.js</span>
       </a>
-      <a class="nav-item" data-page="zone-builder" data-label="Zone Builder" data-icon="⚡" onclick="navigate('zone-builder','Zone Builder',this)">
+      <a class="nav-item" data-page="zone-builder" data-label="Zone Builder" data-icon="⚡">
         <span class="nav-icon">⚡</span><span class="nav-label">Zone Builder</span>
       </a>
-      <a class="nav-item" data-page="WWNResolver" data-label="WWN Resolver" data-icon="🔍" onclick="navigate('WWNResolver','WWN Resolver',this)">
+      <a class="nav-item" data-page="WWNResolver" data-label="WWN Resolver" data-icon="🔍">
         <span class="nav-icon">🔍</span><span class="nav-label">WWN Resolver</span>
       </a>
-      <a class="nav-item" data-page="hostwwnfinder" data-label="Host WWN Finder" data-icon="🔎" onclick="navigate('hostwwnfinder','Host WWN Finder',this)">
+      <a class="nav-item" data-page="hostwwnfinder" data-label="Host WWN Finder" data-icon="🔎">
         <span class="nav-icon">🔎</span><span class="nav-label">Host WWN Finder</span>
       </a>
     </div>
@@ -403,16 +395,16 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 
     <div class="nav-section">
       <div class="nav-section-label">Analytics</div>
-      <a class="nav-item" data-page="trend" data-label="Trend Analizi" data-icon="📈" onclick="navigate('trend','Trend Analizi',this)">
+      <a class="nav-item" data-page="trend" data-label="Trend Analizi" data-icon="📈">
         <span class="nav-icon">📈</span><span class="nav-label">Trend Analizi</span>
       </a>
-      <a class="nav-item" data-page="anomaly" data-label="Anomali Dedektörü" data-icon="🚨" onclick="navigate('anomaly','Anomali Dedektörü',this)">
+      <a class="nav-item" data-page="anomaly" data-label="Anomali Dedektörü" data-icon="🚨">
         <span class="nav-icon">🚨</span><span class="nav-label">Anomali Dedektörü</span>
       </a>
-      <a class="nav-item" data-page="capacity-planner" data-label="Capacity Planner" data-icon="📊" onclick="navigate('capacity-planner','Capacity Planner',this)">
+      <a class="nav-item" data-page="capacity-planner" data-label="Capacity Planner" data-icon="📊">
         <span class="nav-icon">📊</span><span class="nav-label">Capacity Planner</span>
       </a>
-      <a class="nav-item" data-page="impact" data-label="Impact Analysis" data-icon="💥" onclick="navigate('impact','Impact Analysis',this)">
+      <a class="nav-item" data-page="impact" data-label="Impact Analysis" data-icon="💥">
         <span class="nav-icon">💥</span><span class="nav-label">Impact Analysis</span>
       </a>
     </div>
@@ -421,10 +413,10 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 
     <div class="nav-section">
       <div class="nav-section-label">Tools</div>
-      <a class="nav-item" data-page="cabinet-finder-v2" data-label="Cabinet Finder v2" data-icon="🗄" onclick="navigate('cabinet-finder-v2','Cabinet Finder v2',this)">
+      <a class="nav-item" data-page="cabinet-finder-v2" data-label="Cabinet Finder v2" data-icon="🗄">
         <span class="nav-icon">🗄</span><span class="nav-label">Cabinet Finder v2</span>
       </a>
-      <a class="nav-item" data-page="cabinet-finder" data-label="Cabinet Finder" data-icon="📦" onclick="navigate('cabinet-finder','Cabinet Finder',this)">
+      <a class="nav-item" data-page="cabinet-finder" data-label="Cabinet Finder" data-icon="📦">
         <span class="nav-icon">📦</span><span class="nav-label">Cabinet Finder</span>
       </a>
     </div>
@@ -433,7 +425,7 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 
     <div class="nav-section">
       <div class="nav-section-label">Management</div>
-      <a class="nav-item" data-page="management" data-label="Operations Center" data-icon="⚙️" onclick="navigate('management','Operations Center',this)">
+      <a class="nav-item" data-page="management" data-label="Operations Center" data-icon="⚙️">
         <span class="nav-icon">⚙️</span><span class="nav-label">Operations Center</span>
       </a>
     </div>
@@ -658,10 +650,10 @@ function renderTabs(activeId) {
   }
   bar.classList.add('visible');
   bar.innerHTML = STATE.tabs.map(t => `
-    <div class="tab-item ${t.id === activeId ? 'active' : ''}" onclick="navigateTab('${t.id}')">
+    <div class="tab-item ${t.id === activeId ? 'active' : ''}" data-tab="${escLabel(t.id)}">
       <span>${t.icon}</span>
       <span>${escLabel(t.label)}</span>
-      <span class="tab-close" onclick="closeTab(event,'${t.id}')">×</span>
+      <span class="tab-close" data-tab="${escLabel(t.id)}">×</span>
     </div>`).join('');
 
   // Scroll active tab into view
@@ -788,6 +780,35 @@ function routeFromHash() {
 
 window.addEventListener('popstate', () => routeFromHash());
 window.addEventListener('DOMContentLoaded', () => routeFromHash());
+
+  StorageNav.init({ title: "Portal SPA", section: "tools" });
+
+  // ── EVENT DELEGATION (replaces inline onclick) ──────────────────
+  // Sidebar nav items
+  document.getElementById('sidebar').addEventListener('click', function(e) {
+    const item = e.target.closest('.nav-item[data-page]');
+    if (!item) return;
+    e.preventDefault();
+    navigate(item.dataset.page, item.dataset.label, item);
+  });
+
+  // Sidebar toggle button
+  document.querySelector('.sidebar-toggle').addEventListener('click', toggleSidebar);
+
+  // Sidebar backdrop
+  document.getElementById('sidebar-backdrop').addEventListener('click', closeSidebar);
+
+  // Topbar search / quick-launch
+  document.querySelector('.topbar-search').addEventListener('click', openQL);
+
+  // Tab bar — event delegation for tab clicks and close buttons
+  document.getElementById('tab-bar').addEventListener('click', function(e) {
+    const closeBtn = e.target.closest('.tab-close[data-tab]');
+    if (closeBtn) { e.stopPropagation(); closeTab(e, closeBtn.dataset.tab); return; }
+    const tab = e.target.closest('.tab-item[data-tab]');
+    if (tab) navigateTab(tab.dataset.tab);
+  });
+
 </script>
 </body>
 </html>
