@@ -33,6 +33,8 @@ const StorageNav = (() => {
     { label: 'Host Finder',  href: './hostwwnfinder.html', section: 'tools' },
     { label: 'Cabinet Finder', href: './cabinet-finder.html', section: 'tools' },
     { label: 'Host Search',     href: './hostsearch.html',      section: 'tools' },
+    { label: 'Port Groups',     href: './portgroups.html',      section: 'tools' },
+    { label: 'Executive',       href: './executive.html',       section: 'tools' },
     { label: 'Cabinet v2',  href: './cabinet-finder-v2.html', section: 'tools' },
     { label: 'Ops Hub',   href: './management.html', section: 'tools' },
   ];

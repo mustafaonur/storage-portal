@@ -627,32 +627,92 @@ function renderNsTable() {
 
 /* ════════ CONNECTIVITY ════════ */
 function renderConnectivity() {
-  const istAnk = connData.filter(r => r.Kaynak === 'Istanbul' && r.Hedef === 'Ankara');
-  const ankIst = connData.filter(r => r.Kaynak === 'Ankara'   && r.Hedef === 'Istanbul');
+  const grid = document.querySelector('#tab-connectivity .conn-grid');
+  if (!grid) return;
 
-  const renderSide = (rows, elId) => {
-    if (rows.length === 0) {
-      document.getElementById(elId).innerHTML =
-        '<div class="center-state" style="padding:20px"><p>Veri yok</p></div>';
-      return;
-    }
-    const overall = rows.every(r => r.Durum === 'Success');
-    const html = rows.map(r => {
-      const ok = r.Durum === 'Success';
-      return `<div class="conn-row">
-        <span class="conn-ip">${esc(r.HedefIP||'')}</span>
-        <span class="conn-port">:${esc(r.Port||'')}</span>
-        <span class="${ok ? 'status-ok' : 'status-fail'}">${ok ? '✓ OK' : '✗ FAIL'}</span>
-      </div>`;
-    }).join('');
-    const badge = overall
-      ? `<span class="status-ok" style="font-size:11px;float:right">✓ TÜMÜ OK</span>`
-      : `<span class="status-fail" style="font-size:11px;float:right">✗ HATA VAR</span>`;
-    document.getElementById(elId).innerHTML = badge + html;
-  };
+  if (!connData || connData.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1">${spEmptyState({type:'no-data',
+      title:'Bağlantı verisi yok',
+      message:'ECS_Connectivity.csv bulunamadı.',
+      hint:'StorageReport.ps1 -OnlyECS'})}</div>`;
+    return;
+  }
 
-  renderSide(istAnk, 'conn-ist-ank');
-  renderSide(ankIst, 'conn-ank-ist');
+  // Build unique sites and ports
+  const sites = [...new Set([...connData.map(r=>r.Kaynak), ...connData.map(r=>r.Hedef)])].sort();
+  const ports  = [...new Set(connData.map(r=>r.Port))].sort();
+
+  // Summary KPIs
+  const totalTests = connData.length;
+  const failedTests = connData.filter(r => r.Durum !== 'Success').length;
+  const allOk = failedTests === 0;
+  const statusCol = allOk ? 'var(--accent3)' : 'var(--danger)';
+
+  // Replace grid content with full health view
+  grid.style.gridTemplateColumns = '1fr';
+  grid.innerHTML = `
+    <!-- KPI bar -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+      <div class="sp-stat-box sp-border-${allOk?'green':'danger'}">
+        <div class="sp-stat-label">Genel Durum</div>
+        <div class="sp-stat-value" style="color:${statusCol}">${allOk ? 'SAĞLIKLI' : 'SORUN VAR'}</div>
+        <div class="sp-stat-sub">${totalTests} test · ${failedTests} hata</div>
+      </div>
+      <div class="sp-stat-box sp-border-blue">
+        <div class="sp-stat-label">Test Edilen Port</div>
+        <div class="sp-stat-value">${ports.length}</div>
+        <div class="sp-stat-sub">${ports.join(' · ')}</div>
+      </div>
+      <div class="sp-stat-box sp-border-gold">
+        <div class="sp-stat-label">Site Bağlantısı</div>
+        <div class="sp-stat-value">${sites.length}</div>
+        <div class="sp-stat-sub">${sites.join(' ↔ ')}</div>
+      </div>
+    </div>
+
+    <!-- Connectivity matrix -->
+    <div style="margin-bottom:10px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Bağlantı Matrisi (Kaynak → Hedef : Port)</div>
+    <div style="overflow:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr>
+            <th style="padding:8px 14px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:var(--surface2);border-bottom:1px solid var(--border)">Kaynak</th>
+            <th style="padding:8px 14px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:var(--surface2);border-bottom:1px solid var(--border)">Hedef</th>
+            ${ports.map(p => `<th style="padding:8px 14px;text-align:center;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:var(--surface2);border-bottom:1px solid var(--border)">:${esc(p)}</th>`).join('')}
+            <th style="padding:8px 14px;text-align:center;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:var(--surface2);border-bottom:1px solid var(--border)">Özet</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sites.flatMap(src => sites.filter(s=>s!==src).map(dst => {
+            const rowData = ports.map(p => connData.find(r => r.Kaynak===src && r.Hedef===dst && r.Port===p));
+            const rowOk = rowData.filter(Boolean).every(r => r.Durum === 'Success');
+            const rowCol = rowData.filter(Boolean).length === 0 ? 'var(--text-dim)' : rowOk ? 'var(--accent3)' : 'var(--danger)';
+            return `<tr style="border-bottom:1px solid rgba(30,45,68,.5)">
+              <td style="padding:10px 14px;color:var(--accent2);font-weight:500">${esc(src)}</td>
+              <td style="padding:10px 14px;color:var(--text-bright)">${esc(dst)}</td>
+              ${ports.map(p => {
+                const r = connData.find(row => row.Kaynak===src && row.Hedef===dst && row.Port===p);
+                if (!r) return `<td style="padding:10px 14px;text-align:center;color:var(--text-dim)">—</td>`;
+                const ok = r.Durum === 'Success';
+                const col = ok ? 'var(--accent3)' : 'var(--danger)';
+                return `<td style="padding:10px 14px;text-align:center">
+                  <span style="color:${col};font-size:12px;font-weight:700">${ok?'✓':'✗'}</span>
+                  <div style="font-size:9px;color:${col};margin-top:2px">${esc(r.Durum)}</div>
+                </td>`;
+              }).join('')}
+              <td style="padding:10px 14px;text-align:center">
+                <span style="color:${rowCol};font-size:11px;font-weight:700;border:1px solid ${rowCol};padding:2px 8px">${rowOk?'OK':'HATA'}</span>
+              </td>
+            </tr>`;
+          })).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Last scan note -->
+    <div style="margin-top:12px;font-size:10px;color:var(--text-dim)">
+      Son güncelleme: ECS_Connectivity.csv · Tarama sırasında site→site port erişim testi yapılır
+    </div>`;
 }
 
 /* ════════ UTILS ════════ */

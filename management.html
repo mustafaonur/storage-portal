@@ -242,6 +242,7 @@ tr:hover .del-btn{opacity:1;}
   <button class="mtab" data-mtab="alarm">Alarm <span class="mtab-badge" id="mtab-alarm-badge">○</span></button>
   <button class="mtab" data-mtab="kontak">Kontaklar</button>
   <button class="mtab" data-mtab="kontrat">Kontrat Takip <span class="mtab-badge" id="mtab-kontrat-badge">○</span></button>
+  <button class="mtab" data-mtab="rezervasyon">Kapasite Rezervasyon <span class="mtab-badge" id="mtab-rezervasyon-badge">○</span></button>
 </div>
 
 <div class="tabpage active" id="tabpage-sorumluluk">
@@ -717,6 +718,88 @@ tr:hover .del-btn{opacity:1;}
   <span>Storage Portal v2.0</span>
 </div>
 </div>
+<div class="tabpage" id="tabpage-rezervasyon">
+  <div class="grid" style="grid-template-columns:1fr 1.4fr;gap:16px">
+
+    <!-- Form -->
+    <div class="panel pl-warn">
+      <div class="panel-hdr">Yeni Rezervasyon</div>
+      <div class="panel-body">
+        <div class="kk-row">
+          <div><label class="kk-lbl">Talep Eden Ekip / Proje</label><input id="rez-proje" class="kk-in" placeholder="ör. ENPARA-APP, QNB-DWH"></div>
+        </div>
+        <div class="kk-row2">
+          <div><label class="kk-lbl">Hedef Kabinet / Vendor</label>
+            <select id="rez-vendor" class="kk-in">
+              <option value="">Vendor seçin...</option>
+              <option>Huawei</option><option>PowerMax</option><option>Pure FA</option>
+              <option>Pure FB</option><option>NetApp</option><option>ECS</option>
+            </select>
+          </div>
+          <div><label class="kk-lbl">Lokasyon</label>
+            <select id="rez-lokasyon" class="kk-in">
+              <option value="">Lokasyon...</option>
+              <option>Istanbul</option><option>Ankara</option><option>Kos</option>
+            </select>
+          </div>
+        </div>
+        <div class="kk-row2">
+          <div><label class="kk-lbl">Talep Edilen Kapasite (TB)</label><input id="rez-tb" class="kk-in" type="number" min="0.1" step="0.1" placeholder="ör. 5.0"></div>
+          <div><label class="kk-lbl">Protokol</label>
+            <select id="rez-proto" class="kk-in">
+              <option>FC</option><option>NFS</option><option>iSCSI</option><option>S3</option><option>SMB</option>
+            </select>
+          </div>
+        </div>
+        <div class="kk-row2">
+          <div><label class="kk-lbl">Talep Tarihi</label><input id="rez-talep-tarih" class="kk-in" type="date"></div>
+          <div><label class="kk-lbl">Hedef Sağlama Tarihi</label><input id="rez-hedef-tarih" class="kk-in" type="date"></div>
+        </div>
+        <div class="kk-row">
+          <div><label class="kk-lbl">Host / Sunucu Adı</label><input id="rez-host" class="kk-in" placeholder="ör. srvprd-db01, birden fazla virgülle ayırın"></div>
+        </div>
+        <div class="kk-row">
+          <div><label class="kk-lbl">Durum</label>
+            <select id="rez-durum" class="kk-in">
+              <option value="beklemede">Beklemede</option>
+              <option value="onaylandi">Onaylandı</option>
+              <option value="saglandi">Sağlandı</option>
+              <option value="iptal">İptal</option>
+            </select>
+          </div>
+        </div>
+        <div class="kk-row">
+          <div><label class="kk-lbl">Not</label><input id="rez-not" class="kk-in" placeholder="Opsiyonel not"></div>
+        </div>
+        <button class="kk-btn" onclick="addRezSon()">+ Rezervasyon Ekle</button>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="panel">
+      <div class="panel-hdr" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Rezervasyon Listesi</span>
+        <div style="display:flex;gap:8px">
+          <select id="rez-filter" class="kk-in" style="padding:4px 8px;font-size:10px" onchange="renderRezSon()">
+            <option value="">Tüm Durumlar</option>
+            <option value="beklemede">Beklemede</option>
+            <option value="onaylandi">Onaylandı</option>
+            <option value="saglandi">Sağlandı</option>
+            <option value="iptal">İptal</option>
+          </select>
+          <button class="kk-btn" onclick="exportRezSon()" style="padding:4px 12px;font-size:10px">⬇ CSV</button>
+        </div>
+      </div>
+      <div id="rez-list" style="overflow-y:auto;max-height:520px"></div>
+      <div style="padding:10px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--text-dim)">
+        Toplam: <span id="rez-total-tb" style="color:var(--accent3)">0 TB</span> rezerve ·
+        <span id="rez-pending-tb" style="color:var(--warn)">0 TB</span> beklemede
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
 <script src="./asset-inventory.js"></script>
 <script src="./storage-utils.js"></script>
@@ -833,6 +916,8 @@ const DEFAULTS = {
 
   kabinetOnerileri:[],
 
+  rezervasyonlar: [],   // Kapasite rezervasyon kayıtları
+
   alarmConfig:{
     enabled:false,
     smtp:{ server:'', port:25, from:'uniprddb02@finansbank.com.tr',
@@ -907,7 +992,8 @@ function saveAll(){saveData();}
 function resetData(){if(!confirm('Tüm veriler sıfırlansın mı?'))return;D=JSON.parse(JSON.stringify(DEFAULTS));try{localStorage.removeItem(SK);}catch(e){console.error('localStorage.removeItem error:',e);}renderAll();showToast('Sıfırlandı');}
 
 /* ────────────────── RENDER ────────────────── */
-function renderAll(){renderKesinti();renderDrc();renderUrun();renderChecks();renderCalisma();renderNobet();restoreNk();renderEnvanter();renderKontaklar();renderSam();renderProposals();renderAlarmMail();mUpdateAlarmBadge();kontratInit();}
+function renderAll(){
+  renderRezSon();renderKesinti();renderDrc();renderUrun();renderChecks();renderCalisma();renderNobet();restoreNk();renderEnvanter();renderKontaklar();renderSam();renderProposals();renderAlarmMail();mUpdateAlarmBadge();kontratInit();}
 
 function renderKesinti(){
   const b = document.getElementById('b-kesinti');
@@ -2155,6 +2241,127 @@ function mUpdateAlarmBadge(){
   load();renderAll();
 
   StorageNav.init({ title: "Ops Hub", section: "tools" });
+
+/* ── KAPASİTE REZERVASYON SİSTEMİ ─────────────────────────── */
+function renderRezSon() {
+  const el  = document.getElementById('rez-list');
+  const filter = document.getElementById('rez-filter')?.value || '';
+  const list = (D.rezervasyonlar || []).filter(r => !filter || r.durum === filter);
+
+  const badge = document.getElementById('mtab-rezervasyon-badge');
+  const pending = (D.rezervasyonlar||[]).filter(r => r.durum === 'beklemede').length;
+  if (badge) badge.textContent = pending || '○';
+
+  const totalTB   = (D.rezervasyonlar||[]).reduce((s,r) => s + (parseFloat(r.tb)||0), 0);
+  const pendingTB = (D.rezervasyonlar||[]).filter(r=>r.durum==='beklemede').reduce((s,r) => s + (parseFloat(r.tb)||0), 0);
+  const totEl = document.getElementById('rez-total-tb');
+  const penEl = document.getElementById('rez-pending-tb');
+  if (totEl) totEl.textContent = totalTB.toFixed(1) + ' TB';
+  if (penEl) penEl.textContent = pendingTB.toFixed(1) + ' TB';
+
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);font-size:11px">Rezervasyon yok</div>';
+    return;
+  }
+
+  const durumCol = { beklemede:'var(--warn)', onaylandi:'var(--accent2)', saglandi:'var(--accent3)', iptal:'var(--text-dim)' };
+  const durumLbl = { beklemede:'BEKLEMEDE', onaylandi:'ONAYLANDI', saglandi:'SAĞLANDI', iptal:'İPTAL' };
+
+  const sortedList = [...list].sort((a,b) => (a.talepTarih||'').localeCompare(b.talepTarih||''));
+  el.innerHTML = sortedList.map((r,i) => {
+    const realIdx = (D.rezervasyonlar||[]).indexOf(r);
+    const col = durumCol[r.durum] || 'var(--text-dim)';
+    const overdue = r.hedefTarih && r.durum === 'beklemede' && new Date(r.hedefTarih) < new Date();
+    return `<div style="padding:10px 14px;border-bottom:1px solid rgba(30,45,68,.4);${overdue?'background:rgba(232,75,75,.04);':''}" >
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:var(--text-bright);font-weight:500">${esc(r.proje||'—')}</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:2px">
+            ${esc(r.vendor||'')} ${esc(r.lokasyon?'· '+r.lokasyon:'')} · ${esc(r.proto||'')} · ${r.tb||'?'} TB
+          </div>
+          <div style="font-size:9px;color:var(--text-dim);margin-top:2px">
+            ${r.host ? esc(r.host) + ' · ' : ''}Talep: ${esc(r.talepTarih||'—')} → Hedef: ${esc(r.hedefTarih||'—')}
+            ${overdue ? ' <span style="color:var(--danger)">⚠ Gecikti</span>' : ''}
+          </div>
+          ${r.not ? `<div style="font-size:9px;color:var(--text-dim);margin-top:2px;font-style:italic">${esc(r.not)}</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          <span style="font-size:9px;color:${col};border:1px solid ${col};padding:2px 7px">${durumLbl[r.durum]||r.durum}</span>
+          <div style="display:flex;gap:4px">
+            <select style="font-size:9px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:2px 4px"
+              onchange="changeRezDurum(${realIdx}, this.value)">
+              <option value="beklemede" ${r.durum==='beklemede'?'selected':''}>Beklemede</option>
+              <option value="onaylandi" ${r.durum==='onaylandi'?'selected':''}>Onaylandı</option>
+              <option value="saglandi"  ${r.durum==='saglandi'?'selected':''}>Sağlandı</option>
+              <option value="iptal"     ${r.durum==='iptal'?'selected':''}>İptal</option>
+            </select>
+            <button onclick="delRezSon(${realIdx})" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--danger);padding:2px 6px;cursor:pointer">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addRezSon() {
+  const proje  = document.getElementById('rez-proje').value.trim();
+  const vendor = document.getElementById('rez-vendor').value;
+  const lok    = document.getElementById('rez-lokasyon').value;
+  const tb     = document.getElementById('rez-tb').value;
+  const proto  = document.getElementById('rez-proto').value;
+  const host   = document.getElementById('rez-host').value.trim();
+  const talep  = document.getElementById('rez-talep-tarih').value;
+  const hedef  = document.getElementById('rez-hedef-tarih').value;
+  const durum  = document.getElementById('rez-durum').value;
+  const not    = document.getElementById('rez-not').value.trim();
+
+  if (!proje || !vendor || !tb) {
+    showToast('Proje, vendor ve kapasite zorunlu'); return;
+  }
+  if (!D.rezervasyonlar) D.rezervasyonlar = [];
+  D.rezervasyonlar.push({ proje, vendor, lokasyon:lok, tb:parseFloat(tb)||0, proto, host, talepTarih:talep, hedefTarih:hedef, durum, not });
+
+  // Clear form
+  ['rez-proje','rez-host','rez-not'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  document.getElementById('rez-tb').value = '';
+
+  saveData();
+  renderRezSon();
+  showToast('Rezervasyon eklendi ✓');
+}
+
+function changeRezDurum(idx, val) {
+  if (!D.rezervasyonlar || !D.rezervasyonlar[idx]) return;
+  D.rezervasyonlar[idx].durum = val;
+  saveData();
+  renderRezSon();
+}
+
+function delRezSon(idx) {
+  if (!confirm('Bu rezervasyonu silmek istediğinizden emin misiniz?')) return;
+  D.rezervasyonlar.splice(idx, 1);
+  saveData();
+  renderRezSon();
+}
+
+function exportRezSon() {
+  if (!D.rezervasyonlar || !D.rezervasyonlar.length) { showToast('Dışa aktarılacak veri yok'); return; }
+  const cols = ['proje','vendor','lokasyon','tb','proto','host','talepTarih','hedefTarih','durum','not'];
+  const header = cols.join(',');
+  const rows = D.rezervasyonlar.map(r => cols.map(k => '"'+(String(r[k]||'').replace(/"/g,'""'))+'"').join(','));
+  const blob = new Blob(['﻿'+[header,...rows].join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'rezervasyonlar.csv';
+  a.click();
+}
+
+// Set today as default talep date
+(function() {
+  const el = document.getElementById('rez-talep-tarih');
+  if (el) el.value = new Date().toISOString().slice(0,10);
+})();
+
 </script>
 
 </body>

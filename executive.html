@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Summary · Storage Portal</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<script src="./asset-inventory.js"></script>
+<script src="./nav.js"></script>
+<style>
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.18) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.shell{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:28px 24px;}
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid var(--border);}
+.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:3px;}
+.report-meta{text-align:right;font-size:10px;color:var(--text-dim);line-height:1.9;}
+.report-date{font-size:13px;color:var(--text-bright);font-weight:600;}
+
+/* Health Score */
+.health-hero{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;background:var(--surface);border:1px solid var(--border);padding:24px 28px;margin-bottom:24px;}
+.score-ring{position:relative;width:110px;height:110px;flex-shrink:0;}
+.score-ring svg{width:110px;height:110px;}
+.score-value{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.score-num{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;line-height:1;}
+.score-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-top:2px;}
+.health-detail{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.hd-item{border-left:2px solid var(--border);padding-left:14px;}
+.hd-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
+.hd-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
+.hd-sub{font-size:10px;color:var(--text-dim);margin-top:3px;}
+
+/* Section */
+.section{margin-bottom:24px;}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.section-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
+
+/* Vendor capacity grid */
+.vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+.vendor-card{background:var(--surface);border:1px solid var(--border);padding:16px;}
+.vc-name{font-size:12px;font-weight:600;color:var(--text-bright);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.vc-bar-wrap{height:8px;background:var(--surface2);border:1px solid var(--border);margin:8px 0;}
+.vc-bar{height:100%;transition:width .6s;}
+.vc-stats{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);}
+
+/* Critical table */
+.crit-table{width:100%;border-collapse:collapse;font-size:11px;}
+.crit-table th{background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.crit-table td{padding:8px 12px;border-bottom:1px solid rgba(30,45,68,.5);}
+.crit-table tr:hover td{background:var(--surface2);}
+
+/* Contract */
+.contract-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
+.contract-item{background:var(--surface);border:1px solid var(--border);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.ci-info{flex:1;min-width:0;}
+.ci-name{font-size:11px;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ci-sub{font-size:9px;color:var(--text-dim);margin-top:2px;}
+.ci-days{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;text-align:right;flex-shrink:0;}
+
+/* Print */
+@media print {
+  body{background:#fff;color:#111;}
+  body::before{display:none;}
+  .shell{padding:20px;max-width:100%;}
+  .no-print{display:none!important;}
+  .vendor-card,.contract-item,.health-hero{border-color:#ccc;background:#f8f8f8;}
+  .section-title{color:#1a3a6c;}
+  .hd-value{color:#111;}
+  header{border-bottom:2px solid #333;}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div>
+    <div class="brand-title">Enterprise Storage — Executive Summary</div>
+    <div class="brand-sub">QNB / Enpara · ibtech Storage Operations</div>
+  </div>
+  <div class="report-meta">
+    <div class="report-date" id="report-date">—</div>
+    <div>Otomatik oluşturuldu · Storage Portal</div>
+    <div class="no-print" style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="window.print()" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:1px">🖨 YAZDIR</button>
+      <a href="./index.html" style="font-size:9px;color:var(--accent2);text-decoration:none;border:1px solid rgba(75,159,232,.35);padding:4px 12px">← Dashboard</a>
+    </div>
+  </div>
+</header>
+
+<!-- STORAGE HEALTH SCORE -->
+<div class="health-hero">
+  <div class="score-ring">
+    <svg viewBox="0 0 110 110">
+      <circle cx="55" cy="55" r="46" fill="none" stroke="var(--surface2)" stroke-width="8"/>
+      <circle id="score-arc" cx="55" cy="55" r="46" fill="none" stroke="var(--accent3)" stroke-width="8"
+        stroke-linecap="round" stroke-dasharray="289 289" stroke-dashoffset="289"
+        transform="rotate(-90 55 55)" style="transition:stroke-dashoffset 1s ease,stroke .4s"/>
+    </svg>
+    <div class="score-value">
+      <div class="score-num" id="score-num" style="color:var(--accent3)">—</div>
+      <div class="score-lbl">SKOR</div>
+    </div>
+  </div>
+  <div class="health-detail">
+    <div class="hd-item">
+      <div class="hd-label">Toplam Kapasite</div>
+      <div class="hd-value" id="ex-cap">—</div>
+      <div class="hd-sub" id="ex-cap-sub">—</div>
+    </div>
+    <div class="hd-item">
+      <div class="hd-label">Ortalama Doluluk</div>
+      <div class="hd-value" id="ex-pct">—</div>
+      <div class="hd-sub" id="ex-pct-sub">—</div>
+    </div>
+    <div class="hd-item">
+      <div class="hd-label">Kritik Alarm</div>
+      <div class="hd-value" id="ex-crit" style="color:var(--danger)">—</div>
+      <div class="hd-sub" id="ex-crit-sub">—</div>
+    </div>
+    <div class="hd-item">
+      <div class="hd-label">Kontrat Riski</div>
+      <div class="hd-value" id="ex-contract" style="color:var(--warn)">—</div>
+      <div class="hd-sub">90 gün içinde bitiyor</div>
+    </div>
+  </div>
+</div>
+
+<!-- VENDOR CAPACITY -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-title">Vendor Kapasite Durumu</div>
+    <div id="vendor-last-scan" style="font-size:10px;color:var(--text-dim)"></div>
+  </div>
+  <div class="vendor-grid" id="vendor-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-dim);font-size:11px">Yükleniyor...</div>
+  </div>
+</div>
+
+<!-- CRITICAL CABINETS -->
+<div class="section" id="crit-section" style="display:none">
+  <div class="section-hdr">
+    <div class="section-title" style="color:var(--danger)">Kritik Kabinetler (%80+)</div>
+    <span id="crit-count" style="font-size:10px;color:var(--danger)"></span>
+  </div>
+  <table class="crit-table">
+    <thead><tr>
+      <th>Kabinet</th><th>Vendor</th><th>Lokasyon</th>
+      <th>Total (TB)</th><th>Kullanım</th><th>Boş (TB)</th>
+    </tr></thead>
+    <tbody id="crit-tbody"></tbody>
+  </table>
+</div>
+
+<!-- CONTRACT EXPIRY -->
+<div class="section" id="contract-section" style="display:none">
+  <div class="section-hdr">
+    <div class="section-title" style="color:var(--warn)">Kontrat / Garanti Takibi</div>
+    <span style="font-size:10px;color:var(--text-dim)">180 gün içinde bitiyor</span>
+  </div>
+  <div class="contract-grid" id="contract-grid"></div>
+</div>
+
+<!-- SITE COMPARISON -->
+<div class="section" id="site-section" style="display:none">
+  <div class="section-hdr">
+    <div class="section-title">Site Karşılaştırması</div>
+  </div>
+  <div id="site-comp-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px"></div>
+</div>
+
+<!-- FOOTER -->
+<div style="margin-top:32px;padding-top:14px;border-top:1px solid var(--border);font-size:9px;color:var(--text-dim);display:flex;justify-content:space-between;">
+  <span>Enterprise Storage Portal · ibtech · QNB/Enpara</span>
+  <span id="footer-date"></span>
+</div>
+
+</div>
+<script>
+const VENDORS = [
+  { id:'hw',   label:'Huawei OceanStor',  url:'./Hw/Dorado_Dashboard.csv',    col:'Kabinet', accent:'var(--accent)'  },
+  { id:'pmax', label:'Dell PowerMax',      url:'./Pmax/PmaxPoolDash.csv',       col:'Array ID',accent:'var(--accent2)' },
+  { id:'pure', label:'Pure FlashArray',    url:'./Pure/Pure_Dashboard.csv',     col:'Kabinet', accent:'var(--accent3)' },
+  { id:'fb',   label:'Pure FlashBlade',    url:'./Pure/FB_Dashboard.csv',       col:'Kabinet', accent:'var(--purple)'  },
+  { id:'na',   label:'NetApp ONTAP',       url:'./NetApp/NetApp_Dashboard.csv', col:'Kabinet', accent:'var(--accent2)' },
+  { id:'ecs',  label:'Dell ECS',           url:'./Ecs/ECS_Dashboard.csv',       col:'Node IP', accent:'var(--warn)'    },
+];
+
+const SKIP = r => {
+  const k = (r['Kabinet']||r['Array ID']||r['Node IP']||'').trim();
+  const l = (r['Lokasyon']||'').trim();
+  return !k || /^(TOPLAM|GENEL|===|---)/i.test(k) || ['---','==='].includes(l);
+};
+
+let allAlarms = [];
+let bySite = {};
+
+async function main() {
+  const now = new Date();
+  document.getElementById('report-date').textContent = now.toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('footer-date').textContent = now.toLocaleString('tr-TR');
+
+  // Fetch all vendor dashboards
+  const results = await Promise.allSettled(VENDORS.map(v => fetchCSVParsed(v.url)));
+  const vendorData = VENDORS.map((v,i) => ({
+    ...v,
+    rows: results[i].status === 'fulfilled' ? results[i].value.filter(r => !SKIP(r)) : []
+  }));
+
+  let totalCap = 0, totalUsed = 0, totalFree = 0, totalCabs = 0;
+  allAlarms = [];
+  bySite = {};
+
+  // Build vendor cards
+  const grid = document.getElementById('vendor-grid');
+  const cards = vendorData.map(v => {
+    if (!v.rows.length) return null;
+    const cap  = v.rows.reduce((s,r) => s + toN(r['Total (TB)']), 0);
+    const used = v.rows.reduce((s,r) => s + toN(r['Used (TB)']), 0);
+    const free = cap - used;
+    const pct  = cap > 0 ? used/cap*100 : 0;
+    const barCol = pct >= 80 ? 'var(--danger)' : pct >= 70 ? 'var(--warn)' : v.accent;
+
+    totalCap  += cap;
+    totalUsed += used;
+    totalFree += free;
+    totalCabs += v.rows.length;
+
+    // Alarms
+    v.rows.forEach(r => {
+      const p = toN(r['Doluluk (%)']);
+      if (p >= 80) allAlarms.push({
+        vendor: v.label, kabinet: r['Kabinet']||r['Array ID']||'',
+        lokasyon: r['Lokasyon']||'', total: toN(r['Total (TB)']),
+        used: toN(r['Used (TB)']), free: toN(r['Free (TB)']), pct: p
+      });
+    });
+
+    // By site
+    v.rows.forEach(r => {
+      const site = (r['Lokasyon']||'Diğer').trim();
+      if (!bySite[site]) bySite[site] = {cap:0,used:0,cabs:0};
+      bySite[site].cap  += toN(r['Total (TB)']);
+      bySite[site].used += toN(r['Used (TB)']);
+      bySite[site].cabs += 1;
+    });
+
+    return { v, cap, used, free, pct, barCol };
+  }).filter(Boolean);
+
+  if (!cards.length) {
+    grid.innerHTML = spEmptyState({type:'no-data',title:'Vendor verisi yok',message:'StorageReport.ps1 çalıştırıldıktan sonra veriler burada görünür.'});
+    return;
+  }
+
+  grid.innerHTML = cards.map(({v, cap, used, pct, barCol}) => `
+    <div class="vendor-card">
+      <div class="vc-name">
+        <span>${esc(v.label)}</span>
+        <span style="font-size:10px;color:${barCol};font-weight:700">${pct.toFixed(1)}%</span>
+      </div>
+      <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.min(100,pct).toFixed(1)}%;background:${barCol}"></div></div>
+      <div class="vc-stats">
+        <span>${cap.toFixed(1)} TB total</span>
+        <span style="color:var(--text-bright)">${used.toFixed(1)} TB used</span>
+      </div>
+    </div>`).join('');
+
+  // Health score: 100 - penalties
+  // -5 per critical cabinet, -2 per warning, -10 per site >85%
+  const critCount  = allAlarms.length;
+  const warnCount  = vendorData.flatMap(v => v.rows).filter(r => { const p=toN(r['Doluluk (%)']); return p>=70&&p<80; }).length;
+  const avgPct     = totalCap > 0 ? totalUsed/totalCap*100 : 0;
+  let score = Math.max(0, 100 - critCount*6 - warnCount*2 - Math.max(0, avgPct-60)*0.5);
+  score = Math.round(score);
+  const scoreCol = score >= 80 ? 'var(--accent3)' : score >= 60 ? 'var(--warn)' : 'var(--danger)';
+
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-num').style.color = scoreCol;
+  const arc = document.getElementById('score-arc');
+  arc.style.stroke = scoreCol;
+  const circ = 2 * Math.PI * 46;
+  arc.style.strokeDashoffset = circ - (score/100)*circ;
+
+  document.getElementById('ex-cap').textContent = totalCap.toFixed(1) + ' TB';
+  document.getElementById('ex-cap-sub').textContent = (totalCap/1024).toFixed(2) + ' PB · ' + totalCabs + ' kabinet';
+  document.getElementById('ex-pct').textContent = avgPct.toFixed(1) + '%';
+  document.getElementById('ex-pct-sub').style.color = avgPct>=80?'var(--danger)':avgPct>=70?'var(--warn)':'var(--accent3)';
+  document.getElementById('ex-pct-sub').textContent = totalUsed.toFixed(0) + ' / ' + totalCap.toFixed(0) + ' TB';
+  document.getElementById('ex-crit').textContent = critCount;
+  document.getElementById('ex-crit-sub').textContent = warnCount + ' uyarı seviyesinde';
+
+  // Critical cabinets
+  if (allAlarms.length) {
+    document.getElementById('crit-section').style.display = 'block';
+    document.getElementById('crit-count').textContent = allAlarms.length + ' kabinet';
+    const sorted = [...allAlarms].sort((a,b) => b.pct - a.pct);
+    document.getElementById('crit-tbody').innerHTML = sorted.map(a => {
+      const col = a.pct >= 90 ? 'var(--danger)' : 'var(--warn)';
+      return `<tr>
+        <td style="color:var(--text-bright);font-weight:500">${esc(a.kabinet)}</td>
+        <td style="color:var(--text-dim)">${esc(a.vendor)}</td>
+        <td style="color:var(--text-dim)">${esc(a.lokasyon)}</td>
+        <td>${a.total.toFixed(1)}</td>
+        <td><span style="color:${col};font-weight:700">${a.pct.toFixed(1)}%</span></td>
+        <td style="color:${a.free<10?'var(--danger)':'var(--text-dim)'}">${a.free.toFixed(1)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Contract expiry
+  if (typeof ASSET_INVENTORY !== 'undefined' && ASSET_INVENTORY.length) {
+    const now2 = new Date();
+    const expiring = ASSET_INVENTORY
+      .filter(r => r.contractEnd)
+      .map(r => ({...r, days: Math.round((new Date(r.contractEnd)-now2)/86400000)}))
+      .filter(r => r.days >= 0 && r.days <= 180)
+      .sort((a,b) => a.days - b.days);
+
+    document.getElementById('ex-contract').textContent = expiring.filter(r=>r.days<=90).length;
+
+    if (expiring.length) {
+      document.getElementById('contract-section').style.display = 'block';
+      document.getElementById('contract-grid').innerHTML = expiring.map(r => {
+        const col = r.days <= 30 ? 'var(--danger)' : r.days <= 90 ? 'var(--warn)' : 'var(--accent)';
+        return `<div class="contract-item">
+          <div class="ci-info">
+            <div class="ci-name">${esc(r.productName||'')}</div>
+            <div class="ci-sub">${esc(r.assetId||'')} · ${esc(r.location||'')}</div>
+            <div class="ci-sub">${esc(r.contractEnd)}</div>
+          </div>
+          <div class="ci-days" style="color:${col}">${r.days}<div style="font-size:9px;font-weight:400;color:var(--text-dim)">gün</div></div>
+        </div>`;
+      }).join('');
+    }
+  } else {
+    document.getElementById('ex-contract').textContent = '—';
+  }
+
+  // Site comparison
+  const sites = Object.entries(bySite).sort((a,b) => b[1].cap - a[1].cap);
+  if (sites.length >= 2) {
+    document.getElementById('site-section').style.display = 'block';
+    document.getElementById('site-comp-grid').innerHTML = sites.map(([site, s]) => {
+      const pct = s.cap > 0 ? s.used/s.cap*100 : 0;
+      const col = pct >= 80 ? 'var(--danger)' : pct >= 70 ? 'var(--warn)' : 'var(--accent3)';
+      return `<div class="vendor-card">
+        <div class="vc-name"><span style="font-family:'Syne',sans-serif">${esc(site)}</span>
+          <span style="font-size:10px;color:${col}">${pct.toFixed(1)}%</span></div>
+        <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.min(100,pct).toFixed(1)}%;background:${col}"></div></div>
+        <div class="vc-stats"><span>${s.cap.toFixed(1)} TB</span><span>${s.cabs} kabinet</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Last scan
+  renderFreshnessBadge('vendor-last-scan', VENDORS.map(v=>v.url), true);
+}
+
+main();
+StorageNav.init({ title: 'Executive Summary', section: 'tools' });
+</script>
+</body>
+</html>

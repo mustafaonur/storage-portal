@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Port Group Mapping · Storage Portal</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
+<style>
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+.brand-icon{width:42px;height:42px;border:2px solid var(--purple);display:grid;place-items:center;animation:pb 3s ease-in-out infinite;}
+@keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(192,132,252,.4);}50%{box-shadow:0 0 0 6px rgba(192,132,252,0);}}
+.brand-icon svg{width:22px;height:22px;stroke:var(--purple);fill:none;stroke-width:1.5;stroke-linecap:round;}
+.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+
+.vendor-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);}
+.v-tab{background:transparent;border:none;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:10px 22px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.v-tab.active{color:var(--purple);border-bottom-color:var(--purple);}
+.v-tab:hover{color:var(--text);}
+.v-panel{display:none;}
+.v-panel.active{display:block;}
+
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.pg-search{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 12px;outline:none;}
+.pg-search:focus{border-color:var(--purple);}
+.filter-sel{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 12px;outline:none;}
+.filter-sel:focus{border-color:var(--purple);}
+
+.pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;}
+.pg-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);overflow:hidden;}
+.pg-card-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.pg-name{font-size:13px;font-weight:600;color:var(--text-bright);}
+.pg-alias{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.pg-meta{text-align:right;font-size:10px;color:var(--text-dim);}
+.pg-ports{padding:10px 16px;}
+.port-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(30,45,68,.4);font-size:10px;}
+.port-row:last-child{border-bottom:none;}
+.port-wwn{font-family:monospace;color:var(--accent2);font-size:9px;flex:1;word-break:break-all;}
+.port-count{color:var(--text-dim);font-size:9px;white-space:nowrap;}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="1"/><path d="M6 11h12M6 13h12"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+    </div>
+    <div>
+      <div class="brand-title">Port Group Mapping</div>
+      <div class="brand-sub">Huawei Dorado · Dell PowerMax · Target Port Görünümü</div>
+    </div>
+  </div>
+  <div id="data-fresh-badge"></div>
+</header>
+
+<div class="vendor-tabs">
+  <button class="v-tab active" data-panel="huawei">Huawei OceanStor</button>
+  <button class="v-tab" data-panel="pmax">Dell PowerMax</button>
+</div>
+
+<!-- HUAWEI -->
+<div class="v-panel active" id="panel-huawei">
+  <div class="stats-row" id="hw-stats"></div>
+  <div class="filter-bar">
+    <input class="pg-search" id="hw-search" placeholder="Port group, alias, kabinet ara..." autocomplete="off">
+    <select class="filter-sel" id="hw-cab"><option value="">Tüm Kabinetler</option></select>
+    <select class="filter-sel" id="hw-loc"><option value="">Tüm Lokasyonlar</option></select>
+    <span id="hw-count" style="font-size:10px;color:var(--text-dim)"></span>
+  </div>
+  <div class="pg-grid" id="hw-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-dim)">Yükleniyor...</div>
+  </div>
+</div>
+
+<!-- PMAX -->
+<div class="v-panel" id="panel-pmax">
+  <div class="stats-row" id="pm-stats"></div>
+  <div class="filter-bar">
+    <input class="pg-search" id="pm-search" placeholder="Port group, alias, array ara..." autocomplete="off">
+    <select class="filter-sel" id="pm-cab"><option value="">Tüm Arrayler</option></select>
+    <span id="pm-count" style="font-size:10px;color:var(--text-dim)"></span>
+  </div>
+  <div class="pg-grid" id="pm-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-dim)">Yükleniyor...</div>
+  </div>
+</div>
+
+</div>
+<script>
+const CSV_HW_PG   = './Hw/Dorado_PortGroup.csv';
+const CSV_PMAX_PG = './Pmax/PmaxPortGroup.csv';
+
+let hwData   = [];
+let pmaxData = [];
+
+// Group by (kabinet, portGroup) → array of {alias, wwn, portCount}
+function groupPortGroups(rows, cabinetCol) {
+  const groups = {};
+  rows.forEach(r => {
+    const cab = (r['Kabinet'] || r[cabinetCol] || '').trim();
+    const pg  = (r['PortGroup'] || '').trim();
+    const key = `${cab}||${pg}`;
+    if (!groups[key]) {
+      groups[key] = {
+        kabinet:   cab,
+        lokasyon:  (r['Lokasyon'] || '').trim(),
+        portGroup: pg,
+        alias:     (r['Alias'] || '').trim(),
+        ports: []
+      };
+    }
+    const wwn  = (r['PortWWN'] || '').trim();
+    const cnt  = r['PortCount'] ? parseInt(r['PortCount']) || 0 : 0;
+    if (wwn) groups[key].ports.push({ wwn, count: cnt });
+  });
+  return Object.values(groups).sort((a,b) => a.kabinet.localeCompare(b.kabinet) || a.portGroup.localeCompare(b.portGroup));
+}
+
+function buildCard(g) {
+  const portHtml = g.ports.length
+    ? g.ports.map(p => `<div class="port-row">
+        <div class="port-wwn">${esc(p.wwn || '—')}</div>
+        ${p.count ? `<div class="port-count">${p.count} port</div>` : ''}
+      </div>`).join('')
+    : `<div style="padding:8px 0;font-size:10px;color:var(--text-dim)">Port WWN verisi yok</div>`;
+
+  return `<div class="pg-card">
+    <div class="pg-card-hdr">
+      <div>
+        <div class="pg-name">${esc(g.portGroup)}</div>
+        ${g.alias && g.alias !== g.portGroup ? `<div class="pg-alias">${esc(g.alias)}</div>` : ''}
+      </div>
+      <div class="pg-meta">
+        <div style="color:var(--text-bright);font-weight:500">${esc(g.kabinet)}</div>
+        <div>${esc(g.lokasyon)}</div>
+        <div style="color:var(--purple)">${g.ports.length} port</div>
+      </div>
+    </div>
+    <div class="pg-ports">${portHtml}</div>
+  </div>`;
+}
+
+function renderGrid(groups, gridId, countId, searchId, cabSelId, locSelId) {
+  const q      = (document.getElementById(searchId)?.value || '').toLowerCase();
+  const cabF   =  document.getElementById(cabSelId)?.value || '';
+  const locF   =  document.getElementById(locSelId)?.value || '';
+
+  let data = groups.filter(g =>
+    (!q   || g.portGroup.toLowerCase().includes(q) || g.alias.toLowerCase().includes(q) || g.kabinet.toLowerCase().includes(q)) &&
+    (!cabF || g.kabinet   === cabF) &&
+    (!locF || g.lokasyon  === locF)
+  );
+
+  document.getElementById(countId).textContent = `${data.length} port group`;
+  const grid = document.getElementById(gridId);
+  if (!data.length) {
+    grid.innerHTML = spEmptyState({type: data.length===0&&groups.length===0 ? 'no-data' : 'no-filter',
+      title: groups.length===0 ? 'Port group verisi yok' : 'Eşleşen port group yok',
+      message: groups.length===0 ? 'CSV dosyası bulunamadı.' : 'Filtreyi değiştirmeyi deneyin.'});
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  const div  = document.createElement('div');
+  div.className = 'pg-grid';
+  div.innerHTML = data.map(g => buildCard(g)).join('');
+  grid.innerHTML = '';
+  grid.appendChild(div);
+}
+
+function populateFilters(groups, cabSelId, locSelId) {
+  const cabSel = document.getElementById(cabSelId);
+  const locSel = document.getElementById(locSelId);
+  if (cabSel) {
+    const cabs = [...new Set(groups.map(g => g.kabinet).filter(Boolean))].sort();
+    cabSel.innerHTML = '<option value="">Tüm Kabinetler</option>' + cabs.map(c=>`<option>${esc(c)}</option>`).join('');
+  }
+  if (locSel) {
+    const locs = [...new Set(groups.map(g => g.lokasyon).filter(Boolean))].sort();
+    locSel.innerHTML = '<option value="">Tüm Lokasyonlar</option>' + locs.map(l=>`<option>${esc(l)}</option>`).join('');
+  }
+}
+
+function buildStats(groups, statsId) {
+  const totalPG    = groups.length;
+  const totalPorts = groups.reduce((s,g) => s + g.ports.length, 0);
+  const cabinets   = new Set(groups.map(g=>g.kabinet)).size;
+  const emptyPG    = groups.filter(g=>g.ports.length===0).length;
+
+  document.getElementById(statsId).innerHTML = `
+    <div class="sp-stat-box sp-border-purple">
+      <div class="sp-stat-label">Port Group</div>
+      <div class="sp-stat-value">${totalPG}</div>
+      <div class="sp-stat-sub">${cabinets} kabinet</div>
+    </div>
+    <div class="sp-stat-box sp-border-blue">
+      <div class="sp-stat-label">Toplam Port</div>
+      <div class="sp-stat-value">${totalPorts}</div>
+      <div class="sp-stat-sub">target port</div>
+    </div>
+    <div class="sp-stat-box sp-border-gold">
+      <div class="sp-stat-label">Ortalama Port/PG</div>
+      <div class="sp-stat-value">${totalPG ? (totalPorts/totalPG).toFixed(1) : '—'}</div>
+    </div>
+    <div class="sp-stat-box ${emptyPG>0?'sp-border-warn':'sp-border-green'}">
+      <div class="sp-stat-label">Boş Port Group</div>
+      <div class="sp-stat-value ${emptyPG>0?'sp-warn':'sp-accent3'}">${emptyPG}</div>
+      <div class="sp-stat-sub">${emptyPG>0?'Port ataması yok':'Tümü dolu'}</div>
+    </div>`;
+}
+
+async function loadAll() {
+  const [hwRows, pmaxRows] = await Promise.all([
+    fetchCSVParsed(CSV_HW_PG),
+    fetchCSVParsed(CSV_PMAX_PG)
+  ]);
+
+  hwData   = groupPortGroups(hwRows, 'Kabinet');
+  pmaxData = groupPortGroups(pmaxRows, 'Kabinet');
+
+  buildStats(hwData, 'hw-stats');
+  buildStats(pmaxData, 'pm-stats');
+
+  populateFilters(hwData, 'hw-cab', 'hw-loc');
+  populateFilters(pmaxData, 'pm-cab', null);
+
+  renderGrid(hwData,   'hw-grid', 'hw-count', 'hw-search', 'hw-cab', 'hw-loc');
+  renderGrid(pmaxData, 'pm-grid', 'pm-count', 'pm-search', 'pm-cab', null);
+
+  renderFreshnessBadge('data-fresh-badge', [CSV_HW_PG, CSV_PMAX_PG], true);
+}
+
+// Event wiring
+['hw-search','hw-cab','hw-loc'].forEach(id => {
+  document.getElementById(id)?.addEventListener(id==='hw-search'?'input':'change',
+    debounce(() => renderGrid(hwData,'hw-grid','hw-count','hw-search','hw-cab','hw-loc')));
+});
+['pm-search','pm-cab'].forEach(id => {
+  document.getElementById(id)?.addEventListener(id==='pm-search'?'input':'change',
+    debounce(() => renderGrid(pmaxData,'pm-grid','pm-count','pm-search','pm-cab',null)));
+});
+
+// Tab switching
+document.querySelector('.vendor-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.v-tab[data-panel]');
+  if (!tab) return;
+  document.querySelectorAll('.v-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.v-panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+});
+
+loadAll();
+StorageNav.init({ title: 'Port Groups', section: 'tools' });
+</script>
+</body>
+</html>
