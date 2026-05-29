@@ -1,0 +1,26 @@
+[
+  {
+    "id": "orphan-hba",
+    "name": "Orphan HBA",
+    "severity": "critical",
+    "desc": "Fabric'te görünen ama aktif zone'u olmayan HBA — erişim kesintisi riski."
+  },
+  {
+    "id": "ghost-member",
+    "name": "Ghost Zone Üyesi",
+    "severity": "warn",
+    "desc": "Zone'da tanımlı ama fabric'te görünmeyen WWN — stale konfigürasyon."
+  },
+  {
+    "id": "no-alias",
+    "name": "WWN Alias Eksik",
+    "severity": "info",
+    "desc": "Alias tanımlanmamış WWN'ler yönetim görünürlüğünü azaltır."
+  },
+  {
+    "id": "single-initiator",
+    "name": "Çoklu Initiator",
+    "severity": "warn",
+    "desc": "Aynı zone'da 2'den fazla initiator — I/O çakışma riski."
+  }
+]

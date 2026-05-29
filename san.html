@@ -499,6 +499,7 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <button class="tab-btn" data-tab="ports" onclick="setTab('ports', event)">Port Analizi</button>
     <button class="tab-btn" data-tab="charts" onclick="setTab('charts', event)">Grafikler</button>
     <button class="tab-btn" data-tab="zoneaudit" onclick="setTab('zoneaudit', event)">Zone Audit</button>
+    <button class="tab-btn" data-tab="compliance" onclick="setTab('compliance', event)">Uyumluluk</button>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -597,6 +598,19 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     </div>
 
     <div id="za-table-wrap"></div>
+  </div>
+
+  <div id="tab-compliance" class="tab-content sp-hidden">
+    <div class="section-title" style="padding:24px 0 12px">Zone Uyumluluk Kuralları</div>
+
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);padding:10px 14px;font-size:10px;color:var(--text-dim);line-height:1.7;margin-bottom:18px">
+      <b style="color:var(--text-bright)">Kural motoru:</b>
+      Zone Audit CSV'sindeki veriler üzerinde JSON-tabanlı kurallar çalıştırır.
+      Kurallar <code>zone-rules.json</code> dosyasından okunur — yoksa yerleşik varsayılanlar kullanılır.
+    </div>
+
+    <div id="compliance-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px"></div>
+    <div id="compliance-results"></div>
   </div>
 
   <div class="dash-footer">
@@ -1630,6 +1644,169 @@ autoCheckFreshness(['./San/SAN_Director_Dashboard.csv', './San/SAN_Director_Port
   const __db_renderZoneAudit = debounce(renderZoneAudit);
 
   StorageNav.init({ title: "SAN / Brocade", section: "vendor" });
+
+/* ══════════════════════════════════════════════════════════════
+   ZONE COMPLIANCE ENGINE
+   Kurallar zone-rules.json'dan okunur. Yoksa BUILTIN_RULES kullanılır.
+   Her kural: { id, name, severity, check(row, allRows) → bool (ihlal=true) }
+══════════════════════════════════════════════════════════════ */
+const BUILTIN_RULES = [
+  {
+    id:'single-initiator',
+    name:'Tek Initiator Kontrolü',
+    severity:'warn',
+    desc:'Aynı zone\'da birden fazla initiator (HBA) varsa potansiyel I/O çakışması.',
+    check(row, all) {
+      if (!row['Zone'] || row['Zone']==='—') return false;
+      const zoneName = row['Zone'];
+      const members = all.filter(r => r['Zone']===zoneName);
+      const initiators = members.filter(r => !(r['Alias']||'').toLowerCase().includes('stor') && r['WWN']);
+      return initiators.length > 2; // >2 = likely multiple initiators
+    }
+  },
+  {
+    id:'no-alias',
+    name:'WWN Alias Eksik',
+    severity:'info',
+    desc:'Alias tanımlanmamış WWN\'ler — yönetimi zorlaştırır.',
+    check(row) { return !row['Alias'] || row['Alias'].trim()==='' || row['Alias']==='—'; }
+  },
+  {
+    id:'orphan-hba',
+    name:'Orphan HBA',
+    severity:'critical',
+    desc:'Fabric\'te görünen ama aktif zone\'u olmayan HBA.',
+    check(row) { return row['Sorun']==='Orphan HBA'; }
+  },
+  {
+    id:'ghost-member',
+    name:'Ghost Zone Üyesi',
+    severity:'warn',
+    desc:'Zone\'da tanımlı ama fabric\'te görünmeyen WWN.',
+    check(row) { return row['Sorun']==='Ghost Zone Uyesi' || row['Sorun']==='Ghost Zone Üyesi'; }
+  }
+];
+
+let ZONE_RULES = BUILTIN_RULES;
+
+async function loadZoneRules() {
+  try {
+    const r = await fetch('./zone-rules.json', { cache:'no-store' });
+    if (!r.ok) return;
+    const custom = await r.json();
+    if (Array.isArray(custom) && custom.length) {
+      // Merge: custom rules override built-in by id
+      const builtinById = Object.fromEntries(BUILTIN_RULES.map(r=>[r.id,r]));
+      custom.forEach(cr => {
+        if (cr.id) builtinById[cr.id] = { ...builtinById[cr.id], ...cr };
+        else ZONE_RULES.push(cr);
+      });
+      ZONE_RULES = Object.values(builtinById);
+    }
+  } catch { /* use builtin */ }
+}
+
+function runCompliance() {
+  const el = document.getElementById('compliance-results');
+  const sumEl = document.getElementById('compliance-summary');
+  if (!el) return;
+
+  if (zoneAudit.length === 0) {
+    sumEl.innerHTML = '';
+    el.innerHTML = spEmptyState({type:'no-data',title:'Zone Audit verisi yok',message:'Önce SAN taraması yapın.',hint:'StorageReport.ps1 -OnlySAN'});
+    return;
+  }
+
+  // Run every rule against every row
+  const violations = [];
+  ZONE_RULES.forEach(rule => {
+    zoneAudit.forEach(row => {
+      try {
+        if (rule.check(row, zoneAudit)) {
+          violations.push({ rule, row });
+        }
+      } catch { /* skip bad rule */ }
+    });
+  });
+
+  const crit = violations.filter(v=>v.rule.severity==='critical').length;
+  const warn = violations.filter(v=>v.rule.severity==='warn').length;
+  const info = violations.filter(v=>v.rule.severity==='info').length;
+  const pass = ZONE_RULES.length - new Set(violations.map(v=>v.rule.id)).size;
+
+  sumEl.innerHTML = `
+    <div class="sp-stat-box sp-border-danger">
+      <div class="sp-stat-label">Kritik İhlal</div>
+      <div class="sp-stat-value ${crit>0?'sp-danger':'sp-accent3'}">${crit}</div>
+    </div>
+    <div class="sp-stat-box sp-border-warn">
+      <div class="sp-stat-label">Uyarı</div>
+      <div class="sp-stat-value ${warn>0?'sp-warn':'sp-accent3'}">${warn}</div>
+    </div>
+    <div class="sp-stat-box sp-border-blue">
+      <div class="sp-stat-label">Bilgi</div>
+      <div class="sp-stat-value">${info}</div>
+    </div>
+    <div class="sp-stat-box sp-border-green">
+      <div class="sp-stat-label">Geçen Kural</div>
+      <div class="sp-stat-value sp-accent3">${pass} / ${ZONE_RULES.length}</div>
+    </div>`;
+
+  if (!violations.length) {
+    el.innerHTML = spEmptyState({type:'all-good',title:'Tüm kurallar geçti',message:'Zone yapılandırması uyumluluk kurallarını karşılıyor.'});
+    return;
+  }
+
+  // Group by rule
+  const byRule = {};
+  violations.forEach(v => {
+    if (!byRule[v.rule.id]) byRule[v.rule.id] = { rule:v.rule, rows:[] };
+    byRule[v.rule.id].rows.push(v.row);
+  });
+
+  const sevColor = s => s==='critical'?'var(--danger)':s==='warn'?'var(--warn)':'var(--accent2)';
+  const sevLabel = s => s==='critical'?'KRİTİK':s==='warn'?'UYARI':'BİLGİ';
+
+  el.innerHTML = Object.values(byRule).map(g => {
+    const col = sevColor(g.rule.severity);
+    const rows = g.rows.slice(0,20).map(r => `<tr>
+      <td style="padding:6px 10px;font-family:monospace;font-size:10px;color:var(--accent2)">${esc(r['WWN']||'')}</td>
+      <td style="padding:6px 10px;color:var(--text-bright)">${esc(r['Alias']||'—')}</td>
+      <td style="padding:6px 10px;color:var(--text-dim)">${esc(r['Zone']||'—')}</td>
+      <td style="padding:6px 10px;color:var(--text-dim);font-size:10px">${esc(r['SwitchName']||'')}</td>
+    </tr>`).join('');
+    const moreNote = g.rows.length>20 ? `<div style="padding:6px 10px;font-size:10px;color:var(--text-dim)">...ve ${g.rows.length-20} daha</div>` : '';
+    return `<div style="background:var(--surface);border:1px solid var(--border);margin-bottom:14px">
+      <div style="padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <span style="color:${col};font-size:9px;border:1px solid ${col};padding:1px 6px;margin-right:8px">${sevLabel(g.rule.severity)}</span>
+          <span style="color:var(--text-bright);font-weight:500;font-size:12px">${esc(g.rule.name)}</span>
+          <span style="color:var(--text-dim);font-size:10px;margin-left:8px">${esc(g.rule.desc||'')}</span>
+        </div>
+        <span style="font-size:11px;color:${col};font-weight:700">${g.rows.length} kayıt</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:6px 10px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">WWN</th>
+          <th style="padding:6px 10px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Alias</th>
+          <th style="padding:6px 10px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Zone</th>
+          <th style="padding:6px 10px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Switch</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>${moreNote}
+    </div>`;
+  }).join('');
+}
+
+// Trigger compliance run when tab is activated
+const _origSetTab = typeof setTab !== 'undefined' ? null : null;
+document.querySelector('.tab-btns')?.addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn[data-tab="compliance"]');
+  if (btn && zoneAudit.length > 0) setTimeout(runCompliance, 50);
+});
+
+loadZoneRules();
+
 </script>
 </body>
 </html>

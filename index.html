@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="./storage-styles.css">
 <script src="./storage-utils.js"></script>
 <script src="./asset-inventory.js"></script>
+<script src="./report-export.js"></script>
 <style>
   /* =========================================================
      DESIGN TOKENS  -  ortak tema (huawei.html ile uyumlu)
@@ -486,9 +487,10 @@
       <div style="display:flex;align-items:center;justify-content:flex-end;gap:14px">
         <span><span class="live-dot"></span>ACTIVE MONITORING</span>
         <a href="./portal.html" style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent2);text-decoration:none;border:1px solid rgba(75,159,232,.35);padding:3px 8px;transition:border-color .2s" title="Tam SPA deneyimi için Portal'ı aç">⬡ SPA MODE</a>
+        <button id="btn-export-report" style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent3);background:transparent;border:1px solid rgba(75,232,160,.35);padding:3px 8px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:border-color .2s" title="Güncel durumu HTML rapor olarak indir">⬇ RAPOR</button>
       </div>
       <div id="clock">--:--:--</div>
-      <div id="last-scan-status" style="font-size:10px;color:var(--text-dim);min-height:14px">—</div>
+      <div id="last-scan-status" style="font-size:10px;color:var(--text-dim);min-height:14px;cursor:pointer" title="Tarama detaylarını göster" onclick="openLastRunModal()">—</div>
       <div id="hdr-stat" style="color:var(--text);">-</div>
       <div id="data-fresh-badge" data-fresh-badge style="margin-top:2px"></div>
     </div>
@@ -521,6 +523,30 @@
       <div class="stat-sub" id="v-alarm-sub">Kritik (%65+) | Uyarı (%50+)</div>
     </div>
 
+  </div>
+
+  <!-- ========== CAPACITY RUNWAY ========== -->
+  <div id="runway-panel" style="display:none;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);padding:14px 18px;margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--danger)">⚠ Kritik Kapasite Runway</div>
+      <a href="./capacity-planner.html" style="font-size:10px;color:var(--accent2);text-decoration:none">Tüm Projeksiyon →</a>
+    </div>
+    <div id="runway-list" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+  </div>
+
+  <!-- ========== CONTRACT EXPIRY BANNER ========== -->
+  <div id="contract-banner" style="display:none;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warn);padding:12px 16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--warn)">⚠ Yaklaşan Kontrat Bitişleri</div>
+      <a href="./management.html" style="font-size:10px;color:var(--accent2);text-decoration:none">Tüm Kontratlar →</a>
+    </div>
+    <div id="contract-banner-items" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+
+  <!-- ========== MULTI-SITE COMPARISON ========== -->
+  <div id="site-panel" style="display:none;margin-bottom:18px">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Site Karşılaştırması</div>
+    <div id="site-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
   </div>
 
   <!-- ========== LAYER OZET BANDI (SAN / NAS / S3) ========== -->
@@ -1044,7 +1070,17 @@
       </div>
     </a>
 
-    <a href="./hostwwnfinder.html" class="app-card type-app">
+    <a href="./hostsearch.html" class="app-card type-app">
+          <div class="app-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
+          </div>
+          <div class="app-card-content">
+            <div class="app-card-name">Cross-Vendor Host Search</div>
+            <div class="app-card-desc">Huawei, PowerMax, Pure FA ve SAN Fabric kayıtlarını tek aramada tarayın — host adı, WWN veya OS tipiyle.</div>
+            <div class="app-card-tags"><span class="feature-tag">Multi-Vendor</span><span class="feature-tag">WWN</span></div>
+          </div>
+        </a>
+        <a href="./hostwwnfinder.html" class="app-card type-app">
       <div class="app-card-header">
         <div>
           <div class="app-card-name">Host WWN Finder</div>
@@ -1164,6 +1200,18 @@
   </div>
 </div><!-- /shell -->
 
+
+<!-- LAST-RUN MODAL -->
+<div id="last-run-modal" style="display:none;position:fixed;inset:0;background:rgba(8,12,20,.92);z-index:500;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);max-width:640px;width:90%;max-height:80vh;overflow-y:auto">
+    <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Son Tarama Detayı</div>
+      <button onclick="closeLastRunModal()" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div id="last-run-modal-body" style="padding:18px"></div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -1207,8 +1255,19 @@ const STAT = {
   pmCabs: 0, pmHosts: 0, pmCap: 0, pmUsed: 0, pmFree: 0, pmAlarms: 0, pmWarn: 0,
   puCabs: 0, puHosts: 0, puCap: 0, puUsed: 0, puFree: 0, puAlarms: 0, puWarn: 0,
   alarmList: [],
+  bySite: {},   // { 'Istanbul': {cap,used,free,cabs,hosts}, ... }
 };
 const LOG = [];
+
+function addToSite(lokasyon, cap, used, free, hosts) {
+  const site = (lokasyon || 'Bilinmiyor').trim() || 'Bilinmiyor';
+  if (!STAT.bySite[site]) STAT.bySite[site] = {cap:0,used:0,free:0,cabs:0,hosts:0};
+  STAT.bySite[site].cap   += cap;
+  STAT.bySite[site].used  += used;
+  STAT.bySite[site].free  += free;
+  STAT.bySite[site].cabs  += 1;
+  STAT.bySite[site].hosts += hosts;
+}
 
 /* ──────────────────────────────────────────────────────────────
    PROCESS  -  Huawei
@@ -1232,6 +1291,7 @@ function processHuawei(rows) {
     STAT.hwUsed += u;
     STAT.hwFree += f;
     STAT.hwHosts += h;
+    addToSite(r['Lokasyon'], t, u, f, h);
 
     if (p >= 65) {
       STAT.hwAlarms++;
@@ -1266,6 +1326,7 @@ function processPowerMax(rows) {
     STAT.pmUsed += u;
     STAT.pmFree += f;
     STAT.pmHosts += h;
+    addToSite(r['Lokasyon'], t, u, f, h);
 
     if (p >= 65) {
       STAT.pmAlarms++;
@@ -1297,6 +1358,7 @@ function processPure(rows) {
     STAT.puUsed += u;
     STAT.puFree += f;
     STAT.puHosts += h;
+    addToSite(r['Lokasyon'], t, u, f, h);
 
     if (p >= 65) {
       STAT.puAlarms++;
@@ -1426,6 +1488,7 @@ async function main() {
   ldStep('Dashboard hazırlanıyor...', 90);
   render();
   loadLayerStats();
+  renderSiteComparison();
   // Hide loading overlay
   setTimeout(() => {
     const ov = document.getElementById('app-loading');
@@ -1763,6 +1826,38 @@ renderFreshnessBadge('data-fresh-badge', [
 ], true);  // en eski - genel sağlık göstergesi
 
 
+/* ── CAPACITY RUNWAY WIDGET ─────────────────────────────────────── */
+async function loadRunway() {
+  try {
+    const r = await fetch('./last-run.json', { cache: 'no-store' });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d || !d.runway || !d.runway.length) return;
+
+    // Show cabinets with <60 days runway (etaDays != null and < 60)
+    // Since runway in last-run.json doesn't have etaDays (computed by capacity-planner),
+    // show high-utilisation cabinets (>80%) as proxy
+    const critical = (d.runway || []).filter(x => x.pctNow >= 80).sort((a,b)=>b.pctNow-a.pctNow).slice(0,6);
+    if (!critical.length) return;
+
+    const panel = document.getElementById('runway-panel');
+    const list  = document.getElementById('runway-list');
+    if (!panel || !list) return;
+
+    list.innerHTML = critical.map(x => {
+      const col = x.pctNow >= 90 ? 'var(--danger)' : 'var(--warn)';
+      return `<div style="background:var(--surface2);border:1px solid var(--border);border-left:2px solid ${col};padding:10px 14px;min-width:160px;flex:1">
+        <div style="font-size:11px;color:var(--text-bright);font-weight:500">${esc(x.cab)}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${esc(x.vendor)}</div>
+        <div style="font-size:18px;font-weight:800;color:${col};margin-top:4px">${x.pctNow.toFixed(1)}%</div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:2px">${x.usedNow.toFixed(1)} / ${x.totNow.toFixed(1)} TB</div>
+      </div>`;
+    }).join('');
+
+    panel.style.display = 'block';
+  } catch { /* silent */ }
+}
+
 /* ── LAST-RUN STATUS ─────────────────────────────────────────────── */
 async function loadLastRun() {
   const el = document.getElementById('last-scan-status');
@@ -1808,6 +1903,142 @@ async function loadLastRun() {
 }
 
 loadLastRun();
+loadRunway();
+loadContractBanner();
+document.getElementById('btn-export-report').addEventListener('click', () => {
+  StorageReport.download({
+    stat: STAT,
+    alarmList: STAT.alarmList || [],
+    assetInventory: typeof ASSET_INVENTORY !== 'undefined' ? ASSET_INVENTORY : []
+  });
+});
+
+/* ── MULTI-SITE COMPARISON ────────────────────────────────────────── */
+function renderSiteComparison() {
+  const panel = document.getElementById('site-panel');
+  const grid  = document.getElementById('site-grid');
+  if (!panel || !grid) return;
+
+  const sites = Object.entries(STAT.bySite).sort((a,b) => b[1].cap - a[1].cap);
+  if (sites.length < 2) return;   // single site — not useful to compare
+
+  panel.style.display = 'block';
+
+  grid.innerHTML = sites.map(([site, s]) => {
+    const pct = s.cap > 0 ? (s.used / s.cap * 100) : 0;
+    const col = pct >= 80 ? 'var(--danger)' : pct >= 70 ? 'var(--warn)' : 'var(--accent3)';
+    const barW = Math.min(100, pct).toFixed(1);
+    return `<div style="background:var(--surface);border:1px solid var(--border);padding:14px 16px">
+      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-bright);margin-bottom:8px">${esc(site)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;color:var(--text-dim);margin-bottom:10px">
+        <span>Kapasite</span><span style="color:var(--text-bright);text-align:right">${s.cap.toFixed(1)} TB</span>
+        <span>Kullanılan</span><span style="color:${col};text-align:right">${s.used.toFixed(1)} TB</span>
+        <span>Kabinet</span><span style="color:var(--text-bright);text-align:right">${s.cabs}</span>
+        <span>Host</span><span style="color:var(--text-bright);text-align:right">${s.hosts}</span>
+      </div>
+      <div style="height:6px;background:var(--surface2);border:1px solid var(--border)">
+        <div style="height:100%;width:${barW}%;background:${col};opacity:.7"></div>
+      </div>
+      <div style="font-size:9px;color:${col};margin-top:4px;text-align:right">${pct.toFixed(1)}% dolu</div>
+    </div>`;
+  }).join('');
+}
+
+
+/* ── CONTRACT EXPIRY BANNER ──────────────────────────────────────── */
+function loadContractBanner() {
+  const banner = document.getElementById('contract-banner');
+  const items  = document.getElementById('contract-banner-items');
+  if (!banner || !items) return;
+
+  // Wait briefly for ASSET_INVENTORY to load from async asset-inventory.js
+  setTimeout(() => {
+    try {
+      if (typeof ASSET_INVENTORY === 'undefined' || !ASSET_INVENTORY.length) return;
+      const now = new Date();
+      const critical = ASSET_INVENTORY
+        .filter(r => r.contractEnd)
+        .map(r => ({ ...r, days: Math.round((new Date(r.contractEnd) - now) / 86400000) }))
+        .filter(r => r.days >= 0 && r.days <= 90)
+        .sort((a,b) => a.days - b.days)
+        .slice(0, 5);
+
+      if (!critical.length) return;
+      banner.style.display = 'block';
+
+      items.innerHTML = critical.map(r => {
+        const col = r.days <= 30 ? 'var(--danger)' : 'var(--warn)';
+        return `<div style="background:var(--surface2);border:1px solid var(--border);border-left:2px solid ${col};padding:8px 12px;min-width:180px;flex:1;max-width:260px">
+          <div style="font-size:11px;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.productName||'')}</div>
+          <div style="font-size:9px;color:var(--text-dim);margin-top:2px">${esc(r.assetId||'')} · ${esc(r.location||'')}</div>
+          <div style="font-size:14px;font-weight:800;color:${col};margin-top:4px">${r.days} gün</div>
+          <div style="font-size:9px;color:var(--text-dim)">${esc(r.contractEnd)}</div>
+        </div>`;
+      }).join('');
+    } catch { /* silent */ }
+  }, 800);   // small delay for async ASSET_INVENTORY load
+}
+
+
+/* ── LAST-RUN DETAIL MODAL ───────────────────────────────────────── */
+function openLastRunModal() {
+  const modal = document.getElementById('last-run-modal');
+  const body  = document.getElementById('last-run-modal-body');
+  if (!modal || !body) return;
+  modal.style.display = 'flex';
+
+  fetch('./last-run.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d) { body.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px">last-run.json bulunamadı</div>'; return; }
+      const ts  = new Date(d.timestamp);
+      const dur = d.durationSec ? d.durationSec + 's' : '—';
+      const errs = d.errors || [];
+
+      const vendorRows = Object.entries(d.vendors || {}).map(([v, info]) =>
+        `<tr>
+          <td style="padding:6px 12px;color:var(--text-bright)">${esc(v)}</td>
+          <td style="padding:6px 12px;color:var(--accent3)">${info.rows}</td>
+          <td style="padding:6px 12px;color:${info.errors>0?'var(--danger)':'var(--accent3)'}">${info.errors>0?info.errors:' ✓'}</td>
+        </tr>`).join('');
+
+      const flags = Object.entries(d.runFlags || {})
+        .filter(([,v]) => v)
+        .map(([k]) => `<span style="font-size:9px;border:1px solid var(--accent2);color:var(--accent2);padding:1px 6px">${esc(k.toUpperCase())}</span>`)
+        .join(' ');
+
+      body.innerHTML = `
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Tarih &amp; Süre</div>
+          <div style="font-size:14px;color:var(--text-bright)">${ts.toLocaleString('tr-TR')}</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Süre: ${esc(dur)} · Script v${esc(d.scriptVersion||'?')}</div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">Çalışan Modüller</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${flags||'<span style="color:var(--text-dim)">Bilgi yok</span>'}</div>
+        </div>
+        ${vendorRows ? `<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:6px 12px;text-align:left;font-size:9px;letter-spacing:1px;color:var(--text-dim)">VENDOR</th>
+            <th style="padding:6px 12px;text-align:left;font-size:9px;letter-spacing:1px;color:var(--text-dim)">SATIR</th>
+            <th style="padding:6px 12px;text-align:left;font-size:9px;letter-spacing:1px;color:var(--text-dim)">HATA</th>
+          </tr></thead>
+          <tbody>${vendorRows}</tbody>
+        </table>` : ''}
+        ${errs.length ? `<div style="margin-top:10px;padding:10px;background:rgba(232,75,75,.08);border:1px solid rgba(232,75,75,.3);font-size:10px;color:var(--danger)">${errs.map(e=>`• ${esc(e)}`).join('<br>')}</div>` : ''}`;
+    })
+    .catch(() => { body.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px">Veri okunamadı</div>'; });
+}
+
+function closeLastRunModal() {
+  const m = document.getElementById('last-run-modal');
+  if (m) m.style.display = 'none';
+}
+
+document.getElementById('last-run-modal')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('last-run-modal')) closeLastRunModal();
+});
+
 </script>
 </body>
 </html>

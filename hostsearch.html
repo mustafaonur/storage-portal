@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross-Vendor Host Search · Storage Portal</title>
+<link rel="stylesheet" href="./storage-styles.css">
+<script src="./storage-utils.js"></script>
+<script src="./nav.js"></script>
+<style>
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-icon{width:42px;height:42px;border:2px solid var(--accent2);display:grid;place-items:center;animation:pb 3s ease-in-out infinite;}
+@keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(75,159,232,.4);}50%{box-shadow:0 0 0 6px rgba(75,159,232,0);}}
+.brand-icon svg{width:22px;height:22px;stroke:var(--accent2);fill:none;stroke-width:1.5;stroke-linecap:round;}
+.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+
+.search-hero{margin-bottom:24px;}
+.search-wrap{display:flex;gap:10px;margin-bottom:12px;}
+.search-main{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:12px 16px;outline:none;transition:border-color .2s;}
+.search-main:focus{border-color:var(--accent2);}
+.search-main::placeholder{color:var(--text-dim);}
+.search-btn{background:var(--accent2);color:var(--bg);border:none;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:12px 20px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:opacity .15s;}
+.search-btn:hover{opacity:.85;}
+.search-hint{font-size:10px;color:var(--text-dim);line-height:1.8;}
+
+.vendor-toggles{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.v-toggle{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;transition:all .15s;letter-spacing:.5px;}
+.v-toggle.on{border-color:var(--accent2);color:var(--accent2);background:rgba(75,159,232,.08);}
+
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.results-count{font-size:11px;color:var(--text-dim);}
+
+.host-card{background:var(--surface);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;}
+.host-card-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+.host-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);}
+.host-badges{display:flex;gap:6px;flex-wrap:wrap;}
+.vendor-badge{font-size:9px;padding:2px 8px;border:1px solid;border-radius:10px;}
+.vb-huawei {color:var(--accent) ;border-color:rgba(232,184,75,.4);}
+.vb-pmax   {color:var(--accent2);border-color:rgba(75,159,232,.4);}
+.vb-pure   {color:var(--accent3);border-color:rgba(75,232,160,.4);}
+.vb-san    {color:var(--purple)  ;border-color:rgba(192,132,252,.4);}
+.host-card-body{padding:0;}
+.alloc-row{display:grid;grid-template-columns:110px 120px 1fr 100px auto;gap:0;border-bottom:1px solid rgba(30,45,68,.5);align-items:center;}
+.alloc-row:last-child{border-bottom:none;}
+.alloc-row:hover{background:rgba(75,159,232,.04);}
+.alloc-cell{padding:8px 14px;font-size:11px;}
+.alloc-vendor{color:var(--text-dim);font-size:10px;letter-spacing:.5px;}
+.alloc-cab  {color:var(--text-bright);font-weight:500;}
+.alloc-prov {color:var(--accent3);text-align:right;}
+.alloc-wwn  {color:var(--accent2);font-size:10px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.alloc-os   {color:var(--text-dim);font-size:10px;}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-dim);}
+.loading-bar{height:2px;background:var(--surface2);position:relative;overflow:hidden;margin-bottom:20px;display:none;}
+.loading-bar.active{display:block;}
+.loading-bar::after{content:'';position:absolute;left:-50%;width:50%;height:100%;background:var(--accent2);animation:load 1.2s ease-in-out infinite;}
+@keyframes load{0%{left:-50%;}100%{left:100%;}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
+    </div>
+    <div>
+      <div class="brand-title">Cross-Vendor Host Search</div>
+      <div class="brand-sub">Huawei · PowerMax · Pure · SAN — Birleşik Arama</div>
+    </div>
+  </div>
+  <div id="data-fresh-badge"></div>
+</header>
+
+<div class="search-hero">
+  <div class="search-wrap">
+    <input class="search-main" id="q" type="text" placeholder="Host adı, WWN, OS veya kabinet ara..." autocomplete="off" spellcheck="false">
+    <button class="search-btn" id="btn-search">ARA</button>
+  </div>
+  <div class="vendor-toggles">
+    <span style="font-size:10px;color:var(--text-dim);align-self:center;margin-right:4px">VENDOR:</span>
+    <button class="v-toggle on" data-v="huawei">Huawei</button>
+    <button class="v-toggle on" data-v="pmax">PowerMax</button>
+    <button class="v-toggle on" data-v="pure">Pure FA</button>
+    <button class="v-toggle on" data-v="san">SAN Fabric</button>
+  </div>
+  <div class="search-hint">
+    Sunucu adı, kısmi ad, WWN (kısmi) veya OS tipiyle arama yapın.
+    Tüm vendor'lardaki host kayıtları aynı anda taranır — sonuçlar host bazında gruplandırılır.
+  </div>
+</div>
+
+<div class="loading-bar" id="loading-bar"></div>
+
+<div id="results">
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.3" style="margin-bottom:12px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+    <div style="font-size:14px;color:var(--text-dim);margin-bottom:4px">Arama terimi girin</div>
+    <div style="font-size:11px">Tüm vendor host veritabanları belleğe yüklendi — arama anında gerçekleşir</div>
+  </div>
+</div>
+
+</div>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CROSS-VENDOR HOST SEARCH
+   Kaynaklar:
+     Huawei  → ./Hw/Dorado_Host.csv     cols: Kabinet, Host Name, OS, Map Durumu, Provisioned (TB), Host WWN
+     PowerMax→ ./Pmax/PmaxPoolHost.csv  cols: Array ID, Host Name, OS, Provisioned (TB), Host WWN, Masking View
+     Pure FA → ./Pure/Pure_Host.csv     cols: Kabinet, Host Name, OS, Host Group, Protocol, Provisioned (TB), Host WWN
+     SAN     → ./San/SAN_Fabric_Hosts.csv cols: Fabric, SwitchName, PortIndex, PortWWN, Alias, State, Speed
+   Tümü: Lokasyon kolonu mevcut
+══════════════════════════════════════════════════════════════ */
+
+const SOURCES = {
+  huawei: { url:'./Hw/Dorado_Host.csv',        label:'Huawei',   cls:'vb-huawei' },
+  pmax:   { url:'./Pmax/PmaxPoolHost.csv',      label:'PowerMax', cls:'vb-pmax'   },
+  pure:   { url:'./Pure/Pure_Host.csv',         label:'Pure FA',  cls:'vb-pure'   },
+  san:    { url:'./San/SAN_Fabric_Hosts.csv',   label:'SAN',      cls:'vb-san'    },
+};
+
+// Normalised record shape: { vendor, label, cls, hostName, os, kabinet, lokasyon, provTB, wwns, extra }
+let RECORDS = [];
+let LOADED  = false;
+let ACTIVE_VENDORS = new Set(['huawei','pmax','pure','san']);
+
+function normalise(vendor, row) {
+  const src = SOURCES[vendor];
+  let hostName='', os='', kabinet='', lokasyon='', provTB=0, wwns=[], extra='';
+
+  if (vendor === 'huawei') {
+    hostName = row['Host Name'] || '';
+    os       = row['OS']        || '';
+    kabinet  = row['Kabinet']   || '';
+    lokasyon = row['Lokasyon']  || '';
+    provTB   = toN(row['Provisioned (TB)']);
+    wwns     = expandWwnList(row['Host WWN'] || '');
+    extra    = row['Map Durumu'] || '';
+  } else if (vendor === 'pmax') {
+    hostName = row['Host Name']   || '';
+    os       = row['OS']          || '';
+    kabinet  = row['Array ID']    || '';
+    lokasyon = row['Lokasyon']    || '';
+    provTB   = toN(row['Provisioned (TB)']);
+    wwns     = expandWwnList(row['Host WWN'] || '');
+    extra    = row['Storage Group'] || row['Masking View'] || '';
+  } else if (vendor === 'pure') {
+    hostName = row['Host Name']   || '';
+    os       = row['OS']          || '';
+    kabinet  = row['Kabinet']     || '';
+    lokasyon = row['Lokasyon']    || '';
+    provTB   = toN(row['Provisioned (TB)']);
+    wwns     = expandWwnList(row['Host WWN'] || '');
+    extra    = row['Host Group']  || '';
+  } else if (vendor === 'san') {
+    // SAN Fabric Hosts: no host-name col; alias is closest
+    hostName = row['Alias']       || '';
+    os       = '';
+    kabinet  = row['SwitchName']  || '';
+    lokasyon = row['Lokasyon']    || '';
+    wwns     = expandWwnList(row['PortWWN'] || '');
+    extra    = `${row['Fabric']||''} · ${row['State']||''} · ${row['Speed']||''}`.replace(/^ · | · $/g,'');
+  }
+
+  if (!hostName && !wwns.length) return null;
+  return { vendor, label:src.label, cls:src.cls, hostName, os, kabinet, lokasyon, provTB, wwns, extra };
+}
+
+async function loadAll() {
+  const bar = document.getElementById('loading-bar');
+  bar.classList.add('active');
+
+  const entries = Object.entries(SOURCES);
+  const results = await Promise.allSettled(entries.map(([v,s]) => fetchCSVParsed(s.url)));
+
+  RECORDS = [];
+  results.forEach((r, i) => {
+    if (r.status !== 'fulfilled') return;
+    const vendor = entries[i][0];
+    r.value.forEach(row => {
+      const n = normalise(vendor, row);
+      if (n) RECORDS.push(n);
+    });
+  });
+
+  bar.classList.remove('active');
+  LOADED = true;
+
+  // Freshness badge
+  renderFreshnessBadge('data-fresh-badge', Object.values(SOURCES).map(s=>s.url), true);
+}
+
+function search(q) {
+  if (!LOADED) { toast('Veri yükleniyor...'); return; }
+  const term = q.trim().toLowerCase();
+  if (!term) {
+    document.getElementById('results').innerHTML = '<div class="empty-state"><div style="font-size:14px;color:var(--text-dim)">Arama terimi girin</div></div>';
+    return;
+  }
+
+  const filtered = RECORDS.filter(r => {
+    if (!ACTIVE_VENDORS.has(r.vendor)) return false;
+    return (
+      r.hostName.toLowerCase().includes(term) ||
+      r.os.toLowerCase().includes(term)       ||
+      r.kabinet.toLowerCase().includes(term)  ||
+      r.lokasyon.toLowerCase().includes(term) ||
+      r.extra.toLowerCase().includes(term)    ||
+      r.wwns.some(w => w.replace(/:/g,'').includes(term.replace(/[:\s]/g,'')))
+    );
+  });
+
+  // Group by normalised host name
+  const groups = {};
+  filtered.forEach(r => {
+    const key = r.hostName.toLowerCase() || r.wwns[0] || Math.random().toString();
+    if (!groups[key]) groups[key] = { hostName: r.hostName || r.wwns[0] || '—', records: [] };
+    groups[key].records.push(r);
+  });
+
+  const groupList = Object.values(groups).sort((a,b) => a.hostName.localeCompare(b.hostName));
+  const el = document.getElementById('results');
+
+  if (!groupList.length) {
+    el.innerHTML = '<div class="empty-state"><div style="font-size:14px">Eşleşen kayıt bulunamadı</div><div style="font-size:11px;margin-top:4px">Farklı bir arama terimi deneyin veya vendor filtrelerini genişletin</div></div>';
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+
+  // Results header
+  const hdr = document.createElement('div');
+  hdr.className = 'results-header';
+  hdr.innerHTML = `<div class="results-count">${groupList.length} host · ${filtered.length} kayıt eşleşti</div>
+    <button style="font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;cursor:pointer;font-family:'JetBrains Mono',monospace" id="btn-export-csv">⬇ CSV</button>`;
+  frag.appendChild(hdr);
+
+  groupList.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'host-card';
+
+    const vendorSet = [...new Set(g.records.map(r => r.vendor))];
+    const badges = vendorSet.map(v => {
+      const s = SOURCES[v]; return `<span class="vendor-badge ${s?SOURCES[v].cls:''}">${s?s.label:v}</span>`;
+    }).join('');
+
+    const totalProv = g.records.reduce((s,r) => s + r.provTB, 0);
+    const provStr   = totalProv > 0 ? `<span style="font-size:11px;color:var(--accent3)">${totalProv.toFixed(2)} TB prov.</span>` : '';
+
+    card.innerHTML = `
+      <div class="host-card-hdr">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="host-name">${esc(g.hostName)}</span>
+          <div class="host-badges">${badges}</div>
+        </div>
+        ${provStr}
+      </div>
+      <div class="host-card-body">
+        <div class="alloc-row" style="background:var(--surface2);border-bottom:1px solid var(--border)">
+          <div class="alloc-cell alloc-vendor" style="font-size:9px;color:var(--text-dim)">VENDOR</div>
+          <div class="alloc-cell alloc-vendor" style="font-size:9px;color:var(--text-dim)">KABİNET</div>
+          <div class="alloc-cell alloc-vendor" style="font-size:9px;color:var(--text-dim)">DETAY / OS</div>
+          <div class="alloc-cell alloc-vendor" style="font-size:9px;color:var(--text-dim);text-align:right">PROV. TB</div>
+          <div class="alloc-cell alloc-vendor" style="font-size:9px;color:var(--text-dim)">LOKASYON</div>
+        </div>
+        ${g.records.map(r => `
+        <div class="alloc-row">
+          <div class="alloc-cell"><span class="vendor-badge ${r.cls}">${esc(r.label)}</span></div>
+          <div class="alloc-cell alloc-cab">${esc(r.kabinet)}</div>
+          <div class="alloc-cell alloc-wwn" title="${esc(r.extra||r.wwns.join(', '))}">${esc(r.os||r.extra||r.wwns[0]||'—')}</div>
+          <div class="alloc-cell alloc-prov">${r.provTB > 0 ? r.provTB.toFixed(2) : '—'}</div>
+          <div class="alloc-cell alloc-os">${esc(r.lokasyon)}</div>
+        </div>`).join('')}
+      </div>`;
+    frag.appendChild(card);
+  });
+
+  el.innerHTML = '';
+  el.appendChild(frag);
+
+  // CSV export
+  document.getElementById('btn-export-csv').addEventListener('click', () => {
+    const lines = ['"Host","Vendor","Kabinet","Lokasyon","OS/Detay","Prov TB","WWN"'];
+    filtered.forEach(r => lines.push([r.hostName,r.label,r.kabinet,r.lokasyon,r.os||r.extra,r.provTB.toFixed(2),r.wwns.join('|')]
+      .map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')));
+    const blob = new Blob(['\ufeff'+lines.join('\n')], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'host-search.csv';
+    a.click();
+    toast(`${filtered.length} kayıt aktarıldı`);
+  });
+}
+
+// Event wiring
+document.getElementById('btn-search').addEventListener('click', () => search(document.getElementById('q').value));
+document.getElementById('q').addEventListener('keydown', e => { if (e.key==='Enter') search(e.target.value); });
+document.getElementById('q').addEventListener('input', debounce(e => { if(e.target.value.length>=2) search(e.target.value); }, 300));
+
+document.querySelector('.vendor-toggles').addEventListener('click', e => {
+  const btn = e.target.closest('.v-toggle[data-v]');
+  if (!btn) return;
+  const v = btn.dataset.v;
+  if (ACTIVE_VENDORS.has(v)) { ACTIVE_VENDORS.delete(v); btn.classList.remove('on'); }
+  else { ACTIVE_VENDORS.add(v); btn.classList.add('on'); }
+  const q = document.getElementById('q').value;
+  if (q.trim()) search(q);
+});
+
+// Load on start
+loadAll().then(() => { toast(`${RECORDS.length} kayıt yüklendi`); });
+
+StorageNav.init({ title: 'Host Search', section: 'tools' });
+</script>
+</body>
+</html>

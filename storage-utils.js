@@ -593,3 +593,63 @@ function buildTr(cells, rowClass) {
   });
   return tr;
 }
+
+/* ════════════════════════════════════════════════════════════
+   THEME TOGGLE — dark/light, persisted to localStorage
+════════════════════════════════════════════════════════════ */
+
+const SP_THEME_KEY = 'sp-theme';
+
+function spGetTheme() {
+  try { return localStorage.getItem(SP_THEME_KEY) || 'dark'; } catch { return 'dark'; }
+}
+
+function spSetTheme(t) {
+  document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : '');
+  try { localStorage.setItem(SP_THEME_KEY, t); } catch {}
+  document.querySelectorAll('.theme-toggle').forEach(btn => {
+    btn.textContent = t === 'light' ? '☾ DARK' : '☀ LIGHT';
+    btn.title = t === 'light' ? 'Koyu temaya geç' : 'Açık temaya geç';
+  });
+}
+
+function spToggleTheme() {
+  spSetTheme(spGetTheme() === 'light' ? 'dark' : 'light');
+}
+
+/**
+ * injectThemeToggle(containerId)
+ * Inserts a theme toggle button into the given container element.
+ * If containerId is omitted, appends to document.body.
+ */
+function injectThemeToggle(containerId) {
+  const btn = document.createElement('button');
+  btn.className = 'theme-toggle';
+  btn.addEventListener('click', spToggleTheme);
+
+  const target = containerId ? document.getElementById(containerId) : null;
+  if (target) target.appendChild(btn);
+  else document.body.appendChild(btn);
+}
+
+// Apply saved theme immediately on every page
+(function applyThemeOnLoad() {
+  const saved = spGetTheme();
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+  // Inject toggle into header-meta if it exists (index.html), or nav area
+  window.addEventListener('DOMContentLoaded', () => {
+    spSetTheme(spGetTheme()); // sync button label
+
+    // Auto-inject into header-meta if present
+    const hm = document.querySelector('.header-meta, .hdr-right');
+    if (hm) {
+      const btn = document.createElement('button');
+      btn.className = 'theme-toggle';
+      btn.addEventListener('click', spToggleTheme);
+      hm.prepend(btn);
+      spSetTheme(spGetTheme());
+    }
+  });
+})();

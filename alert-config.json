@@ -1,0 +1,31 @@
+{
+  "_comment": "Storage Portal kapasite alarm konfigürasyonu. enabled=false güvenli varsayılan.",
+  "enabled": false,
+  "smtp": {
+    "server": "",
+    "port": 25,
+    "from": "storage-portal@sirket.com",
+    "subject": "QNB Storage Kapasite Alarmı",
+    "useSsl": false
+  },
+  "recipients": [
+    { "name": "Storage Admin", "email": "storage@sirket.com", "active": false },
+    { "name": "IT Manager",    "email": "itmanager@sirket.com","active": false }
+  ],
+  "thresholds": {
+    "kritik": 85,
+    "uyari": 75
+  },
+  "options": {
+    "sadeceKritikGonder": true,
+    "runwayAlertDays": 60
+  },
+  "vendors": {
+    "Huawei":   true,
+    "PowerMax": true,
+    "PureFA":   true,
+    "PureFB":   true,
+    "NetApp":   true,
+    "ECS":      true
+  }
+}

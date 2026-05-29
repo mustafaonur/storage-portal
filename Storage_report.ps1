@@ -393,81 +393,98 @@ function Add-LocationTotals {
 }
 
 # ============================================================
-# ALARM / MAIL — kritik kapasite bildirimi
+# ALARM / MAIL — kritik kapasite bildirimi + runway uyarisi
 # alert-config.json'dan okur. enabled=false ise HIC mail gitmez.
 # Guvenli varsayilan: pasif. management.html'den ya da elle ac.
 # ============================================================
 function Send-CapacityAlert {
     param(
-        [Parameter(Mandatory)] $VendorDashboards,  # @{ Huawei=@(...); PowerMax=@(...); ... }
+        [Parameter(Mandatory)] $VendorDashboards,
         [string]$ConfigPath
     )
 
-    if (-not $ConfigPath) { $ConfigPath = Join-Path $ScriptRoot 'alert-config.json' }
-
+    if (-not $ConfigPath) { $ConfigPath = Join-Path $PSScriptRoot 'alert-config.json' }
     if (-not (Test-Path $ConfigPath)) {
-        Write-Step "  Alarm: alert-config.json yok, atlandi" DarkGray
-        return
+        Write-Step "  Alarm: alert-config.json yok, atlandi" DarkGray; return
     }
-    try {
-        $cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    } catch {
-        Write-Step "  Alarm: config okunamadi ($($_.Exception.Message)), atlandi" DarkYellow
-        return
-    }
+    try { $cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json }
+    catch { Write-Step "  Alarm: config okunamadi ($($_.Exception.Message))" DarkYellow; return }
 
     if (-not $cfg.enabled) {
-        Write-Step "  Alarm: PASIF (alert-config.json enabled=false). Mail gonderilmedi." DarkGray
-        return
+        Write-Step "  Alarm: PASIF (enabled=false). Mail gonderilmedi." DarkGray; return
     }
 
-    $kritikEsik = if ($cfg.thresholds.kritik) { [double]$cfg.thresholds.kritik } else { 85 }
-    $uyariEsik  = if ($cfg.thresholds.uyari)  { [double]$cfg.thresholds.uyari }  else { 75 }
-    $sadeceKritik = $cfg.options.sadeceKritikGonder -ne $false
+    $kritikEsik     = if ($cfg.thresholds.kritik)        { [double]$cfg.thresholds.kritik } else { 85 }
+    $uyariEsik      = if ($cfg.thresholds.uyari)         { [double]$cfg.thresholds.uyari }  else { 75 }
+    $sadeceKritik   = $cfg.options.sadeceKritikGonder -ne $false
+    $runwayDays     = if ($cfg.options.runwayAlertDays)  { [int]$cfg.options.runwayAlertDays } else { 60 }
 
-    # Vendor filtresi: config'de vendors.X=false ise o vendor atlanir
     $vendorFilter = @{}
-    if ($cfg.vendors) {
-        foreach ($p in $cfg.vendors.PSObject.Properties) { $vendorFilter[$p.Name] = $p.Value }
-    }
+    if ($cfg.vendors) { foreach ($p in $cfg.vendors.PSObject.Properties) { $vendorFilter[$p.Name] = $p.Value } }
 
-    $alarmlar = @()
+    # ── Kapasite alarmlari ─────────────────────────────────────────────────
+    $alarmlar = [System.Collections.Generic.List[PSCustomObject]]::new()
     foreach ($vendorName in $VendorDashboards.Keys) {
-        # Bu vendor alarm verecek mi?
-        if ($vendorFilter.ContainsKey($vendorName) -and $vendorFilter[$vendorName] -eq $false) {
-            Write-Step "  Alarm: $vendorName atlandi (config'de kapali)" DarkGray
-            continue
-        }
+        if ($vendorFilter.ContainsKey($vendorName) -and $vendorFilter[$vendorName] -eq $false) { continue }
         foreach ($row in $VendorDashboards[$vendorName]) {
             if ($row.Kabinet -match '^(TOPLAM|GENEL TOPLAM|===|---)') { continue }
             $pctRaw = "$($row.'Doluluk (%)')" -replace '[^0-9\.,]',''
             if (-not $pctRaw) { continue }
-            $pct = Parse-Double $pctRaw
+            # PS5.1 safe parse
+            $pct = try { [double]($pctRaw -replace ',','.') } catch { 0 }
             if ($pct -le 0) { continue }
 
-            $seviye = if ($pct -ge $kritikEsik) { 'KRITIK' }
-                      elseif ($pct -ge $uyariEsik) { 'UYARI' }
-                      else { $null }
+            $seviye = if ($pct -ge $kritikEsik) { 'KRITIK' } elseif ($pct -ge $uyariEsik) { 'UYARI' } else { $null }
             if (-not $seviye) { continue }
             if ($sadeceKritik -and $seviye -ne 'KRITIK') { continue }
 
-            $alarmlar += [PSCustomObject]@{
+            $tot  = try { [double]"$($row.'Total (TB)')" } catch { 0 }
+            $used = try { [double]"$($row.'Used (TB)')"  } catch { 0 }
+            $free = try { [double]"$($row.'Free (TB)')"  } catch { 0 }
+
+            $alarmlar.Add([PSCustomObject]@{
+                Tip      = 'KAPASITE'
                 Seviye   = $seviye
                 Vendor   = $vendorName
-                Lokasyon = $row.Lokasyon
-                Kabinet  = $row.Kabinet
-                IP       = $row.IP
-                'Doluluk %' = $pct
-                'Total TB'  = $row.'Total (TB)'
-                'Used TB'   = $row.'Used (TB)'
-                'Free TB'   = $row.'Free (TB)'
-            }
+                Lokasyon = "$($row.Lokasyon)"
+                Kabinet  = "$($row.Kabinet)"
+                Detail   = "$pct% dolu"
+                'Toplam TB' = $tot
+                'Bos TB'    = $free
+                ETA      = ''
+            })
         }
     }
 
+    # ── Runway alarmlari (last-run.json yoksa atlanir) ─────────────────────
+    $lastRunPath = Join-Path $PSScriptRoot 'last-run.json'
+    if ((Test-Path $lastRunPath) -and $runwayDays -gt 0) {
+        try {
+            $lr = Get-Content $lastRunPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($lr.runway) {
+                foreach ($item in $lr.runway) {
+                    if ($item.etaDays -ne $null -and $item.etaDays -le $runwayDays) {
+                        $sev = if ($item.etaDays -le 30) { 'KRITIK' } else { 'UYARI' }
+                        if ($sadeceKritik -and $sev -ne 'KRITIK') { continue }
+                        $alarmlar.Add([PSCustomObject]@{
+                            Tip      = 'RUNWAY'
+                            Seviye   = $sev
+                            Vendor   = "$($item.vendor)"
+                            Lokasyon = ''
+                            Kabinet  = "$($item.cab)"
+                            Detail   = "$($item.etaDays) gun kaldi"
+                            'Toplam TB' = $item.totNow
+                            'Bos TB'    = [math]::Round($item.totNow - $item.usedNow, 2)
+                            ETA      = "$($item.etaDate)"
+                        })
+                    }
+                }
+            }
+        } catch { Write-Verbose "Runway parse hatasi: $($_.Exception.Message)" }
+    }
+
     if ($alarmlar.Count -eq 0) {
-        Write-Step "  Alarm: esik asan kabinet yok (kritik=%$kritikEsik, uyari=%$uyariEsik). Mail gerekmedi." Green
-        return
+        Write-Step "  Alarm: esik asan kabinet yok. Mail gerekmedi." Green; return
     }
 
     $aliciList = @()
@@ -475,54 +492,73 @@ function Send-CapacityAlert {
         if ($r.active -eq $true -and $r.email) { $aliciList += $r.email }
     }
     if ($aliciList.Count -eq 0) {
-        Write-Step "  Alarm: $($alarmlar.Count) esik asan kabinet VAR ama aktif alici yok. Mail gonderilmedi." DarkYellow
-        return
+        Write-Step "  Alarm: $($alarmlar.Count) alarm VAR ama aktif alici yok." DarkYellow; return
     }
 
     $smtp = $cfg.smtp
     if (-not $smtp.server) {
-        Write-Step "  Alarm: SMTP server tanimli degil. Mail gonderilmedi." DarkYellow
-        Write-Step "  -> $($alarmlar.Count) kabinet: $(($alarmlar | ForEach-Object { $_.Kabinet }) -join ', ')" DarkYellow
-        return
+        Write-Step "  Alarm: SMTP server tanimli degil. Mail gonderilmedi." DarkYellow; return
     }
 
-    $tableStr = $alarmlar |
-        Sort-Object @{E='Seviye';Desc=$true}, @{E='Doluluk %';Desc=$true} |
-        Format-Table Seviye, Vendor, Lokasyon, Kabinet, IP, 'Doluluk %', 'Total TB', 'Used TB', 'Free TB' -AutoSize |
-        Out-String
+    # ── HTML body ──────────────────────────────────────────────────────────
+    $sorted  = $alarmlar | Sort-Object @{E='Seviye';Desc=$true}, @{E='Detail';Desc=$true}
+    $kritikN = ($alarmlar | Where-Object Seviye -eq 'KRITIK').Count
+    $uyariN  = ($alarmlar | Where-Object Seviye -eq 'UYARI').Count
+    $now     = Get-Date -Format 'yyyy-MM-dd HH:mm'
 
-    $kritikSayi = ($alarmlar | Where-Object { $_.Seviye -eq 'KRITIK' }).Count
-    $uyariSayi  = ($alarmlar | Where-Object { $_.Seviye -eq 'UYARI' }).Count
-    $now = Get-Date -Format 'yyyy-MM-dd HH:mm'
+    $rowsHtml = ($sorted | ForEach-Object {
+        $bg  = if ($_.Seviye -eq 'KRITIK') { '#2d0a0a' } else { '#1e1a08' }
+        $col = if ($_.Seviye -eq 'KRITIK') { '#e84b4b' } else { '#e8844b' }
+        $tip = if ($_.Tip -eq 'RUNWAY')    { '&#9201;' } else { '&#9888;' }
+        "<tr style='background:$bg'>
+          <td style='padding:7px 12px;color:$col;font-weight:700'>$tip $($_.Seviye)</td>
+          <td style='padding:7px 12px;color:#c8d8f0'>$($_.Vendor)</td>
+          <td style='padding:7px 12px;color:#e8f2ff;font-weight:500'>$($_.Kabinet)</td>
+          <td style='padding:7px 12px;color:#c8d8f0'>$($_.Lokasyon)</td>
+          <td style='padding:7px 12px;color:$col;font-weight:700'>$($_.Detail)</td>
+          <td style='padding:7px 12px;color:#5a7090'>$($_.ETA)</td>
+        </tr>"
+    }) -join ''
 
-    $body = "<p style='font-family:Segoe UI,Arial;font-size:13px'>" +
-            "QNB Storage izleme - <b>$kritikSayi kritik</b>" +
-            $(if ($uyariSayi -gt 0) { ", <b>$uyariSayi uyari</b>" } else { "" }) +
-            " kabinet kapasite esigini asti.<br>Tarama zamani: $now</p>" +
-            "<pre style='font-family:Consolas,Courier New;font-size:12px;background:#f4f4f4;padding:10px;border:1px solid #ddd'>" +
-            $tableStr +
-            "</pre>" +
-            "<p style='font-family:Segoe UI,Arial;font-size:11px;color:#888'>" +
-            "Esikler: kritik %$kritikEsik, uyari %$uyariEsik. Otomatik bildirim - Storage Portal.</p>"
+    $body = @"
+<div style='font-family:Consolas,Courier New,monospace;background:#080c14;color:#c8d8f0;padding:24px;max-width:860px'>
+  <div style='border-bottom:2px solid #e8b84b;padding-bottom:12px;margin-bottom:20px'>
+    <span style='font-family:Arial,sans-serif;font-size:20px;font-weight:800;color:#e8f2ff'>Storage Portal</span>
+    <span style='margin-left:12px;font-size:11px;color:#5a7090;letter-spacing:2px;text-transform:uppercase'>Kapasite Alarmı</span>
+  </div>
+  <p style='font-size:13px;margin-bottom:16px'>
+    <strong style='color:#e84b4b'>$kritikN kritik</strong>$(if($uyariN -gt 0){", <strong style='color:#e8844b'>$uyariN uyarı</strong>"}else{""}) kabinet eşik aştı &mdash; $now
+  </p>
+  <table style='width:100%;border-collapse:collapse;font-size:12px;border:1px solid #1e2d44'>
+    <thead>
+      <tr style='background:#0d1420'>
+        <th style='padding:8px 12px;text-align:left;color:#5a7090;font-weight:500;border-bottom:1px solid #1e2d44'>Seviye</th>
+        <th style='padding:8px 12px;text-align:left;color:#5a7090;font-weight:500;border-bottom:1px solid #1e2d44'>Vendor</th>
+        <th style='padding:8px 12px;text-align:left;color:#5a7090;font-weight:500;border-bottom:1px solid #1e2d44'>Kabinet</th>
+        <th style='padding:8px 12px;text-align:left;color:#5a7090;font-weight:500;border-bottom:1px solid #1e2d44'>Lokasyon</th>
+        <th style='padding:8px 12px;text-align:left;color:#5a7090;font-weight:500;border-bottom:1px solid #1e2d44'>Durum</th>
+        <th style='padding:8px 12px;text-align:left;color:#5a7090;font-weight:500;border-bottom:1px solid #1e2d44'>ETA</th>
+      </tr>
+    </thead>
+    <tbody>$rowsHtml</tbody>
+  </table>
+  <p style='font-size:10px;color:#5a7090;margin-top:16px'>Eşikler: kritik %$kritikEsik · uyarı %$uyariEsik · runway $runwayDays gün · Storage Portal otomatik bildirim</p>
+</div>
+"@
 
-    $subject = if ($smtp.subject) { "$($smtp.subject) [$now]" } else { "QNB Storage - $($alarmlar.Count) Kabinet Esik Asti" }
+    $subject = "$(if($cfg.smtp.subject){$cfg.smtp.subject}else{'QNB Storage Alarm'}) — $kritikN kritik [$now]"
 
     try {
-        $mailParams = @{
-            From       = $smtp.from
-            To         = $aliciList
-            Subject    = $subject
-            Body       = $body
-            BodyAsHtml = $true
-            SmtpServer = $smtp.server
-            Port       = if ($smtp.port) { [int]$smtp.port } else { 25 }
-            Encoding   = [System.Text.Encoding]::UTF8
+        $mp = @{
+            From = $smtp.from; To = $aliciList; Subject = $subject
+            Body = $body; BodyAsHtml = $true; SmtpServer = $smtp.server
+            Port = if ($smtp.port) { [int]$smtp.port } else { 25 }
+            Encoding = [System.Text.Encoding]::UTF8
         }
-        if ($smtp.useSsl -eq $true) { $mailParams['UseSsl'] = $true }
-
-        Send-MailMessage @mailParams -ErrorAction Stop
+        if ($smtp.useSsl -eq $true) { $mp['UseSsl'] = $true }
+        Send-MailMessage @mp -ErrorAction Stop
         Write-Step "  Alarm: MAIL GONDERILDI -> $($aliciList -join ', ')" Green
-        Write-Step "  -> $kritikSayi kritik + $uyariSayi uyari kabinet bildirildi" Green
+        Write-Step "  -> $kritikN kritik + $uyariN uyari alarm bildirildi" Green
     } catch {
         Write-Step "  Alarm: MAIL GONDERILEMEDI: $($_.Exception.Message)" Red
         Write-Step "  -> Bildirilemeyen: $(($alarmlar | ForEach-Object { $_.Kabinet }) -join ', ')" DarkYellow
@@ -4705,6 +4741,32 @@ try {
         }
         scriptVersion  = '1.0'
     }
+
+    # Runway data: quick linear projection from dashboard used/total
+    # Simple 7-day growth estimate using vendor row data available at this point
+    $runwayRows = [System.Collections.Generic.List[PSCustomObject]]::new()
+    foreach ($vk in $vendorCheck.Keys) {
+        $rows = $vendorCheck[$vk]
+        if (-not $rows) { continue }
+        foreach ($row in @($rows)) {
+            if (-not $row.'Total (TB)' -or $row.'Total (TB)' -eq 'HATA') { continue }
+            $tot  = try { [double]"$($row.'Total (TB)')" }  catch { 0 }
+            $used = try { [double]"$($row.'Used (TB)')" }   catch { 0 }
+            $pct  = try { [double]"$($row.'Doluluk (%)')" } catch { 0 }
+            if ($tot -le 0) { continue }
+            # No history slope available here — etaDays left null; capacity-planner.html computes it
+            $runwayRows.Add([PSCustomObject]@{
+                vendor   = $vk
+                cab      = "$($row.Kabinet)"
+                usedNow  = [math]::Round($used,2)
+                totNow   = [math]::Round($tot,2)
+                pctNow   = [math]::Round($pct,1)
+                etaDays  = $null
+                etaDate  = ''
+            })
+        }
+    }
+    $lastRunObj['runway'] = $runwayRows
 
     $jsonPath = Join-Path $LocalBase 'last-run.json'
     $lastRunObj | ConvertTo-Json -Depth 4 | Set-Content -Path $jsonPath -Encoding UTF8 -Force
