@@ -225,9 +225,7 @@ async function loadAll(){
   computeStats();
   renderTable();
   setOverlay(false);
-  if (typeof checkPortalFreshness === 'function') {
-    checkPortalFreshness([CSV_PROD, CSV_DR]);
-  }
+  autoCheckFreshness([CSV_PROD, CSV_DR]);
 
   if(ROWS.length===0){
     document.getElementById('tbody').innerHTML=

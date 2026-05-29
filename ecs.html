@@ -670,8 +670,7 @@ loadAll();
 /* Veri tazeliği rozeti */
 renderFreshnessBadge('data-fresh-badge', ['./Ecs/ECS_Dashboard.csv', './Ecs/ECS_Buckets.csv']);
 
-// Stale data check
-checkPortalFreshness(['./Ecs/ECS_Dashboard.csv', './Ecs/ECS_Buckets.csv']);
+// Stale data check handled globally by storage-utils.js autoCheckFreshness()
 
 
   // Debounced wrappers for search inputs

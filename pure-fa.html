@@ -935,8 +935,7 @@ loadCSVs();
 /* Veri tazeliği rozeti */
 renderFreshnessBadge('data-fresh-badge', ['./Pure/Pure_Dashboard.csv', './Pure/Pure_Host.csv']);
 
-// Stale data check
-checkPortalFreshness(['./Pure/Pure_Dashboard.csv', './Pure/Pure_Host.csv']);
+// Stale data check handled globally by storage-utils.js autoCheckFreshness()
 
 
   // Debounced wrappers for search inputs

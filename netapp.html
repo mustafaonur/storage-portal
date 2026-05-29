@@ -1383,10 +1383,7 @@ if (typeof renderFreshnessBadge === 'function') {
   renderFreshnessBadge('data-fresh-badge', ['./NetApp/NetApp_Dashboard.csv', './NetApp/NetApp_Volume.csv']);
 }
 
-// Stale data check
-if (typeof checkPortalFreshness === 'function') {
-  checkPortalFreshness(['./NetApp/NetApp_Dashboard.csv', './NetApp/NetApp_Volume.csv']);
-}
+// Stale data check handled globally by storage-utils.js autoCheckFreshness()
 
   // Debounced wrappers for search inputs
   const __db_renderHostTable = debounce(renderHostTable);

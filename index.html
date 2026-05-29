@@ -483,7 +483,10 @@
       </div>
     </div>
     <div class="header-meta">
-      <div><span class="live-dot"></span>ACTIVE MONITORING</div>
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:14px">
+        <span><span class="live-dot"></span>ACTIVE MONITORING</span>
+        <a href="./portal.html" style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent2);text-decoration:none;border:1px solid rgba(75,159,232,.35);padding:3px 8px;transition:border-color .2s" title="Tam SPA deneyimi için Portal'ı aç">⬡ SPA MODE</a>
+      </div>
       <div id="clock">--:--:--</div>
       <div id="last-scan-status" style="font-size:10px;color:var(--text-dim);min-height:14px">—</div>
       <div id="hdr-stat" style="color:var(--text);">-</div>
@@ -959,7 +962,7 @@
         <span class="status-badge badge-ok">ONLINE</span>
       </div>
       <div class="app-card-body">
-        <div class="app-card-desc">İkincil navigasyon merkezi — tüm storage araçlarına hızlı erişim, SPA tabanlı yan menü ile kategorize edilmiş bağlantılar.</div>
+        <div class="app-card-desc">Tam SPA deneyimi — sidebar navigasyonu, sekme geçmişi, Ctrl+K hızlı arama ve canlı tarama durumu ile tüm modüllere tek ekrandan erişim.</div>
         <div class="feature-list">
           <span class="feature-tag">SPA</span>
           <span class="feature-tag">Navigasyon</span>
@@ -1749,14 +1752,7 @@ loadChangeLog();
 loadWarranty();
 loadCabinetStatus();
 
-// Stale data check
-checkPortalFreshness([
-  './Hw/Dorado_Dashboard.csv',
-  './Pmax/PmaxPoolDash.csv',
-  './Pure/Pure_Dashboard.csv',
-  './NetApp/NetApp_Dashboard.csv',
-  './San/SAN_Director_Dashboard.csv'
-]);
+// Stale data check handled globally by storage-utils.js autoCheckFreshness()
 
 /* Veri tazeliği rozeti — tüm vendor dashboard'larının en eskisi */
 renderFreshnessBadge('data-fresh-badge', [

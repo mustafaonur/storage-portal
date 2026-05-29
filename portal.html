@@ -191,6 +191,35 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   z-index:5;                     /* above iframe (1), below loader (10) */
 }
 .home-screen.hidden { display:none; }
+  .home-hero { text-align:center; margin-bottom:32px; }
+  .home-logo { margin-bottom:12px; }
+  .home-scan-status { font-size:10px; color:var(--text-dim); margin-top:8px; min-height:14px; }
+  kbd { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:1px 5px; font-size:10px; font-family:inherit; }
+  .home-tiles {
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+    max-width:540px;
+    margin:0 auto;
+  }
+  .home-tile {
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:14px 10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:7px;
+    cursor:pointer;
+    font-size:11px;
+    color:var(--text-dim);
+    letter-spacing:.5px;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .home-tile:hover { border-color:var(--accent2); color:var(--text-bright); background:var(--surface2); }
+  .home-tile-icon  { font-size:20px; line-height:1; }
+  .home-tile-analytics { border-color:rgba(75,159,232,.2); }
+  .home-tile-analytics:hover { border-color:var(--accent2); }
 .home-logo { font-size:48px; opacity:.2; }
 .home-txt  { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-bright); opacity:.15; }
 .home-sub  { font-size:11px; color:var(--text-dim); opacity:.4; letter-spacing:3px; }
@@ -438,9 +467,29 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   <div class="content-area" id="content-area">
     <!-- Home / welcome screen -->
     <div class="home-screen" id="home-screen">
-      <div class="home-logo">🗄</div>
-      <div class="home-txt">Storage Portal</div>
-      <div class="home-sub">Sol menüden bir modül seçin · Ctrl+K ile hızlı aç</div>
+      <div class="home-hero">
+        <div class="home-logo" aria-hidden="true">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/><circle cx="18" cy="5.5" r="1" fill="var(--accent3)"/><circle cx="18" cy="12.5" r="1" fill="var(--accent2)"/><circle cx="18" cy="19.5" r="1" fill="var(--accent)"/></svg>
+        </div>
+        <div class="home-txt">Enterprise Storage Portal</div>
+        <div class="home-sub">Sol menüden modül seçin veya <kbd>Ctrl+K</kbd> ile hızlı arama yapın</div>
+        <div id="home-scan-status" class="home-scan-status">tarama durumu yükleniyor…</div>
+      </div>
+
+      <div class="home-tiles" id="home-tiles">
+        <div class="home-tile" data-page="huawei"           data-label="Huawei OceanStor">    <span class="home-tile-icon">🟡</span><span>Huawei</span></div>
+        <div class="home-tile" data-page="pmax"             data-label="PowerMax">             <span class="home-tile-icon">🔵</span><span>PowerMax</span></div>
+        <div class="home-tile" data-page="pure-fa"          data-label="Pure FlashArray">      <span class="home-tile-icon">🟢</span><span>Pure FA</span></div>
+        <div class="home-tile" data-page="pure-fb"          data-label="Pure FlashBlade">      <span class="home-tile-icon">🟩</span><span>Pure FB</span></div>
+        <div class="home-tile" data-page="netapp"           data-label="NetApp ONTAP">         <span class="home-tile-icon">🟣</span><span>NetApp</span></div>
+        <div class="home-tile" data-page="ecs"              data-label="Dell ECS">             <span class="home-tile-icon">🔴</span><span>ECS</span></div>
+        <div class="home-tile" data-page="hitachi"          data-label="Hitachi VSP">          <span class="home-tile-icon">⚪</span><span>Hitachi</span></div>
+        <div class="home-tile" data-page="san"              data-label="SAN Fabric">           <span class="home-tile-icon">🔶</span><span>SAN</span></div>
+        <div class="home-tile home-tile-analytics" data-page="trend"           data-label="Trend Analizi">        <span class="home-tile-icon">📈</span><span>Trend</span></div>
+        <div class="home-tile home-tile-analytics" data-page="anomaly"         data-label="Anomali Dedektörü">    <span class="home-tile-icon">🚨</span><span>Anomali</span></div>
+        <div class="home-tile home-tile-analytics" data-page="capacity-planner" data-label="Capacity Planner">   <span class="home-tile-icon">📊</span><span>Capacity</span></div>
+        <div class="home-tile home-tile-analytics" data-page="impact"          data-label="Impact Analysis">      <span class="home-tile-icon">💥</span><span>Impact</span></div>
+      </div>
     </div>
 
     <!-- Frame loader -->
@@ -808,6 +857,35 @@ window.addEventListener('DOMContentLoaded', () => routeFromHash());
     const tab = e.target.closest('.tab-item[data-tab]');
     if (tab) navigateTab(tab.dataset.tab);
   });
+
+  // Home screen quick-launch tiles
+  document.getElementById('home-tiles').addEventListener('click', function(e) {
+    const tile = e.target.closest('.home-tile[data-page]');
+    if (!tile) return;
+    navigate(tile.dataset.page, tile.dataset.label, null);
+  });
+
+  // Load last-run status into home screen
+  (async function loadHomeScanStatus() {
+    const el = document.getElementById('home-scan-status');
+    if (!el) return;
+    try {
+      const r = await fetch('./last-run.json', { cache: 'no-store' });
+      if (!r.ok) { el.textContent = 'tarama durumu bulunamadı'; return; }
+      const d = await r.json();
+      if (!d || !d.timestamp) return;
+      const ts = new Date(d.timestamp);
+      const diffHr = Math.round((Date.now() - ts) / 3600000);
+      const age = diffHr < 1 ? 'az önce' : diffHr < 24 ? diffHr + ' saat önce' : Math.floor(diffHr/24) + ' gün önce';
+      const errs = d.errorCount || 0;
+      const ageColor = diffHr > 26 ? 'var(--danger)' : diffHr > 12 ? 'var(--warn)' : 'var(--accent3)';
+      el.innerHTML =
+        '<span style="color:' + ageColor + '">⟳ Son tarama: ' + age + '</span>' +
+        (errs > 0
+          ? ' · <span style="color:var(--warn)">' + errs + ' hata</span>'
+          : ' · <span style="color:var(--accent3)">✓ temiz</span>');
+    } catch { el.textContent = ''; }
+  })();
 
 </script>
 </body>

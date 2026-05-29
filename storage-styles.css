@@ -91,6 +91,10 @@
 
   --c-stor:#c084fc;
 
+  /* Vendor accent tokens */
+  --hitachi:#e05f5f;
+  --c-hitachi:#e05f5f;
+
 }
 
 * {
@@ -1071,6 +1075,23 @@ header {
 .sp-label-caps { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); }
 .sp-panel-grid { background:var(--grid); border:1px solid var(--border); }
 .sp-stat-box { background:var(--surface2); border:1px solid var(--border); padding:12px 16px; }
+.sp-stat-label { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px; }
+.sp-stat-value { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:var(--text-bright); line-height:1.1; }
+.sp-stat-unit  { font-size:13px; font-weight:400; color:var(--text-dim); margin-left:3px; }
+.sp-stat-sub   { font-size:9px; color:var(--text-dim); margin-top:4px; }
+.sp-border-blue   { border-left:3px solid var(--accent2); }
+.sp-border-green  { border-left:3px solid var(--accent3); }
+.sp-border-gold   { border-left:3px solid var(--accent); }
+.sp-border-warn   { border-left:3px solid var(--warn); }
+.sp-border-danger { border-left:3px solid var(--danger); }
+.sp-border-purple { border-left:3px solid var(--purple); }
+.sp-badge-blue { border-color:rgba(75,159,232,.4); color:var(--accent2); }
+.sp-badge-green{ border-color:rgba(75,232,160,.4); color:var(--accent3); }
+.sp-badge-gold { border-color:rgba(232,184,75,.4); color:var(--accent); }
+.sp-table-info { font-size:10px; color:var(--text-dim); padding:8px 0 10px; }
+.sp-flex { display:flex; }
+.sp-between { justify-content:space-between; align-items:center; }
+.sp-mt-3 { margin-top:3px; }
 .sp-bl-accent { border-left:3px solid var(--accent); }
 .sp-bl-accent2 { border-left:3px solid var(--accent2); }
 .sp-bl-accent3 { border-left:3px solid var(--accent3); }

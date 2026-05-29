@@ -456,25 +456,41 @@ async function checkPortalFreshness(vendorUrls = []) {
   }
 }
 
-// Global detection for index landing — handles file://, UNC paths, and dev servers
-function _isIndexPage() {
-  const p = window.location.pathname.replace(/\\\\/g, '/');
-  return p.endsWith('index.html') || p.endsWith('/') || p === '';
+// ── PORTAL-WIDE STALE DATA AUTO-CHECK ────────────────────────────────
+// Runs on every page. Each vendor page passes its own CSVs;
+// analytics/tool pages use the master vendor list as a proxy for overall data age.
+const _ALL_VENDOR_CSVS = [
+  './Hw/Dorado_Dashboard.csv',
+  './NetApp/NetApp_Dashboard.csv',
+  './Pure/Pure_Dashboard.csv',
+  './Pmax/PmaxPoolDash.csv',
+  './Ecs/ECS_Dashboard.csv',
+  './Hitachi/Hitachi_PROD.csv',
+  './San/SAN_Director_Dashboard.csv'
+];
+
+/**
+ * autoCheckFreshness(csvUrls)
+ * Called once per page after data loads. If csvUrls is omitted or empty,
+ * falls back to the master vendor list (used by analytics/tool pages).
+ * Deduplicates — will not show the banner more than once per page load.
+ */
+function autoCheckFreshness(csvUrls) {
+  const urls = (csvUrls && csvUrls.length) ? csvUrls : _ALL_VENDOR_CSVS;
+  checkPortalFreshness(urls);
 }
-if (_isIndexPage()) {
-  window.addEventListener('DOMContentLoaded', () => {
-    const allVendors = [
-      './Hw/Dorado_Dashboard.csv',
-      './NetApp/NetApp_Dashboard.csv',
-      './Pure/Pure_Dashboard.csv',
-      './Pmax/PmaxPoolDash.csv',
-      './Ecs/ECS_Dashboard.csv',
-      './Hitachi/Hitachi_PROD.csv',
-      './San/SAN_Director_Dashboard.csv'
-    ];
-    checkPortalFreshness(allVendors);
-  });
-}
+
+// Auto-trigger on DOMContentLoaded for pages that don't call it explicitly.
+// Vendor pages call autoCheckFreshness() themselves after their data loads (better timing).
+// Analytics and tool pages have no single CSV anchor so we fire it here.
+window.addEventListener('DOMContentLoaded', () => {
+  // Delay slightly so page-specific calls (if any) fire first and avoid double-banner
+  setTimeout(() => {
+    if (!document.getElementById('stale-data-banner')) {
+      autoCheckFreshness(_ALL_VENDOR_CSVS);
+    }
+  }, 2000);
+});
 
 function showStaleBanner(freshness) {
   if (document.getElementById('stale-data-banner')) return;

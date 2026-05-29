@@ -1269,12 +1269,12 @@ function renderHmTable() {
   const problem   = data.filter(r => r.durum === 'Fault' || r.durum === 'Paused').length;
   const totalCap  = data.reduce((s,r) => s + r.capTB, 0);
 
-  const statusColor = (d) => {
-    if (d === 'Normal' || d === 'Synchronized') return 'var(--accent3)';
-    if (d === 'Synchronizing') return 'var(--accent2)';
-    if (d === 'Paused') return 'var(--warn)';
-    if (d === 'Fault')  return 'var(--danger)';
-    return 'var(--text-dim)';
+  const hmStatusClass = (d) => {
+    if (d === 'Normal' || d === 'Synchronized') return 'sp-accent3';
+    if (d === 'Synchronizing') return 'sp-accent2';
+    if (d === 'Paused') return 'sp-warn';
+    if (d === 'Fault')  return 'sp-danger';
+    return 'sp-dim';
   };
 
   document.getElementById('hm-summary').innerHTML = `
@@ -1286,11 +1286,11 @@ function renderHmTable() {
       <div class="sp-stat-label">Normal / Sync</div>
       <div class="sp-stat-value sp-accent3">${normal}</div>
     </div>
-    <div class="sp-stat-box" style="border-left:3px solid ${syncing > 0 ? 'var(--accent2)' : 'var(--border)'}">
+    <div class="sp-stat-box ${syncing > 0 ? 'sp-border-blue' : ''}">
       <div class="sp-stat-label">Senkronize Ediliyor</div>
       <div class="sp-stat-value ${syncing > 0 ? 'sp-accent2' : 'sp-dim'}">${syncing}</div>
     </div>
-    <div class="sp-stat-box" style="border-left:3px solid ${problem > 0 ? 'var(--danger)' : 'var(--border)'}">
+    <div class="sp-stat-box ${problem > 0 ? 'sp-border-danger' : ''}">
       <div class="sp-stat-label">Sorun / Duraklatıldı</div>
       <div class="sp-stat-value ${problem > 0 ? 'sp-danger' : 'sp-dim'}">${problem}</div>
       ${problem > 0 ? '<div class="sp-fs-10 sp-danger sp-mt-3">⚠ Dikkat!</div>' : ''}
@@ -1309,7 +1309,7 @@ function renderHmTable() {
       <td class="sp-accent2">${esc(r.uzakLun)}</td>
       <td class="sp-dim-sm">${esc(r.uzakKabinet)}</td>
       <td class="sp-dim-sm">${esc(r.domain)}</td>
-      <td><span style="color:${statusColor(r.durum)};font-size:10px">${esc(r.durum)}</span> ${syncBadge}</td>
+      <td><span class="sp-fs-10 ${hmStatusClass(r.durum)}">${esc(r.durum)}</span> ${syncBadge}</td>
       <td class="sp-right sp-accent2">${r.capTB > 0 ? r.capTB.toFixed(3) + ' TB' : '—'}</td>
     </tr>`;
   }).join('');
@@ -1413,8 +1413,7 @@ loadCSVs();
 /* Veri tazeliği rozeti */
 renderFreshnessBadge('data-fresh-badge', ['./Hw/Dorado_Dashboard.csv', './Hw/Dorado_Host.csv']);
 
-// Stale data check
-checkPortalFreshness(['./Hw/Dorado_Dashboard.csv', './Hw/Dorado_Host.csv']);
+// Stale data check handled globally by storage-utils.js autoCheckFreshness()
 
 
   StorageNav.init({ title: "Huawei Dorado", section: "vendor" });

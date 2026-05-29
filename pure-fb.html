@@ -1285,8 +1285,7 @@ loadCSVs();
 
 renderFreshnessBadge('data-fresh-badge', [CSV_DASHBOARD, CSV_HOSTS]);
 
-// Stale data check
-checkPortalFreshness([CSV_DASHBOARD, CSV_HOSTS]);
+// Stale data check handled globally by storage-utils.js autoCheckFreshness()
 
   StorageNav.init({ title: "Pure FlashBlade", section: "vendor" });
 </script>

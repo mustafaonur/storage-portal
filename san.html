@@ -1623,9 +1623,7 @@ loadData();
 
 /* Veri tazeliği rozeti */
 renderFreshnessBadge('data-fresh-badge', ['./San/SAN_Director_Dashboard.csv', './San/SAN_Director_Ports.csv']);
-if (typeof checkPortalFreshness === 'function') {
-  checkPortalFreshness(['./San/SAN_Director_Dashboard.csv', './San/SAN_Director_Ports.csv']);
-}
+autoCheckFreshness(['./San/SAN_Director_Dashboard.csv', './San/SAN_Director_Ports.csv']);
 
 
   // Debounced wrappers for search inputs

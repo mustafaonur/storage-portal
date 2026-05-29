@@ -1091,8 +1091,7 @@ function renderPmaxSnap() {
 /* Veri tazeliği rozeti */
 renderFreshnessBadge('data-fresh-badge', ['./Pmax/PmaxPoolDash.csv', './Pmax/PmaxPoolHost.csv']);
 
-// Stale data check
-checkPortalFreshness(['./Pmax/PmaxPoolDash.csv', './Pmax/PmaxPoolHost.csv']);
+// Stale data check handled globally by storage-utils.js autoCheckFreshness()
 
 
   // Debounced wrappers for search inputs
