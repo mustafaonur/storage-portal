@@ -513,7 +513,7 @@ const dates30 = () => {
 
    VENDOR YÜKLE
 
-══════════════════════════════════════════════ */
+═════════════════════════════════════════════════ */
 
 async function loadVendor(vid) {
 
@@ -529,74 +529,84 @@ async function loadVendor(vid) {
 
   }
 
-  const dates = dates30();
-
+  // Try history files first (YYYY-MM-DD format)
+  const dates = dateRangeBackFormatted ? dateRangeBackFormatted(30) : dates30();
   S.data[vid] = [];
 
   const loadBar = document.getElementById('loadBar');
-
   const loadProg = document.getElementById('loadProg');
-
   const loadMsg = document.getElementById('loadMsg');
-
   loadBar.style.display='block';
-
   loadProg.max = dates.length;
-
   loadProg.value = 0;
-
   let done = 0;
 
   const tasks = dates.map(d => () =>
-
     fetchCSVText(cfg.hist.replace('{D}',d))
-
       .catch(()=>'')
-
       .then(txt => {
-
         done++;
-
         loadProg.value = done;
-
         loadMsg.textContent = `Yükleniyor: ${d} (${done}/${dates.length})`;
-
         const rows = parseCSV(txt).filter(r => !cfg.skipRows(r));
-
         if (rows.length) S.data[vid].push({date:d, rows});
-
       })
-
   );
 
   // Paralel, batch=6
-
   for(let i=0;i<tasks.length;i+=6){
-
     await Promise.all(tasks.slice(i,i+6).map(fn=>fn()));
+  }
 
+  // If no history files found, try current CSV as fallback
+  if (S.data[vid].length === 0) {
+    loadMsg.textContent = 'History yok, güncel CSV deneniyor...';
+    const currentUrl = cfg.hist.replace('_history/', '').replace('_{D}.csv', '.csv');
+    try {
+      const txt = await fetchCSVText(currentUrl);
+      if (txt) {
+        const rows = parseCSV(txt).filter(r => !cfg.skipRows(r));
+        if (rows.length) {
+          const today = new Date().toISOString().slice(0, 10);
+          S.data[vid].push({date: today, rows});
+          loadProg.value = dates.length;
+          done = dates.length;
+        }
+      }
+    } catch (e) {
+      console.warn(`Fallback CSV de yüklenemedi: ${currentUrl}`, e);
+    }
   }
 
   S.data[vid].sort((a,b)=>a.date.localeCompare(b.date));
-
   loadBar.style.display='none';
 
-  document.getElementById(`bc-${vid}`).textContent = `${S.data[vid].length}g`;
+  const historyCount = S.data[vid].length;
+  document.getElementById(`bc-${vid}`).textContent = `${historyCount}g`;
 
-  if(S.data[vid].length){
-
+  if(historyCount > 0){
     const f=S.data[vid][0].date, l=S.data[vid][S.data[vid].length-1].date;
-
-    document.getElementById('dateRange').textContent=`${f} → ${l}`;
-
-    document.getElementById('dataInfo').textContent=`${S.data[vid].length} günlük snapshot`;
-
+    const sourceNote = historyCount === 1 ? ' (güncel CSV)' : '';
+    document.getElementById('dateRange').textContent=`${f} → ${l}${sourceNote}`;
+    document.getElementById('dataInfo').textContent=`${historyCount} snapshot${sourceNote}`;
   } else {
-
     document.getElementById('dateRange').textContent='—';
-
     document.getElementById('dataInfo').textContent='Veri yok';
-
+    // Show error message in empty state
+    const emptyEl = document.getElementById('emptyMsg');
+    if (emptyEl) {
+      emptyEl.innerHTML = `<div style="color:var(--accent3);opacity:0.55;margin-bottom:14px">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3.5-4 3 3L20 6"/></svg>
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text-bright)">Veri bulunamadı</div>
+      <p style="font-size:12px;color:var(--text-dim);max-width:400px;line-height:1.6;margin-top:6px">
+        <b>${cfg.label}</b> için history dosyaları yok. StorageReport.ps1 düzenli çalıştırılıyor mu?<br>
+        <span style="font-size:11px;color:var(--warn)">Yol: ${cfg.hist.replace('{D}', 'YYYY-MM-DD')}</span>
+      </p>
+      <div style="font-size:10px;color:var(--text-dim);opacity:0.7;margin-top:12px;font-family:'JetBrains Mono',monospace;padding:5px 10px;border:1px solid var(--border)">
+        HistoryDays parametresi değiştiyse veya dizin yapısı farklıysa, güncel CSV'yi kullanmak için script'i güncelleyin.
+      </div>`;
+    }
   }
 
 }

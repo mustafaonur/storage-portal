@@ -274,13 +274,24 @@ function toast(msg, ms) {
 }
 
 function dateRangeBack(n) {
-  const d = [], now = new Date();
-  for (let i = n - 1; i >= 0; i--) {
-    const dt = new Date(now);
-    dt.setDate(dt.getDate() - i);
-    d.push(dt.toISOString().slice(0, 10).replace(/-/g, ''));
-  }
-  return d;
+   const d = [], now = new Date();
+   for (let i = n - 1; i >= 0; i--) {
+     const dt = new Date(now);
+     dt.setDate(dt.getDate() - i);
+     d.push(dt.toISOString().slice(0, 10).replace(/-/g, ''));
+   }
+   return d;
+}
+
+// Alternative date range format: YYYY-MM-DD (used by trend.html)
+function dateRangeBackFormatted(n) {
+   const d = [], now = new Date();
+   for (let i = n - 1; i >= 0; i--) {
+     const dt = new Date(now);
+     dt.setDate(dt.getDate() - i);
+     d.push(dt.toISOString().slice(0, 10));
+   }
+   return d;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -403,4 +414,54 @@ function safeText(el, value) {
 function safeHTML(el, html) {
   if (!el) return;
   el.innerHTML = html == null ? '' : String(html);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PORTAL-WIDE STALE DATA DETECTOR
+════════════════════════════════════════════════════════════ */
+
+const STALE_THRESHOLD_HR = 25;
+
+async function checkPortalFreshness(vendorUrls = []) {
+  if (vendorUrls.length === 0) return;
+  const dates = await Promise.all(vendorUrls.map(getCSVFreshness));
+  const valid = dates.filter(d => d);
+  if (valid.length === 0) return;
+
+  const oldest = new Date(Math.min(...valid.map(d => d.getTime())));
+  const f = freshnessText(oldest);
+
+  if (f.age >= STALE_THRESHOLD_HR) {
+    showStaleBanner(f);
+  }
+}
+
+// Global detection for index landing
+if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
+  window.addEventListener('DOMContentLoaded', () => {
+    const allVendors = [
+      './Hw/Dorado_Dashboard.csv',
+      './NetApp/NetApp_Dashboard.csv',
+      './Pure/Pure_Dashboard.csv',
+      './Pmax/PmaxPoolDash.csv',
+      './Ecs/ECS_Dashboard.csv',
+      './Hitachi/Hitachi_PROD.csv',
+      './San/SAN_Director_Dashboard.csv'
+    ];
+    checkPortalFreshness(allVendors);
+  });
+}
+
+function showStaleBanner(freshness) {
+  if (document.getElementById('stale-data-banner')) return;
+  
+  const banner = document.createElement('div');
+  banner.id = 'stale-data-banner';
+  banner.className = 'stale-banner';
+  banner.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span>DİKKAT: Veriler güncel olmayabilir. Son güncelleme: ${freshness.text} (${freshness.stamp})</span>
+    <div class="stale-banner-close" onclick="this.parentElement.remove()">✕</div>
+  `;
+  document.body.prepend(banner);
 }

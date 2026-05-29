@@ -1389,6 +1389,11 @@ loadCSVs();
 if (typeof renderFreshnessBadge === 'function') {
   renderFreshnessBadge('data-fresh-badge', ['./NetApp/NetApp_Dashboard.csv', './NetApp/NetApp_Volume.csv']);
 }
+
+// Stale data check
+if (typeof checkPortalFreshness === 'function') {
+  checkPortalFreshness(['./NetApp/NetApp_Dashboard.csv', './NetApp/NetApp_Volume.csv']);
+}
 </script>
 </body>
 </html>

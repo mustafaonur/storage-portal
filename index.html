@@ -1763,6 +1763,15 @@ loadChangeLog();
 loadWarranty();
 loadCabinetStatus();
 
+// Stale data check
+checkPortalFreshness([
+  './Hw/Dorado_Dashboard.csv',
+  './Pmax/PmaxPoolDash.csv',
+  './Pure/Pure_Dashboard.csv',
+  './NetApp/NetApp_Dashboard.csv',
+  './San/SAN_Director_Dashboard.csv'
+]);
+
 /* Veri tazeliği rozeti — tüm vendor dashboard'larının en eskisi */
 renderFreshnessBadge('data-fresh-badge', [
   './Hw/Dorado_Dashboard.csv', './Pmax/PmaxPoolDash.csv',

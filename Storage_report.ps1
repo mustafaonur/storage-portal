@@ -4366,24 +4366,25 @@ function Write-CSVAndPublish {
 
     $today = Get-Date -Format 'yyyy-MM-dd'
 
-    # History icin: her satira Tarih kolonu ekle (zaten varsa koruyalim)
-    # NULL degerleri bos string'e cevir (CSV bozulmasin)
-    $dataWithDate = if ($WithHistory) {
-        $dataArray | ForEach-Object {
-            if ($_ | Get-Member -Name 'Tarih' -ErrorAction SilentlyContinue) { $_ }
-            else {
-                $o = [ordered]@{ Tarih = $today }
-                $_.PSObject.Properties | ForEach-Object {
-                    $value = $_.Value
-                    if ($null -eq $value) { $value = '' }
-                    $o[$_.Name] = $value
-                }
-                [PSCustomObject]$o
-            }
+    # Veriyi isle: Tarih ekle (gerekirse), NULL'lari temizle ve Protect-CsvCell uygula
+    $finalData = $dataArray | ForEach-Object {
+        $o = [ordered]@{}
+        
+        # 1. Tarih kolonu (History istenmisse ve yoksa basa ekle)
+        $hasTarih = $_ | Get-Member -Name 'Tarih' -ErrorAction SilentlyContinue
+        if ($WithHistory -and -not $hasTarih) {
+            $o['Tarih'] = $today
         }
-    } else { $dataArray }
 
-    $finalData = @($dataWithDate)
+        # 2. Tum property'leri kopyala ve koru
+        foreach ($prop in $_.PSObject.Properties) {
+            $val = $prop.Value
+            if ($null -eq $val) { $val = '' }
+            elseif ($val -is [string]) { $val = Protect-CsvCell $val }
+            $o[$prop.Name] = $val
+        }
+        [PSCustomObject]$o
+    }
 
     # ON IZLEME - debug icin ilk satir
     if ($finalData.Count -gt 0) {
@@ -4573,12 +4574,8 @@ if ($runECS) {
     Write-CSVAndPublish -Data $ecs.Buckets      -LocalPath (Join-Path $LocalEcs 'ECS_Buckets.csv')      -RemotePath (Join-Path $RemoteEcs 'ECS_Buckets.csv')      -WithHistory -NoPublish:$NoPublish
     Write-CSVAndPublish -Data $ecs.Connectivity -LocalPath (Join-Path $LocalEcs 'ECS_Connectivity.csv') -RemotePath (Join-Path $RemoteEcs 'ECS_Connectivity.csv') -NoPublish:$NoPublish
     # History kaydet
-    if ($ecs.History -and $ecs.History.Count -gt 0) {
-        $histPath = Join-Path $LocalEcs 'ECS_Bucket_History.csv'
-        Protect-CsvData -Data $ecs.History | Export-Csv -Path $histPath -NoTypeInformation -Encoding UTF8 -Force
-        Write-Step "     history: $histPath ($($ecs.History.Count) kayit)" Green
-        if (-not $NoPublish) { try { Copy-Item $histPath (Join-Path $RemoteEcs 'ECS_Bucket_History.csv') -Force } catch { Write-Verbose 'ECS history publish edilemedi' } }
-    }
+    # ECS History - Artik Write-CSVAndPublish kullaniyoruz (Bug #2 fix)
+    Write-CSVAndPublish -Data $ecs.History -LocalPath (Join-Path $LocalEcs 'ECS_Bucket_History.csv') -RemotePath (Join-Path $RemoteEcs 'ECS_Bucket_History.csv') -NoPublish:$NoPublish
 }
 
 # ── NETAPP ONTAP ──
@@ -4636,11 +4633,8 @@ if ($runSAN) {
                     FirstSeen=if ($existingLS.ContainsKey($key)) { $existingLS[$key].FirstSeen } else { $today }
                 }
             }
-            Protect-CsvData -Data ($existingLS.Values | Sort-Object SwitchName, PortWWN) | Export-Csv -Path $lastSeenFile -NoTypeInformation -Encoding UTF8
-            Write-Step "     lokal:  $lastSeenFile  ($($existingLS.Count) kayit)" Green
-            if (-not $NoPublish) {
-                try { Copy-Item $lastSeenFile (Join-Path $RemoteSan 'SAN_Host_LastSeen.csv') -Force } catch { Write-Verbose "[L3883] islem atlandi: $($_.Exception.Message)" }
-            }
+            # SAN Host LastSeen - Artik Write-CSVAndPublish kullaniyoruz (Bug #2 fix)
+            Write-CSVAndPublish -Data ($existingLS.Values | Sort-Object SwitchName, PortWWN) -LocalPath $lastSeenFile -RemotePath (Join-Path $RemoteSan 'SAN_Host_LastSeen.csv') -NoPublish:$NoPublish
         }
     }
 }

@@ -217,6 +217,19 @@ async function loadVendor(vid){
       const rows=parseCSV(txt).filter(r=>!SKIP(r));
       if(rows.length)out.push({date:d,rows});}));
   for(let i=0;i<tasks.length;i+=6){await Promise.all(tasks.slice(i,i+6));}
+  
+  // Fallback to current CSV if history is empty
+  if(out.length === 0) {
+    const currentUrl = cfg.hist.replace('_history/', '').replace('_{D}.csv', '.csv');
+    try {
+      const txt = await fetchCSVText(currentUrl);
+      if(txt) {
+        const rows = parseCSV(txt).filter(r=>!SKIP(r));
+        if(rows.length) out.push({date: new Date().toISOString().slice(0, 10).replace(/-/g,''), rows});
+      }
+    } catch(e) {}
+  }
+
   out.sort((a,b)=>a.date.localeCompare(b.date));
   lb.classList.remove('show');lbi.style.width='0';
   CACHE[vid]=out;return out;

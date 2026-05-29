@@ -145,7 +145,6 @@ tr:hover .del-btn{opacity:1;}
 }
 .nb-week.past    { opacity:.5; }
 .nb-week.current { border-color:var(--accent); background:rgba(232,184,75,.06); box-shadow:0 0 0 1px var(--accent); }
-.nb-week.future  {}
 .nb-week-label   { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:4px; }
 .nb-week.current .nb-week-label { color:var(--accent); }
 .nb-week-date    { font-size:10px; color:var(--text-dim); margin-bottom:8px; }
@@ -188,6 +187,22 @@ tr:hover .del-btn{opacity:1;}
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--border);}
+.sp-hidden { display:none !important; }
+.sp-accent { color:var(--accent); }
+.sp-accent2 { color:var(--accent2); }
+.sp-accent3 { color:var(--accent3); }
+.sp-bright { color:var(--text-bright); }
+.sp-dim { color:var(--text-dim); }
+.sp-center { text-align:center; }
+.sp-right { text-align:right; }
+.sp-flex-1 { flex:1; }
+.sp-ml-8 { margin-left:8px; }
+.sp-ml-14 { margin-left:14px; }
+.sp-mb-6 { margin-bottom:6px; }
+.sp-mt-2 { margin-top:2px; }
+.sp-grid-col-all { grid-column:1/-1; }
+.sp-monospace { font-family:monospace; }
+.sp-pointer { cursor:pointer; }
 </style>
 </head>
 <body>
@@ -209,31 +224,31 @@ tr:hover .del-btn{opacity:1;}
     <div class="hdr-meta">
       <div><span class="live-dot"></span>MANAGEMENT</div>
       <div id="clock">--:--:--</div>
-      <div id="date-disp" style="color:var(--text)"></div>
+      <div id="date-disp" class="sp-bright"></div>
     </div>
     <div class="hdr-btns">
-      <button class="btn btn-p" onclick="openMail()">&#9993; Mail</button>
-      <button class="btn btn-b" onclick="exportCSV()">&#8615; CSV Dışa</button>
-      <button class="btn" onclick="triggerImport()" title="Daha önce dışa aktarılan CSV'yi yükle" style="border-color:var(--accent2);color:var(--accent2)">&#8613; CSV İçe</button>
-      <input type="file" id="main-import-file" accept=".csv" style="display:none" onchange="importCSV(event)">
-      <button class="btn btn-a" onclick="saveAll()">&#10003; Kaydet</button>
+      <button class="btn btn-p" id="btn-open-mail">&#9993; Mail</button>
+      <button class="btn btn-b" id="btn-export-csv">&#8615; CSV Dışa</button>
+      <button class="btn sp-accent2" id="btn-trigger-import" title="Daha önce dışa aktarılan CSV'yi yükle">&#8613; CSV İçe</button>
+      <input type="file" id="main-import-file" accept=".csv" class="sp-hidden">
+      <button class="btn btn-a" id="btn-save-all">&#10003; Kaydet</button>
     </div>
   </div>
 </header>
 
 <div class="action-bar">
   <div class="action-bar-info">Son kayıt: <strong id="last-saved">henüz kaydedilmedi</strong> &nbsp;·&nbsp; Hücrelere tıklayarak düzenle &nbsp;·&nbsp; CSV ile yedek al/yükle</div>
-  <button class="btn" onclick="resetData()" title="Varsayılana döndür">↺ Sıfırla</button>
+  <button class="btn" id="btn-reset-data" title="Varsayılana döndür">↺ Sıfırla</button>
 </div>
 
 <!-- SEKME BAR -->
-<div class="mtab-bar">
-  <button class="mtab active" data-mtab="sorumluluk" onclick="mSwitchTab('sorumluluk',this)">Sorumluluklar</button>
-  <button class="mtab" data-mtab="envanter" onclick="mSwitchTab('envanter',this)">Envanter</button>
-  <button class="mtab" data-mtab="kabinet" onclick="mSwitchTab('kabinet',this)">Kabinet Kayıt</button>
-  <button class="mtab" data-mtab="alarm" onclick="mSwitchTab('alarm',this)">Alarm <span class="mtab-badge" id="mtab-alarm-badge">○</span></button>
-  <button class="mtab" data-mtab="kontak" onclick="mSwitchTab('kontak',this)">Kontaklar</button>
-  <button class="mtab" data-mtab="kontrat" onclick="mSwitchTab('kontrat',this)">Kontrat Takip <span class="mtab-badge" id="mtab-kontrat-badge">○</span></button>
+<div class="mtab-bar" id="mtab-bar">
+  <button class="mtab active" data-mtab="sorumluluk">Sorumluluklar</button>
+  <button class="mtab" data-mtab="envanter">Envanter</button>
+  <button class="mtab" data-mtab="kabinet">Kabinet Kayıt</button>
+  <button class="mtab" data-mtab="alarm">Alarm <span class="mtab-badge" id="mtab-alarm-badge">○</span></button>
+  <button class="mtab" data-mtab="kontak">Kontaklar</button>
+  <button class="mtab" data-mtab="kontrat">Kontrat Takip <span class="mtab-badge" id="mtab-kontrat-badge">○</span></button>
 </div>
 
 <div class="tabpage active" id="tabpage-sorumluluk">
@@ -243,7 +258,7 @@ tr:hover .del-btn{opacity:1;}
   <div class="panel pl-gold">
     <div class="ph">
       <div class="ph-title">Disk Kesinti Sorumlulukları</div>
-      <div class="ph-acts"><button class="btn" onclick="addRow('kesinti')">+ Satır</button></div>
+      <div class="ph-acts"><button class="btn" data-add-row="kesinti">+ Satır</button></div>
     </div>
     <div class="pb">
       <table class="t" id="t-kesinti">
@@ -252,14 +267,14 @@ tr:hover .del-btn{opacity:1;}
         </tr></thead>
         <tbody id="b-kesinti"></tbody>
       </table>
-      <button class="add-btn" onclick="addRow('kesinti')">+ Yeni Dönem Ekle</button>
+      <button class="add-btn" data-add-row="kesinti">+ Yeni Dönem Ekle</button>
     </div>
   </div>
 
   <div class="panel pl-blue">
     <div class="ph">
       <div class="ph-title">DRC Test Sorumlulukları</div>
-      <div class="ph-acts"><button class="btn" onclick="addRow('drc')">+ Satır</button></div>
+      <div class="ph-acts"><button class="btn" data-add-row="drc">+ Satır</button></div>
     </div>
     <div class="pb">
       <table class="t" id="t-drc">
@@ -268,7 +283,7 @@ tr:hover .del-btn{opacity:1;}
         </tr></thead>
         <tbody id="b-drc"></tbody>
       </table>
-      <button class="add-btn" onclick="addRow('drc')">+ Satır Ekle</button>
+      <button class="add-btn" data-add-row="drc">+ Satır Ekle</button>
     </div>
   </div>
 
@@ -276,7 +291,7 @@ tr:hover .del-btn{opacity:1;}
   <div class="panel pl-green">
     <div class="ph">
       <div class="ph-title">Ürün Sorumlulukları</div>
-      <div class="ph-acts"><button class="btn" onclick="addRow('urun')">+ Ürün</button></div>
+      <div class="ph-acts"><button class="btn" data-add-row="urun">+ Ürün</button></div>
     </div>
     <div class="pb">
       <table class="t" id="t-urun">
@@ -285,7 +300,7 @@ tr:hover .del-btn{opacity:1;}
         </tr></thead>
         <tbody id="b-urun"></tbody>
       </table>
-      <button class="add-btn" onclick="addRow('urun')">+ Ürün Ekle</button>
+      <button class="add-btn" data-add-row="urun">+ Ürün Ekle</button>
     </div>
   </div>
 
@@ -293,8 +308,8 @@ tr:hover .del-btn{opacity:1;}
     <div class="ph">
       <div class="ph-title">Ürün Sorumlusu Kontrol Listesi</div>
       <div class="ph-acts">
-        <button class="btn" onclick="addCheck()">+ Madde</button>
-        <button class="btn" onclick="resetChecks()">↺</button>
+        <button class="btn" id="btn-add-check">+ Madde</button>
+        <button class="btn" id="btn-reset-checks">↺</button>
       </div>
     </div>
     <div class="pb"><div class="cl" id="cl"></div></div>
@@ -304,7 +319,7 @@ tr:hover .del-btn{opacity:1;}
   <div class="panel pl-warn col1">
     <div class="ph">
       <div class="ph-title">Çalışma Sorumlulukları</div>
-      <div class="ph-acts"><button class="btn" onclick="addRow('calisma')">+ Satır</button></div>
+      <div class="ph-acts"><button class="btn" data-add-row="calisma">+ Satır</button></div>
     </div>
     <div class="pb">
       <table class="t" id="t-calisma">
@@ -313,7 +328,7 @@ tr:hover .del-btn{opacity:1;}
         </tr></thead>
         <tbody id="b-calisma"></tbody>
       </table>
-      <button class="add-btn" onclick="addRow('calisma')">+ Satır Ekle</button>
+      <button class="add-btn" data-add-row="calisma">+ Satır Ekle</button>
     </div>
   </div>
 
@@ -322,13 +337,13 @@ tr:hover .del-btn{opacity:1;}
     <div class="ph">
       <div class="ph-title">Nöbet Takvimi</div>
       <div class="ph-acts">
-        <button class="btn" onclick="shiftWeek(-1)" title="Bir hafta geri">&laquo;</button>
-        <button class="btn" onclick="shiftWeek(0)"  title="Bu haftaya dön">Bu Hafta</button>
-        <button class="btn" onclick="shiftWeek(1)"  title="Bir hafta ileri">&raquo;</button>
+        <button class="btn" id="btn-week-prev" title="Bir hafta geri">&laquo;</button>
+        <button class="btn" id="btn-week-now"  title="Bu haftaya dön">Bu Hafta</button>
+        <button class="btn" id="btn-week-next"  title="Bir hafta ileri">&raquo;</button>
       </div>
     </div>
-    <div class="pb" style="padding:14px;">
-      <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">
+    <div class="pb sp-p14">
+      <div class="sp-label-caps sp-mb-8">
         Nöbet Sırası (Primary)
       </div>
       <div class="nb-grid" id="nb-primary-grid">
@@ -341,11 +356,11 @@ tr:hover .del-btn{opacity:1;}
         <div class="nb-cell nb-p" contenteditable="true" data-nk="p4">Elif</div>
         <div class="nb-cell nb-p" contenteditable="true" data-nk="p5">Onur</div>
       </div>
-      <div style="font-size:10px;color:var(--text-dim);margin:6px 0 16px">
+      <div class="sp-dim sp-mb-16" style="font-size:10px;margin-top:6px">
         Sıralamayı değiştirmek için isim hücrelerine tıkla. Her hafta otomatik bir sonrakine geçer.
       </div>
-      <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">
-        4 Haftalık Görünüm <span id="nb-offset-label" style="color:var(--accent);margin-left:8px"></span>
+      <div class="sp-label-caps sp-mb-8">
+        4 Haftalık Görünüm <span id="nb-offset-label" class="sp-accent sp-ml-8"></span>
       </div>
       <div class="nb-weeks" id="nb-weeks"></div>
     </div>
@@ -362,41 +377,37 @@ tr:hover .del-btn{opacity:1;}
     <div class="ph">
       <div class="ph-title">Ürün Envanteri</div>
       <div class="ph-acts">
-        <button class="btn" onclick="addEnvanter()">+ Ürün Ekle</button>
-        <button class="btn" onclick="importEnvanterCSV()" title="CSV'den içe aktar">&#8613; İçe Aktar</button>
-        <input type="file" id="env-file-in" accept=".csv" style="display:none" onchange="doImportEnvanter(event)">
+        <button class="btn" id="btn-add-env">+ Ürün Ekle</button>
+        <button class="btn" id="btn-import-env-trigger" title="CSV'den içe aktar">&#8613; İçe Aktar</button>
+        <input type="file" id="env-file-in" accept=".csv" class="sp-hidden">
       </div>
     </div>
-    <div class="pb" style="padding:14px;">
+    <div class="pb sp-p14">
 
       <!-- FİLTRE -->
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div class="sp-flex-gap8 sp-mb-12" style="flex-wrap:wrap">
         <input id="env-search" type="text" placeholder="Ara (isim, seri no, model...)"
-          oninput="renderEnvanter()"
-          style="background:var(--grid);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 12px;outline:none;flex:1;min-width:200px">
-        <select id="env-vendor-f" onchange="renderEnvanter()"
-          style="background:var(--grid);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none">
+          class="kk-in sp-flex-1" style="min-width:200px">
+        <select id="env-vendor-f" class="kk-in" style="width:auto">
           <option value="">Tüm Vendor'lar</option>
           <option>Huawei</option><option>Dell EMC</option><option>Pure Storage</option>
           <option>NetApp</option><option>Brocade</option><option>Cisco</option>
           <option>HPE</option><option>IBM</option><option>Diğer</option>
         </select>
-        <select id="env-type-f" onchange="renderEnvanter()"
-          style="background:var(--grid);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none">
+        <select id="env-type-f" class="kk-in" style="width:auto">
           <option value="">Tüm Tipler</option>
           <option>SAN Storage</option><option>NAS Storage</option><option>Object Storage</option>
           <option>SAN Switch</option><option>Backup</option><option>Server</option><option>Diğer</option>
         </select>
-        <select id="env-loc-f" onchange="renderEnvanter()"
-          style="background:var(--grid);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none">
+        <select id="env-loc-f" class="kk-in" style="width:auto">
           <option value="">Tüm Lokasyon</option>
           <option>Istanbul</option><option>Ankara</option><option>Kos</option><option>KristalKule</option>
         </select>
       </div>
 
       <!-- TABLO -->
-      <div id="env-table-wrap" style="overflow:auto"></div>
-      <button class="add-btn" onclick="addEnvanter()">+ Ürün Ekle</button>
+      <div id="env-table-wrap" class="sp-overflow-auto"></div>
+      <button class="add-btn" id="btn-add-env-bottom">+ Ürün Ekle</button>
     </div>
   </div>
 
@@ -411,24 +422,26 @@ tr:hover .del-btn{opacity:1;}
     <div class="ph">
       <div class="ph-title">Kabinet Kayıt — Yeni Sistem Önerisi</div>
       <div class="ph-acts">
-        <button class="btn" onclick="exportPendingJSON()" title="pending-cabinets.json indir (onaylayan paylaşılan klasöre koyar)">&#8615; JSON'a Aktar</button>
-        <button class="btn" onclick="document.getElementById('pending-file-in').click()" title="Paylaşılan pending-cabinets.json içe aktar">&#8613; JSON İçe Aktar</button>
-        <input type="file" id="pending-file-in" accept=".json" style="display:none" onchange="doImportPending(event)">
+        <button class="btn" id="btn-export-pending" title="pending-cabinets.json indir (onaylayan paylaşılan klasöre koyar)">&#8615; JSON'a Aktar</button>
+        <button class="btn" id="btn-import-pending-trigger" title="Paylaşılan pending-cabinets.json içe aktar">&#8613; JSON İçe Aktar</button>
+        <input type="file" id="pending-file-in" accept=".json" class="sp-hidden">
       </div>
     </div>
-    <div class="pb" style="padding:14px">
+    <div class="pb sp-p14">
 
       <!-- BİLGİ BANDI -->
-      <div style="background:var(--grid);border:1px solid var(--border);border-left:3px solid var(--accent2);padding:10px 14px;margin-bottom:16px;font-size:11px;color:var(--text-dim);line-height:1.6">
-        <strong style="color:var(--text-bright)">Nasıl çalışır:</strong>
-        Şifre <em>burada girilmez</em>. Öneri eklenir → kıdemli onaylar → onaylayan kendi makinesinde
-        <code style="color:var(--accent2)">Setup-Credentials.ps1 -ImportPending</code> ile şifreyi DPAPI ile girer.
-        Sadece desteklenen vendor'lar eklenebilir; yeni vendor tipi kod gerektirir.
+      <div class="action-bar sp-mb-16 sp-panel-grid" style="border-left-color:var(--accent2)">
+        <div class="action-bar-info" style="font-size:11px; line-height:1.6">
+          <strong class="sp-bright">Nasıl çalışır:</strong>
+          Şifre <em>burada girilmez</em>. Öneri eklenir → kıdemli onaylar → onaylayan kendi makinesinde
+          <code class="sp-accent2">Setup-Credentials.ps1 -ImportPending</code> ile şifreyi DPAPI ile girer.
+          Sadece desteklenen vendor'lar eklenebilir; yeni vendor tipi kod gerektirir.
+        </div>
       </div>
 
       <!-- ÖNERİ FORMU -->
-      <div style="background:var(--grid);border:1px solid var(--border);padding:14px;margin-bottom:18px">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Yeni Kabinet Öner</div>
+      <div class="panel sp-p14 sp-mb-16 sp-panel-grid">
+        <div class="sp-label-caps sp-mb-10">Yeni Kabinet Öner</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
           <div>
             <label class="kk-lbl">Vendor *</label>
@@ -464,26 +477,25 @@ tr:hover .del-btn{opacity:1;}
             <label class="kk-lbl">Öneren *</label>
             <input id="kk-by" class="kk-in" placeholder="Adınız">
           </div>
-          <div style="grid-column:1/-1">
+          <div class="sp-grid-col-all">
             <label class="kk-lbl">Not (opsiyonel)</label>
             <input id="kk-note" class="kk-in" placeholder="örn. QNB Ankara DR, Mart kurulumu">
           </div>
         </div>
-        <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-          <button class="btn" style="border-color:var(--accent2);color:var(--accent2)" onclick="submitProposal()">+ Öneri Ekle</button>
-          <span id="kk-form-msg" style="font-size:10px;color:var(--text-dim)"></span>
+        <div class="sp-flex-gap8 sp-mt-12" style="align-items:center">
+          <button class="btn btn-b" id="btn-submit-proposal">+ Öneri Ekle</button>
+          <span id="kk-form-msg" class="sp-dim" style="font-size:10px"></span>
         </div>
       </div>
 
       <!-- ÖZET -->
-      <div id="kk-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+      <div id="kk-summary" class="sp-grid-4col sp-mb-14"></div>
 
       <!-- LİSTE -->
-      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
-        <input id="kk-search" type="text" placeholder="Ara (kabinet, IP, öneren...)" oninput="renderProposals()"
-          style="background:var(--grid);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 12px;outline:none;flex:1;min-width:180px">
-        <select id="kk-status-f" onchange="renderProposals()"
-          style="background:var(--grid);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none">
+      <div class="sp-flex-gap8 sp-mb-10" style="align-items:center;flex-wrap:wrap">
+        <input id="kk-search" type="text" placeholder="Ara (kabinet, IP, öneren...)"
+          class="kk-in sp-flex-1" style="min-width:180px">
+        <select id="kk-status-f" class="kk-in" style="width:auto">
           <option value="">Tüm Durumlar</option>
           <option value="BEKLIYOR">Bekliyor</option>
           <option value="ONAYLANDI">Onaylandı</option>
@@ -491,7 +503,7 @@ tr:hover .del-btn{opacity:1;}
           <option value="AKTIF">Aktif</option>
         </select>
       </div>
-      <div id="kk-table-wrap" style="overflow:auto"></div>
+      <div id="kk-table-wrap" class="sp-overflow-auto"></div>
     </div>
   </div>
 
@@ -506,80 +518,80 @@ tr:hover .del-btn{opacity:1;}
     <div class="ph">
       <div class="ph-title">Alarm Mail Ayarları</div>
       <div class="ph-acts">
-        <button class="btn" onclick="exportAlertConfig()" title="alert-config.json indir → Scripts klasörüne koy">&#8615; Config'e Aktar</button>
-        <button class="btn" onclick="document.getElementById('alert-file-in').click()" title="Mevcut alert-config.json içe aktar">&#8613; İçe Aktar</button>
-        <input type="file" id="alert-file-in" accept=".json" style="display:none" onchange="doImportAlertConfig(event)">
+        <button class="btn" id="btn-export-alert" title="alert-config.json indir → Scripts klasörüne koy">&#8615; Config'e Aktar</button>
+        <button class="btn" id="btn-import-alert-trigger" title="Mevcut alert-config.json içe aktar">&#8613; İçe Aktar</button>
+        <input type="file" id="alert-file-in" accept=".json" class="sp-hidden">
       </div>
     </div>
-    <div class="pb" style="padding:14px">
+    <div class="pb sp-p14">
 
       <!-- DURUM BANDI -->
-      <div id="alarm-status-band" style="padding:10px 14px;margin-bottom:16px;font-size:11px;line-height:1.6"></div>
+      <div id="alarm-status-band" class="sp-p14 sp-mb-16" style="font-size:11px;line-height:1.6"></div>
 
       <!-- ANA SWITCH -->
-      <div style="display:flex;align-items:center;gap:14px;background:var(--grid);border:1px solid var(--border);padding:14px;margin-bottom:16px">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:var(--text-bright)">
-          <input type="checkbox" id="alarm-enabled" onchange="alarmToggleEnabled()" style="width:16px;height:16px;cursor:pointer">
+      <div class="sp-flex-gap14 sp-panel-grid sp-p14 sp-mb-16" style="align-items:center">
+        <label class="sp-pointer sp-bright" style="display:flex;align-items:center;gap:10px;font-size:12px">
+          <input type="checkbox" id="alarm-enabled" style="width:16px;height:16px;cursor:pointer">
           <span><strong>Alarm Mailleri Aktif</strong></span>
         </label>
-        <span style="font-size:10px;color:var(--text-dim)">Kapalıyken hiç mail gitmez (güvenli varsayılan). Açınca kritik kabinetler için mail gönderilir.</span>
+        <span class="sp-dim" style="font-size:10px">Kapalıyken hiç mail gitmez (güvenli varsayılan). Açınca kritik kabinetler için mail gönderilir.</span>
       </div>
 
       <!-- SMTP -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px">
-        <div><label class="kk-lbl">SMTP Sunucu</label><input id="alarm-smtp" class="kk-in" placeholder="smtp.sirket.com" onchange="alarmSave()"></div>
-        <div><label class="kk-lbl">Port</label><input id="alarm-port" class="kk-in" type="number" value="25" onchange="alarmSave()"></div>
-        <div><label class="kk-lbl">Gönderen (From)</label><input id="alarm-from" class="kk-in" onchange="alarmSave()"></div>
-        <div style="grid-column:1/-1"><label class="kk-lbl">Konu (Subject)</label><input id="alarm-subject" class="kk-in" onchange="alarmSave()"></div>
+      <div class="sp-mb-16" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+        <div><label class="kk-lbl">SMTP Sunucu</label><input id="alarm-smtp" class="kk-in" placeholder="smtp.sirket.com"></div>
+        <div><label class="kk-lbl">Port</label><input id="alarm-port" class="kk-in" type="number" value="25"></div>
+        <div><label class="kk-lbl">Gönderen (From)</label><input id="alarm-from" class="kk-in"></div>
+        <div class="sp-grid-col-all"><label class="kk-lbl">Konu (Subject)</label><input id="alarm-subject" class="kk-in"></div>
       </div>
 
       <!-- EŞİK AYARLARI -->
-      <div style="background:var(--grid);border:1px solid var(--border);padding:14px;margin-bottom:16px">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Doluluk Eşikleri</div>
+      <div class="sp-panel-grid sp-p14 sp-mb-16">
+        <div class="sp-label-caps sp-mb-12">Doluluk Eşikleri</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;align-items:end">
           <div>
-            <label class="kk-lbl" style="color:var(--danger)">Kritik Eşik (%)</label>
-            <input id="alarm-kritik" class="kk-in" type="number" min="1" max="100" value="85" onchange="alarmSave()" style="border-color:var(--danger)">
-            <div style="font-size:9px;color:var(--text-dim);margin-top:3px">Bu ve üstü → kırmızı alarm, mail tetikler</div>
+            <label class="kk-lbl sp-danger">Kritik Eşik (%)</label>
+            <input id="alarm-kritik" class="kk-in" type="number" min="1" max="100" value="85" style="border-color:var(--danger)">
+            <div class="sp-dim sp-mt-3" style="font-size:9px">Bu ve üstü → kırmızı alarm, mail tetikler</div>
           </div>
           <div>
-            <label class="kk-lbl" style="color:var(--warn)">Uyarı Eşik (%)</label>
-            <input id="alarm-uyari" class="kk-in" type="number" min="1" max="100" value="75" onchange="alarmSave()" style="border-color:var(--warn)">
-            <div style="font-size:9px;color:var(--text-dim);margin-top:3px">Bu ve üstü → sarı uyarı</div>
+            <label class="kk-lbl sp-warn">Uyarı Eşik (%)</label>
+            <input id="alarm-uyari" class="kk-in" type="number" min="1" max="100" value="75" style="border-color:var(--warn)">
+            <div class="sp-dim sp-mt-3" style="font-size:9px">Bu ve üstü → sarı uyarı</div>
           </div>
           <div>
             <label class="kk-lbl">Mail Kapsamı</label>
-            <select id="alarm-scope" class="kk-in" onchange="alarmSave()">
+            <select id="alarm-scope" class="kk-in">
               <option value="kritik">Sadece Kritik (önerilen)</option>
               <option value="kritik+uyari">Kritik + Uyarı</option>
             </select>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:3px">Hangi seviye mail tetiklesin</div>
+            <div class="sp-dim sp-mt-3" style="font-size:9px">Hangi seviye mail tetiklesin</div>
           </div>
         </div>
-        <div id="alarm-threshold-preview" style="margin-top:12px;font-size:10px;color:var(--text-dim);padding:8px 10px;background:var(--bg);border:1px solid var(--border)"></div>
+        <div id="alarm-threshold-preview" class="sp-p14 sp-mt-12 sp-panel-grid" style="font-size:10px"></div>
       </div>
 
       <!-- VENDOR SEÇİMİ -->
-      <div style="background:var(--grid);border:1px solid var(--border);padding:14px;margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Hangi Vendor'lar Alarm Versin</div>
-          <div>
-            <button class="btn" style="padding:3px 10px;font-size:9px" onclick="alarmVendorAll(true)">Tümü</button>
-            <button class="btn" style="padding:3px 10px;font-size:9px" onclick="alarmVendorAll(false)">Hiçbiri</button>
+      <div class="sp-panel-grid sp-p14 sp-mb-16">
+        <div class="sp-flex-gap8 sp-mb-12" style="justify-content:space-between;align-items:center">
+          <div class="sp-label-caps">Hangi Vendor'lar Alarm Versin</div>
+          <div class="sp-flex-gap8">
+            <button class="btn" id="btn-alarm-vendor-all" style="padding:3px 10px;font-size:9px">Tümü</button>
+            <button class="btn" id="btn-alarm-vendor-none" style="padding:3px 10px;font-size:9px">Hiçbiri</button>
           </div>
         </div>
         <div id="alarm-vendors" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px"></div>
       </div>
 
       <!-- ALICI EKLE -->
-      <div style="background:var(--grid);border:1px solid var(--border);padding:14px;margin-bottom:16px">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Mail Alıcısı Ekle</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div class="sp-panel-grid sp-p14 sp-mb-16">
+        <div class="sp-label-caps sp-mb-10">Mail Alıcısı Ekle</div>
+        <div class="sp-flex-gap8" style="flex-wrap:wrap;align-items:flex-end">
           <div style="flex:1;min-width:240px"><label class="kk-lbl">E-posta Adresi</label><input id="alarm-new-email" class="kk-in" placeholder="ad.soyad@sirket.com"></div>
           <div style="flex:1;min-width:160px"><label class="kk-lbl">Not (opsiyonel)</label><input id="alarm-new-note" class="kk-in" placeholder="örn. Depolama ekibi"></div>
-          <button class="btn" style="border-color:var(--accent2);color:var(--accent2)" onclick="alarmAddRecipient()">+ Alıcı Ekle</button>
+          <button class="btn btn-b" id="btn-alarm-add-recipient">+ Alıcı Ekle</button>
         </div>
-        <span id="alarm-msg" style="font-size:10px;color:var(--text-dim);display:block;margin-top:8px"></span>
+        <span id="alarm-msg" class="sp-dim sp-mt-8" style="font-size:10px;display:block"></span>
       </div>
 
       <!-- ALICI LİSTESİ -->
@@ -597,22 +609,22 @@ tr:hover .del-btn{opacity:1;}
   <div class="panel pl-green">
     <div class="ph">
       <div class="ph-title">Vendor Kontakları</div>
-      <div class="ph-acts"><button class="btn" onclick="addKontak()">+ Ekle</button></div>
+      <div class="ph-acts"><button class="btn" id="btn-add-kontak-header">+ Ekle</button></div>
     </div>
-    <div class="pb" style="padding:14px">
+    <div class="pb sp-p14">
       <div id="kontak-list"></div>
-      <button class="add-btn" onclick="addKontak()">+ Yeni Kontak</button>
+      <button class="add-btn" id="btn-add-kontak-footer">+ Yeni Kontak</button>
     </div>
   </div>
 
   <div class="panel pl-purple">
     <div class="ph">
       <div class="ph-title">SAM / Account Manager'lar</div>
-      <div class="ph-acts"><button class="btn" onclick="addSam()">+ Ekle</button></div>
+      <div class="ph-acts"><button class="btn" id="btn-add-sam-header">+ Ekle</button></div>
     </div>
-    <div class="pb" style="padding:14px">
+    <div class="pb sp-p14">
       <div id="sam-list"></div>
-      <button class="add-btn" onclick="addSam()">+ Yeni SAM</button>
+      <button class="add-btn" id="btn-add-sam-footer">+ Yeni SAM</button>
     </div>
   </div>
 
@@ -680,11 +692,11 @@ tr:hover .del-btn{opacity:1;}
 </div><!-- /tabpage kontrat -->
 
 <!-- MAIL MODAL -->
-<div class="modal-bg" id="mailModal" onclick="if(event.target===this)closeMail()">
+<div class="modal-bg" id="mailModal">
   <div class="modal">
     <div class="m-hdr">
       <div class="m-title">&#9993; Operations Hub — Mail Raporu</div>
-      <button class="m-close" onclick="closeMail()">&times;</button>
+      <button class="m-close" id="btn-mail-close-x">&times;</button>
     </div>
     <div class="m-body">
       <div class="mf-row">
@@ -695,13 +707,13 @@ tr:hover .del-btn{opacity:1;}
         <span class="mf-lbl">Alıcı</span>
         <input class="mf-in" id="mail-to" placeholder="ornek@sirket.com; ikinci@sirket.com">
       </div>
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px;">Önizleme</div>
+      <div class="sp-stat-label sp-mb-7">Önizleme</div>
       <div class="mail-pre" id="mail-pre"></div>
     </div>
     <div class="m-foot">
-      <button class="btn" onclick="closeMail()">İptal</button>
-      <button class="btn btn-b" onclick="copyMail()">Kopyala</button>
-      <button class="btn btn-p" onclick="sendMail()">Mail İstemcisinde Aç</button>
+      <button class="btn" id="btn-mail-cancel">İptal</button>
+      <button class="btn btn-b" id="btn-mail-copy">Kopyala</button>
+      <button class="btn btn-p" id="btn-mail-open">Mail İstemcisinde Aç</button>
     </div>
   </div>
 </div>
@@ -898,48 +910,54 @@ function persistOnly(){
   }catch(e){ showToast('Kayıt hatası: '+e.message); }
 }
 function saveAll(){saveData();}
-function resetData(){if(!confirm('Tüm veriler sıfırlansın mı?'))return;D=JSON.parse(JSON.stringify(DEFAULTS));localStorage.removeItem(SK);renderAll();showToast('Sıfırlandı');}
+function resetData(){if(!confirm('Tüm veriler sıfırlansın mı?'))return;D=JSON.parse(JSON.stringify(DEFAULTS));try{localStorage.removeItem(SK);}catch(e){console.error('localStorage.removeItem error:',e);}renderAll();showToast('Sıfırlandı');}
 
 /* ────────────────── RENDER ────────────────── */
 function renderAll(){renderKesinti();renderDrc();renderUrun();renderChecks();renderCalisma();renderNobet();restoreNk();renderEnvanter();renderKontaklar();renderSam();renderProposals();renderAlarmMail();mUpdateAlarmBadge();kontratInit();}
 
 function renderKesinti(){
-  document.getElementById('b-kesinti').innerHTML=D.kesinti.map((r,i)=>`<tr>
+  const b = document.getElementById('b-kesinti');
+  b.innerHTML=D.kesinti.map((r,i)=>`<tr>
     <td class="td-date" contenteditable="true">${e(r.donem)}</td>
     <td class="td-p" contenteditable="true">${e(r.sorumlu)}</td>
     <td class="td-dim" contenteditable="true">${e(r.dc)}</td>
-    <td class="td-del"><button class="del-btn" onclick="del('kesinti',${i})">×</button></td>
+    <td class="td-del"><button class="del-btn" data-type="kesinti" data-idx="${i}">×</button></td>
   </tr>`).join('');
 }
 function renderDrc(){
-  document.getElementById('b-drc').innerHTML=D.drc.map((r,i)=>`<tr>
+  const b = document.getElementById('b-drc');
+  b.innerHTML=D.drc.map((r,i)=>`<tr>
     <td class="td-date" contenteditable="true">${e(r.kat)}</td>
     <td class="td-dim" contenteditable="true">${e(r.yil)}</td>
     <td class="td-p" contenteditable="true">${e(r.qnb)}</td>
     <td class="td-s" contenteditable="true">${e(r.enpara)}</td>
-    <td class="td-del"><button class="del-btn" onclick="del('drc',${i})">×</button></td>
+    <td class="td-del"><button class="del-btn" data-type="drc" data-idx="${i}">×</button></td>
   </tr>`).join('');
 }
 function renderUrun(){
-  document.getElementById('b-urun').innerHTML=D.urun.map((r,i)=>`<tr>
+  const b = document.getElementById('b-urun');
+  b.innerHTML=D.urun.map((r,i)=>`<tr>
     <td class="td-v" contenteditable="true">${e(r.vendor)}</td>
     <td class="td-p" contenteditable="true">${e(r.qnb)}</td>
     <td class="td-s" contenteditable="true">${e(r.enpara)}</td>
-    <td class="td-del"><button class="del-btn" onclick="del('urun',${i})">×</button></td>
+    <td class="td-del"><button class="del-btn" data-type="urun" data-idx="${i}">×</button></td>
   </tr>`).join('');
 }
 function renderChecks(){
-  document.getElementById('cl').innerHTML=D.checks.map((c,i)=>`<div class="ci">
-    <div class="cb ${c.done?'on':''}" onclick="toggleCheck(${i})"></div>
-    <span class="cl-lbl ${c.done?'done':''}" contenteditable="true" onblur="updateCheckTxt(${i},this.textContent)">${e(c.t)}</span>
-    <button class="del-btn" style="opacity:1" onclick="delCheck(${i})">×</button>
+  const cl = document.getElementById('cl');
+  if (!cl) return;
+  cl.innerHTML=D.checks.map((c,i)=>`<div class="ci" data-idx="${i}">
+    <div class="cb ${c.done?'on':''}"></div>
+    <span class="cl-lbl ${c.done?'done':''}" contenteditable="true">${e(c.t)}</span>
+    <button class="del-btn sp-pointer" style="opacity:1">×</button>
   </div>`).join('');
 }
 function renderCalisma(){
-  document.getElementById('b-calisma').innerHTML=D.calisma.map((r,i)=>`<tr>
+  const b = document.getElementById('b-calisma');
+  b.innerHTML=D.calisma.map((r,i)=>`<tr>
     <td contenteditable="true">${e(r.c)}</td>
     <td class="td-p" contenteditable="true">${e(r.s)}</td>
-    <td class="td-del"><button class="del-btn" onclick="del('calisma',${i})">×</button></td>
+    <td class="td-del"><button class="del-btn" data-type="calisma" data-idx="${i}">×</button></td>
   </tr>`).join('');
 }
 // 4-haftalık görünüm offset (0=bu hafta, -1=geçen hafta, +1=gelecek hafta)
@@ -1681,7 +1699,7 @@ function doImportPending(ev){
 function renderProposals(){
   const wrap=document.getElementById('kk-table-wrap');
   const sumEl=document.getElementById('kk-summary');
-  if(!wrap)return;
+  if(!wrap || !sumEl)return;
   const list=D.kabinetOnerileri||[];
 
   // Özet kartları
@@ -1689,9 +1707,9 @@ function renderProposals(){
   const cOk =list.filter(k=>k.status==='ONAYLANDI').length;
   const cAkt=list.filter(k=>k.status==='AKTIF').length;
   const cRed=list.filter(k=>k.status==='REDDEDILDI').length;
-  const card=(lbl,val,clr)=>`<div style="background:var(--grid);border:1px solid var(--border);border-left:3px solid ${clr};padding:11px 14px">
-    <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px">${lbl}</div>
-    <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:${val>0?clr:'var(--text-dim)'}">${val}</div></div>`;
+  const card=(lbl,val,clr)=>`<div class="sp-stat-box" style="border-left-color:${clr}">
+    <div class="sp-stat-label">${lbl}</div>
+    <div class="sp-stat-value" style="color:${val>0?clr:'var(--text-dim)'}">${val}</div></div>`;
   sumEl.innerHTML =
     card('Bekliyor',cBek,'var(--warn)') +
     card('Onaylandı',cOk,'var(--accent3)') +
@@ -1699,7 +1717,7 @@ function renderProposals(){
     card('Reddedildi',cRed,'var(--danger)');
 
   if(list.length===0){
-    wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);font-size:11px">Henüz kabinet önerisi yok. Yukarıdaki formdan ekleyin.</div>';
+    wrap.innerHTML='<div class="sp-empty-msg">Henüz kabinet önerisi yok. Yukarıdaki formdan ekleyin.</div>';
     return;
   }
 
@@ -1711,7 +1729,7 @@ function renderProposals(){
   ).sort((a,b)=> new Date(b.onerenAt)-new Date(a.onerenAt));
 
   if(data.length===0){
-    wrap.innerHTML='<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:11px">Filtreyle eşleşen öneri yok.</div>';
+    wrap.innerHTML='<div class="sp-empty-msg">Filtreyle eşleşen öneri yok.</div>';
     return;
   }
 
@@ -1726,31 +1744,31 @@ function renderProposals(){
   const rows=data.map(k=>{
     let acts='';
     if(k.status==='BEKLIYOR'){
-      acts=`<button class="btn" style="padding:4px 10px;font-size:9px;border-color:var(--accent3);color:var(--accent3)" onclick="approveProposal('${k.id}')">Onayla</button>
-            <button class="btn" style="padding:4px 10px;font-size:9px;border-color:var(--danger);color:var(--danger)" onclick="rejectProposal('${k.id}')">Reddet</button>`;
+      acts=`<button class="btn sp-accent3" data-kk-act="approve" data-kk-id="${k.id}">Onayla</button>
+            <button class="btn sp-danger" data-kk-act="reject" data-kk-id="${k.id}">Reddet</button>`;
     } else if(k.status==='ONAYLANDI'){
-      acts=`<span style="font-size:9px;color:var(--text-dim)">Setup-Credentials bekliyor</span>
-            <button class="del-btn" style="opacity:1" onclick="deleteProposal('${k.id}')" title="Sil">×</button>`;
+      acts=`<span class="sp-fs-9 sp-dim">Setup-Credentials bekliyor</span>
+            <button class="del-btn sp-opacity-1" data-kk-act="delete" data-kk-id="${k.id}" title="Sil">×</button>`;
     } else {
-      acts=`<button class="del-btn" style="opacity:1" onclick="deleteProposal('${k.id}')" title="Sil">×</button>`;
+      acts=`<button class="del-btn sp-opacity-1" data-kk-act="delete" data-kk-id="${k.id}" title="Sil">×</button>`;
     }
     const tip = k.status==='REDDEDILDI' && k.redSebep ? ` title="Red sebebi: ${kkEsc(k.redSebep)}"` : '';
-    return `<tr${tip} style="border-bottom:1px solid rgba(40,55,75,.4)">
-      <td style="padding:7px 10px">${badge(k.status)}</td>
-      <td style="padding:7px 10px;color:var(--text-dim);font-size:10px">${kkEsc(KK_VENDOR_LABEL[k.vendor]||k.vendor)}</td>
-      <td style="padding:7px 10px;color:var(--text-bright);font-weight:500">${kkEsc(k.name)}</td>
-      <td style="padding:7px 10px;font-family:monospace;font-size:10px;color:var(--accent2)">${kkEsc(k.ip)}</td>
-      <td style="padding:7px 10px;color:var(--text-dim);font-size:10px">${kkEsc(k.lokasyon)}</td>
-      <td style="padding:7px 10px;font-size:10px;color:var(--text-dim)">${kkEsc(k.onerenBy)}<br><span style="opacity:.6">${dt(k.onerenAt)}</span></td>
-      <td style="padding:7px 10px;font-size:10px;color:var(--text-dim)">${k.onayBy?kkEsc(k.onayBy)+'<br><span style="opacity:.6">'+dt(k.onayAt)+'</span>':'—'}</td>
-      <td style="padding:7px 10px;white-space:nowrap">${acts}</td>
+    return `<tr${tip} class="sp-border-b">
+      <td class="sp-p10">${badge(k.status)}</td>
+      <td class="sp-p10 sp-dim sp-fs-10">${kkEsc(KK_VENDOR_LABEL[k.vendor]||k.vendor)}</td>
+      <td class="sp-p10 sp-bright sp-fw-500">${kkEsc(k.name)}</td>
+      <td class="sp-p10 sp-monospace sp-fs-10 sp-accent2">${kkEsc(k.ip)}</td>
+      <td class="sp-p10 sp-dim sp-fs-10">${kkEsc(k.lokasyon)}</td>
+      <td class="sp-p10 sp-dim sp-fs-10">${kkEsc(k.onerenBy)}<br><span class="sp-opacity-6">${dt(k.onerenAt)}</span></td>
+      <td class="sp-p10 sp-dim sp-fs-10">${k.onayBy?kkEsc(k.onayBy)+'<br><span class="sp-opacity-6">'+dt(k.onayAt)+'</span>':'—'}</td>
+      <td class="sp-p10 sp-nowrap">${acts}</td>
     </tr>`;
   }).join('');
 
-  wrap.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px">
+  wrap.innerHTML=`<table class="t">
     <thead><tr>
       ${['Durum','Vendor','Kabinet','IP','Lokasyon','Öneren','Onaylayan','İşlem'].map(h=>
-        `<th style="background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">${h}</th>`).join('')}
+        `<th>${h}</th>`).join('')}
     </tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
@@ -2054,7 +2072,93 @@ function mUpdateAlarmBadge(){
 }
 
 
-load();renderAll();
+  /* EVENT LISTENERS */
+  document.addEventListener('click', e => {
+    const t = e.target;
+    
+    // Tab switching
+    if (t.classList.contains('mtab')) {
+      mSwitchTab(t.dataset.mtab, t);
+      return;
+    }
+
+    // Generic Add Row
+    if (t.dataset.addRow) {
+      addRow(t.dataset.addRow);
+      return;
+    }
+
+    // Delete buttons (standard)
+    if (t.classList.contains('del-btn')) {
+      const tr = t.closest('tr');
+      const ci = t.closest('.ci');
+      if (tr && tr.parentNode.id === 'b-kesinti') del('kesinti', Array.from(tr.parentNode.children).indexOf(tr));
+      else if (tr && tr.parentNode.id === 'b-drc') del('drc', Array.from(tr.parentNode.children).indexOf(tr));
+      else if (tr && tr.parentNode.id === 'b-urun') del('urun', Array.from(tr.parentNode.children).indexOf(tr));
+      else if (tr && tr.parentNode.id === 'b-calisma') del('calisma', Array.from(tr.parentNode.children).indexOf(tr));
+      else if (tr && tr.dataset.idx !== undefined) {
+        if (tr.closest('.env-table')) delEnvanter(parseInt(tr.dataset.idx));
+      }
+      else if (ci) delCheck(parseInt(ci.dataset.idx));
+      return;
+    }
+
+    // Checklist toggles
+    if (t.classList.contains('cb')) {
+      const ci = t.closest('.ci');
+      if (ci) toggleCheck(parseInt(ci.dataset.idx));
+      return;
+    }
+
+    // Specific Buttons
+    if (t.id === 'btn-save-all') saveAll();
+    if (t.id === 'btn-reset-data') resetData();
+    if (t.id === 'btn-open-mail') openMail();
+    if (t.id === 'btn-export-csv') exportCSV();
+    if (t.id === 'btn-trigger-import') triggerImport();
+    if (t.id === 'btn-add-check') addCheck();
+    if (t.id === 'btn-reset-checks') resetChecks();
+    if (t.id === 'btn-week-prev') shiftWeek(-1);
+    if (t.id === 'btn-week-now') shiftWeek(0);
+    if (t.id === 'btn-week-next') shiftWeek(1);
+    if (t.id === 'btn-add-env' || t.id === 'btn-add-env-bottom') addEnvanter();
+    if (t.id === 'btn-import-env-trigger') importEnvanterCSV();
+    if (t.id === 'btn-export-pending') exportPendingJSON();
+    if (t.id === 'btn-import-pending-trigger') document.getElementById('pending-file-in').click();
+    if (t.id === 'btn-submit-proposal') submitProposal();
+    if (t.id === 'btn-export-alert') exportAlertConfig();
+    if (t.id === 'btn-import-alert-trigger') document.getElementById('alert-file-in').click();
+    if (t.id === 'btn-alarm-vendor-all') alarmVendorAll(true);
+    if (t.id === 'btn-alarm-vendor-none') alarmVendorAll(false);
+    if (t.id === 'btn-alarm-add-recipient') alarmAddRecipient();
+  });
+
+  // Change events
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.id === 'main-import-file') importCSV(e);
+    if (t.id === 'env-file-in') doImportEnvanter(e);
+    if (t.id === 'pending-file-in') doImportPending(e);
+    if (t.id === 'alert-file-in') doImportAlertConfig(e);
+    if (t.id === 'alarm-enabled') alarmToggleEnabled();
+    if (t.id === 'env-vendor-f' || t.id === 'env-type-f' || t.id === 'env-loc-f') renderEnvanter();
+    if (t.id === 'kk-status-f') renderProposals();
+    if (t.id === 'alarm-smtp' || t.id === 'alarm-port' || t.id === 'alarm-from' || t.id === 'alarm-subject' || 
+        t.id === 'alarm-kritik' || t.id === 'alarm-uyari' || t.id === 'alarm-scope') alarmSave();
+  });
+
+  // Input events
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if (t.id === 'env-search') renderEnvanter();
+    if (t.id === 'kk-search') renderProposals();
+    if (t.classList.contains('cl-lbl')) {
+      const ci = t.closest('.ci');
+      if (ci) updateCheckTxt(parseInt(ci.dataset.idx), t.textContent);
+    }
+  });
+
+  load();renderAll();
 </script>
 
 </body>
