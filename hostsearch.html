@@ -21,19 +21,21 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 .brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
 
 .search-hero{margin-bottom:24px;}
-.search-wrap{display:flex;gap:10px;margin-bottom:12px;}
-.search-main{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:12px 16px;outline:none;transition:border-color .2s;}
+.search-wrap{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);}
+.search-main{flex:1;background:var(--surface);border:none;border-right:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:11px 16px;outline:none;transition:border-color .2s;}
 .search-main:focus{border-color:var(--accent2);}
-.search-main::placeholder{color:var(--text-dim);}
-.search-btn{background:var(--accent2);color:var(--bg);border:none;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:12px 20px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:opacity .15s;}
+.search-main::placeholder{color:var(--text-dim);font-size:12px;}
+.search-btn{background:var(--accent2);color:var(--bg);border:none;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:11px 20px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:opacity .15s;white-space:nowrap;}
 .search-btn:hover{opacity:.85;}
-.search-hint{font-size:10px;color:var(--text-dim);line-height:1.8;}
+.search-hint{font-size:10px;color:var(--text-dim);line-height:1.8;margin-top:8px;}
 
-.vendor-toggles{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
-.v-toggle{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;transition:all .15s;letter-spacing:.5px;}
-.v-toggle.on{border-color:var(--accent2);color:var(--accent2);background:rgba(75,159,232,.08);}
+.vendor-toggles{display:flex;gap:0;flex-wrap:wrap;margin-bottom:18px;border:1px solid var(--border);background:var(--surface);}
+.v-toggle{background:transparent;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:7px 16px;cursor:pointer;transition:all .15s;letter-spacing:1px;text-transform:uppercase;}
+.v-toggle:last-child{border-right:none;}
+.v-toggle.on{color:var(--accent2);background:rgba(75,159,232,.08);}
+.v-toggle:hover{color:var(--text-bright);}
 
-.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
 .results-count{font-size:11px;color:var(--text-dim);}
 
 .host-card{background:var(--surface);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;}
@@ -46,7 +48,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 .vb-pure   {color:var(--accent3);border-color:rgba(75,232,160,.4);}
 .vb-san    {color:var(--purple)  ;border-color:rgba(192,132,252,.4);}
 .host-card-body{padding:0;}
-.alloc-row{display:grid;grid-template-columns:110px 120px 1fr 100px auto;gap:0;border-bottom:1px solid rgba(30,45,68,.5);align-items:center;}
+.alloc-row{display:grid;grid-template-columns:100px 140px 1fr 90px 100px;gap:0;border-bottom:1px solid rgba(30,45,68,.4);align-items:center;}
 .alloc-row:last-child{border-bottom:none;}
 .alloc-row:hover{background:rgba(75,159,232,.04);}
 .alloc-cell{padding:8px 14px;font-size:11px;}
@@ -83,6 +85,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     <input class="search-main" id="q" type="text" placeholder="Host adı, WWN, OS veya kabinet ara..." autocomplete="off" spellcheck="false">
     <button class="search-btn" id="btn-search">ARA</button>
   </div>
+  <div style="margin-bottom:8px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Vendor Filtresi</div>
   <div class="vendor-toggles">
     <span style="font-size:10px;color:var(--text-dim);align-self:center;margin-right:4px">VENDOR:</span>
     <button class="v-toggle on" data-v="huawei">Huawei</button>

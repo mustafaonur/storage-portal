@@ -285,6 +285,8 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
     <button class="tab-btn" onclick="switchTab('hosts')">Host Listesi</button>
     <button class="tab-btn" onclick="switchTab('luns')">Volumes</button>
+    <button class="tab-btn" onclick="switchTab('datareduction')">Data Reduction</button>
+    <button class="tab-btn" onclick="switchTab('hostdetail')">Host Detay (IQN/WWN)</button>
   </div>
 
   <div class="tab-panel active" id="tab-overview">
@@ -330,6 +332,28 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div id="lun-table-wrap"></div>
   </div>
 
+  <div class="tab-panel" id="tab-datareduction">
+    <div class="section-title">Data Reduction &amp; Deduplication</div>
+    <div id="dr-summary" class="sp-grid-4col sp-mb-18"></div>
+    <div id="dr-table-wrap"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-hostdetail">
+    <div class="section-title">Host IQN / WWN Detayı</div>
+    <div style="margin-bottom:14px;display:flex;gap:8px">
+      <div class="search-box" style="flex:1;max-width:380px">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="Host veya IQN/WWN ara..." id="hd-search" oninput="renderHostDetail()">
+      </div>
+      <select class="filter-select" id="hd-proto">
+        <option value="">Tüm Protokoller</option>
+        <option value="FC">FC</option>
+        <option value="iSCSI">iSCSI</option>
+      </select>
+    </div>
+    <div id="hd-table-wrap"></div>
+  </div>
+
   <div class="dash-footer">
     <span>PURE FLASHARRAY FLEET DASHBOARD</span>
     <span>POWERSHELL AUTOMATION v2.0</span>
@@ -368,6 +392,8 @@ let lunGroups = [];
 const CSV_DASHBOARD = './Pure/Pure_Dashboard.csv';
 const CSV_HOSTS     = './Pure/Pure_Host.csv';
 const CSV_LUNGROUPS = './Pure/Pure_Volume.csv';
+const CSV_CAPACITY  = './Pure/Pure_Capacity_Dashboard.csv';   // Data reduction per array
+const CSV_HOSTDET   = './Pure/Pure_Host_Details.csv';         // IQN/WWN detail per host
 
 function updateClock() {
   document.getElementById('clock').textContent =
@@ -476,12 +502,15 @@ async function loadCSVs() {
   setOverlay(true, '<div class="spinner"></div><div class="loading-text">CSV Dosyalari Yukleniyor</div>');
   try {
     const fetchCSV = fetchCSVText;
-    const [dashText, hostText, lunText] = await Promise.all([
+    const [dashText, hostText, lunText, capText, hdText] = await Promise.all([
       fetchCSV(CSV_DASHBOARD), fetchCSV(CSV_HOSTS), fetchCSV(CSV_LUNGROUPS),
+      fetchCSVText(CSV_CAPACITY), fetchCSVText(CSV_HOSTDET),
     ]);
-    cabinets  = parseDashboard(dashText);
-    hosts     = parseHosts(hostText);
-    lunGroups = parseLunGroups(lunText);
+    cabinets      = parseDashboard(dashText);
+    hosts         = parseHosts(hostText);
+    lunGroups     = parseLunGroups(lunText);
+    capacityDR    = parseCapacityDR(capText);
+    hostDetailData= parseHostDetail(hdText);
     setOverlay(false);
     initDashboard();
   } catch (err) {
@@ -943,6 +972,186 @@ renderFreshnessBadge('data-fresh-badge', ['./Pure/Pure_Dashboard.csv', './Pure/P
   const __db_renderLunTable = debounce(renderLunTable);
 
   StorageNav.init({ title: "Pure FlashArray", section: "vendor" });
+
+let capacityDR     = [];
+let hostDetailData = [];
+
+/* ── Pure_Capacity_Dashboard.csv parser ────────────────────
+   Schema: Lokasyon, Kabin_Adi, Total_TB, Used_TB, Data_Reduction, Doluluk
+─────────────────────────────────────────────────────────── */
+function parseCapacityDR(text) {
+  if (!text) return [];
+  return parseCSV(text).map(r => ({
+    lokasyon: (r['Lokasyon'] || '').trim(),
+    kabinet:  (r['Kabin_Adi'] || '').trim(),
+    totalTB:  toN(r['Total_TB']),
+    usedTB:   toN(r['Used_TB']),
+    drRatio:  (r['Data_Reduction'] || '').trim(),    // e.g. "2.92:1"
+    doluluk:  (r['Doluluk'] || '').replace('%','').trim(),
+  })).filter(r => r.kabinet);
+}
+
+/* ── Pure_Host_Details.csv parser ──────────────────────────
+   Schema: Lokasyon, Kabin_Adi, Host_Name, Host_Group, Protocol, IQN_WWN
+   IQN_WWN: semicolon-separated WWNs or IQNs
+─────────────────────────────────────────────────────────── */
+function parseHostDetail(text) {
+  if (!text) return [];
+  return parseCSV(text).map(r => ({
+    lokasyon:  (r['Lokasyon'] || '').trim(),
+    kabinet:   (r['Kabin_Adi'] || '').trim(),
+    hostName:  (r['Host_Name'] || '').trim(),
+    hostGroup: (r['Host_Group'] || '').trim(),
+    protocol:  (r['Protocol'] || '').trim(),
+    iqnWwn:    (r['IQN_WWN'] || '').split(';').map(s=>s.trim()).filter(Boolean),
+  })).filter(r => r.hostName);
+}
+
+/* ── Data Reduction tab renderer ───────────────────────────── */
+function renderDataReduction() {
+  const sumEl = document.getElementById('dr-summary');
+  const tblEl = document.getElementById('dr-table-wrap');
+  if (!sumEl || !tblEl) return;
+
+  if (!capacityDR.length) {
+    sumEl.innerHTML = '';
+    tblEl.innerHTML = spEmptyState({type:'no-data', title:'Data Reduction verisi yok',
+      message:'Pure_Capacity_Dashboard.csv bulunamadı.', hint:'StorageReport.ps1 -OnlyPure'});
+    return;
+  }
+
+  // Parse DR ratio to a number for sorting
+  const withDR = capacityDR.map(r => {
+    const parts = r.drRatio.split(':');
+    const ratio = parts.length === 2 ? (parseFloat(parts[0]) || 1) : 1;
+    return { ...r, ratio };
+  }).sort((a,b) => b.ratio - a.ratio);
+
+  const avgRatio   = withDR.reduce((s,r) => s + r.ratio, 0) / (withDR.length || 1);
+  const totalPhys  = withDR.reduce((s,r) => s + r.usedTB, 0);
+  const totalLogic = withDR.reduce((s,r) => s + (r.usedTB * r.ratio), 0);
+  const savedTB    = totalLogic - totalPhys;
+
+  sumEl.innerHTML = `
+    <div class="sp-stat-box sp-border-green">
+      <div class="sp-stat-label">Ortalama DR Oranı</div>
+      <div class="sp-stat-value sp-accent3">${avgRatio.toFixed(2)}:1</div>
+      <div class="sp-stat-sub">Tüm array'ler</div>
+    </div>
+    <div class="sp-stat-box sp-border-blue">
+      <div class="sp-stat-label">Fiziksel Kullanım</div>
+      <div class="sp-stat-value">${totalPhys.toFixed(1)}<span class="sp-stat-unit">TB</span></div>
+    </div>
+    <div class="sp-stat-box sp-border-gold">
+      <div class="sp-stat-label">Tasarruf Edilen</div>
+      <div class="sp-stat-value sp-accent">${savedTB.toFixed(1)}<span class="sp-stat-unit">TB</span></div>
+      <div class="sp-stat-sub">Dedup + Compression</div>
+    </div>
+    <div class="sp-stat-box sp-border-purple">
+      <div class="sp-stat-label">Array Sayısı</div>
+      <div class="sp-stat-value">${withDR.length}</div>
+    </div>`;
+
+  const rows = withDR.map(r => {
+    const pct = toN(r.doluluk);
+    const barW = Math.min(100, pct).toFixed(1);
+    const barCol = pct >= 80 ? 'var(--danger)' : pct >= 65 ? 'var(--warn)' : 'var(--accent3)';
+    const ratioBg = r.ratio >= 3 ? 'var(--accent3)' : r.ratio >= 2 ? 'var(--accent2)' : 'var(--text-dim)';
+    return `<tr>
+      <td class="sp-dim-sm">${esc(r.lokasyon)}</td>
+      <td style="color:var(--text-bright);font-weight:500">${esc(r.kabinet)}</td>
+      <td style="text-align:right">${r.totalTB.toFixed(2)} TB</td>
+      <td style="text-align:right">${r.usedTB.toFixed(2)} TB</td>
+      <td style="text-align:center">
+        <span style="color:${ratioBg};font-weight:700;font-size:13px">${esc(r.drRatio)}</span>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;height:8px;background:var(--surface2);border:1px solid var(--border)">
+            <div style="width:${barW}%;height:100%;background:${barCol};opacity:.7"></div>
+          </div>
+          <span style="font-size:10px;color:${barCol};min-width:38px">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  tblEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="border-bottom:1px solid var(--border)">
+      <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Lokasyon</th>
+      <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Array</th>
+      <th style="padding:8px 12px;text-align:right;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Total</th>
+      <th style="padding:8px 12px;text-align:right;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Used</th>
+      <th style="padding:8px 12px;text-align:center;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">DR Oran</th>
+      <th style="padding:8px 12px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Doluluk</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* ── Host Detail (IQN/WWN) tab renderer ──────────────────── */
+function renderHostDetail() {
+  const el = document.getElementById('hd-table-wrap');
+  if (!el) return;
+
+  if (!hostDetailData.length) {
+    el.innerHTML = spEmptyState({type:'no-data', title:'Host detay verisi yok',
+      message:'Pure_Host_Details.csv bulunamadı.', hint:'StorageReport.ps1 -OnlyPure'});
+    return;
+  }
+
+  const q     = (document.getElementById('hd-search')?.value || '').toLowerCase();
+  const proto = document.getElementById('hd-proto')?.value || '';
+
+  let data = hostDetailData.filter(r =>
+    (!q || r.hostName.toLowerCase().includes(q) ||
+           r.kabinet.toLowerCase().includes(q)  ||
+           r.iqnWwn.some(w => w.toLowerCase().includes(q))) &&
+    (!proto || r.protocol === proto)
+  );
+
+  if (!data.length) {
+    el.innerHTML = spEmptyState({type:'no-filter', title:'Eşleşen kayıt yok'});
+    return;
+  }
+
+  const rows = data.map(r => {
+    const wwns = r.iqnWwn.map(w =>
+      `<div style="font-size:9px;color:var(--accent2);font-family:monospace;line-height:1.6">${esc(w)}</div>`
+    ).join('');
+    const protoCol = r.protocol === 'FC' ? 'var(--accent3)' : 'var(--accent2)';
+    return `<tr>
+      <td style="padding:8px 12px;color:var(--text-dim);font-size:10px">${esc(r.lokasyon)}</td>
+      <td style="padding:8px 12px;color:var(--text-bright);font-weight:500">${esc(r.kabinet)}</td>
+      <td style="padding:8px 12px;color:var(--text-bright)">${esc(r.hostName)}</td>
+      <td style="padding:8px 12px;color:var(--text-dim);font-size:10px">${esc(r.hostGroup||'—')}</td>
+      <td style="padding:8px 12px"><span style="color:${protoCol};font-size:9px;border:1px solid ${protoCol};padding:1px 6px">${esc(r.protocol)}</span></td>
+      <td style="padding:8px 12px">${wwns || '<span style="color:var(--text-dim);font-size:9px">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<div style="font-size:10px;color:var(--text-dim);margin-bottom:8px">${data.length} host · ${data.reduce((s,r)=>s+r.iqnWwn.length,0)} port</div>
+  <table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="border-bottom:1px solid var(--border)">
+      <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Lokasyon</th>
+      <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Array</th>
+      <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Host</th>
+      <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Host Group</th>
+      <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Protokol</th>
+      <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">IQN / WWN</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// Hook into switchTab to trigger renders
+const _origSwitchTab = switchTab;
+function switchTab(name) {
+  _origSwitchTab(name);
+  if (name === 'datareduction') renderDataReduction();
+  if (name === 'hostdetail')    renderHostDetail();
+}
+
 </script>
 </body>
 </html>

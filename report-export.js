@@ -153,7 +153,10 @@ tr:nth-child(even){background:rgba(13,20,32,.4);}
   function openInTab(opts){
     const html = generate(opts);
     const win  = window.open('', '_blank');
-    if(win){ win.document.write(html); win.document.close(); }
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const tab  = window.open(url, '_blank');
+    if(tab) setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
   return { generate, download, openInTab };

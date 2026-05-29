@@ -1126,7 +1126,7 @@
       </div>
     </a>
 
-    <a href="./report.html" class="app-card type-report">
+    <a href="#" class="app-card type-report" id="btn-report-card" title="Güncel kapasite durumunu HTML rapor olarak indir">
       <div class="app-card-header">
         <div>
           <div class="app-card-name">Raporlama</div>
@@ -1905,6 +1905,11 @@ async function loadLastRun() {
 loadLastRun();
 loadRunway();
 loadContractBanner();
+document.getElementById('btn-report-card')?.addEventListener('click', e => {
+  e.preventDefault();
+  StorageReport.download({ stat: STAT, alarmList: STAT.alarmList || [], assetInventory: typeof ASSET_INVENTORY !== 'undefined' ? ASSET_INVENTORY : [] });
+});
+
 document.getElementById('btn-export-report').addEventListener('click', () => {
   StorageReport.download({
     stat: STAT,

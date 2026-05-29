@@ -374,43 +374,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 /* ════════════════════════════════════════════════════
    HELPERS
 ════════════════════════════════════════════════════ */
-function parseCSV(text) {
-  if (!text) return [];
-  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  const lines = text.split('\n').filter(l => l.trim());
-  if (lines.length < 2) return [];
-  let comma = 0, semi = 0, q = false;
-  for (const c of lines[0]) {
-    if (c === '"') { q = !q; continue; }
-    if (q) continue;
-    if (c === ',') comma++; else if (c === ';') semi++;
-  }
-  const D = semi > comma ? ';' : ',';
-  function split(line) {
-    const cols = []; let cur = '', qo = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') { if (qo && line[i+1] === '"') { cur += '"'; i++; } else qo = !qo; }
-      else if (c === D && !qo) { cols.push(cur); cur = ''; }
-      else cur += c;
-    }
-    cols.push(cur);
-    return cols.map(c => { let t = c.trim(); if (t.startsWith('"') && t.endsWith('"')) t = t.slice(1,-1); return t.replace(/""/g, '"'); });
-  }
-  const hdr = split(lines[0]);
-  return lines.slice(1).map(l => { const v = split(l); const o = {}; hdr.forEach((h,i) => o[h] = v[i] ?? ''); return o; });
-}
 
-function toN(v) {
-  if (!v && v !== 0) return 0;
-  let s = String(v).trim();
-  if (!s || s === '-') return 0;
-  if (s.includes('.') && s.includes(',')) {
-    s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,'');
-  } else if (s.includes(',')) s = s.replace(',','.');
-  s = s.replace(/[^\d.\-]/g,'');
-  return parseFloat(s) || 0;
-}
 
 function isDataRow(r) {
   const lok = (r['Lokasyon'] || '').trim();
@@ -424,14 +388,7 @@ function isDataRow(r) {
 function fmt(n, dec = 1) { return n >= 1000 ? (n/1000).toFixed(1) + ' PB' : n.toFixed(dec) + ' TB'; }
 function pctColor(p) { return p >= 65 ? 'var(--danger)' : p >= 50 ? 'var(--warn)' : p >= 35 ? 'var(--accent)' : 'var(--accent3)'; }
 function pctBadge(p) { return p >= 65 ? 'badge-crit' : p >= 50 ? 'badge-warn' : 'badge-ok'; }
-function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-async function fetchCSV(url) {
-  try {
-    const text = await fetchCSVText(url);
-    return text || null;
-  } catch { return null; }
-}
 
 /* ════════════════════════════════════════════════════
    VENDOR CONFIG
@@ -748,7 +705,7 @@ function closeDetail() {
 ════════════════════════════════════════════════════ */
 (async function init() {
   // Fetch all CSVs in parallel
-  const texts = await Promise.all(VENDORS.map(v => fetchCSV(v.csv)));
+  const texts = await Promise.all(VENDORS.map(v => fetchCSVParsed(v.csv)));
 
   let grandTotal = 0, grandUsed = 0, grandFree = 0;
   let critCount = 0, warnCount = 0;

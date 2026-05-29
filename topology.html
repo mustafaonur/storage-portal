@@ -288,30 +288,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 
 .center-state{text-align:center;padding:60px 20px;color:var(--text-dim);}
 
-/* NEW: 3D NETWORK SPHERE DESIGN for SAN Haritası */
-.vn-3d-container{position:relative;width:100%;height:700px;background:radial-gradient(ellipse at center,rgba(75,159,232,.08) 0%,rgba(8,12,20,.9) 70%);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:inset 0 0 80px rgba(0,0,0,.5);}
-
-.vn-canvas-3d{position:absolute;inset:0;cursor:grab;}
-
-.vn-controls-overlay{position:absolute;top:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:10;}
-
-.vn-control-btn{background:rgba(13,20,32,.85);border:1px solid var(--border);color:var(--text);padding:8px 12px;font-size:10px;border-radius:6px;cursor:pointer;backdrop-filter:blur(8px);transition:all .2s;letter-spacing:1px;text-transform:uppercase;}
-
-.vn-control-btn:hover{border-color:var(--accent3);color:var(--accent3);transform:translateY(-1px);}
-
-.vn-stats-panel{position:absolute;bottom:16px;left:16px;background:rgba(13,20,32,.85);border:1px solid var(--border);padding:12px 16px;border-radius:8px;backdrop-filter:blur(8px);font-size:10px;min-width:200px;}
-
-.vn-stat-row{display:flex;justify-content:space-between;margin:4px 0;padding:4px 0;border-bottom:1px solid rgba(30,45,68,.5);}
-
-.vn-stat-row:last-child{border:none;}
-
-.vn-stat-label{color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
-
-.vn-stat-value{color:var(--accent3);font-weight:700;}
-
-/* NEW: TIMELINE FLOW DESIGN for SAN Layout */
-.sl-timeline-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative;box-shadow:0 4px 20px rgba(0,0,0,.4);}
-
 .sl-timeline-header{background:linear-gradient(135deg,var(--surface2),var(--surface));padding:20px;border-bottom:1px solid var(--border);}
 
 .sl-timeline-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text-bright);margin-bottom:8px;}
@@ -379,8 +355,8 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 <div class="tp-tabs">
 <button class="tp-tab active" data-tptab="path" onclick="tpSwitch('path',this)">Path Arama</button>
 <button class="tp-tab" data-tptab="schema" onclick="tpSwitch('schema',this)">Şema Görünümü</button>
-<button class="tp-tab" data-tptab="visnet" onclick="tpSwitch('visnet',this)">🌐 3D Network Sphere</button>
-<button class="tp-tab" data-tptab="layout" onclick="tpSwitch('layout',this)">⚡ Timeline Flow</button>
+<button class="tp-tab" data-tptab="matrix" onclick="tpSwitch('matrix',this)">Fabric Matrisi</button>
+<button class="tp-tab" data-tptab="switchdetail" onclick="tpSwitch('switchdetail',this)">Switch Detay</button>
 </div>
 <!-- SEKME 1: PATH ARAMA -->
 <div class="tp-page active" id="tppage-path">
@@ -432,50 +408,30 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 </div>
 </div>
 
-<!-- SEKME 3: 3D NETWORK SPHERE (Completely New Design) -->
-<div class="tp-page" id="tppage-visnet">
-<div class="vn-3d-container">
-<canvas id="vn-canvas-3d" class="vn-canvas-3d"></canvas>
-<div class="vn-controls-overlay">
-<button class="vn-control-btn" onclick="vn3dRotate()">↻ Auto Rotate</button>
-<button class="vn-control-btn" onclick="vn3dReset()">⟲ Reset View</button>
-<button class="vn-control-btn" onclick="vn3dToggleLabels()">🏷 Labels</button>
-</div>
-<div class="vn-stats-panel">
-<div style="font-size:11px;font-weight:700;color:var(--accent3);margin-bottom:8px;letter-spacing:1px;">NETWORK STATS</div>
-<div class="vn-stat-row"><span class="vn-stat-label">Switches</span><span class="vn-stat-value" id="vn-stat-sw">0</span></div>
-<div class="vn-stat-row"><span class="vn-stat-label">Storage</span><span class="vn-stat-value" id="vn-stat-stor">0</span></div>
-<div class="vn-stat-row"><span class="vn-stat-label">Links</span><span class="vn-stat-value" id="vn-stat-links">0</span></div>
-<div class="vn-stat-row"><span class="vn-stat-label">Active Hosts</span><span class="vn-stat-value" id="vn-stat-hosts">0</span></div>
-</div>
-</div>
-<div style="margin-top:14px;text-align:center;font-size:10px;color:var(--text-dim);letter-spacing:1px;">
-Drag to rotate · Scroll to zoom · Click node for details · 3D sphere visualization
-</div>
+<!-- SEKME 3: FABRIC MATRİSİ -->
+<div class="tp-page" id="tppage-matrix">
+  <div style="margin-bottom:14px;font-size:10px;color:var(--text-dim);line-height:1.8">
+    Her hücre, o switch'e bağlı storage kabineti için host sayısını gösterir.
+    Renk yoğunluğu bağlantı yoğunluğunu temsil eder. Hücreye tıkla → path detaylarına filtrele.
+  </div>
+  <div id="matrix-wrap">
+    <div class="center-state">Veri yükleniyor...</div>
+  </div>
 </div>
 
-<!-- SEKME 4: TIMELINE FLOW (Completely New Design) -->
-<div class="tp-page" id="tppage-layout">
-<div class="sl-timeline-wrap">
-<div class="sl-timeline-header">
-<div class="sl-timeline-title">⚡ Path Flow Timeline</div>
-<div class="sl-timeline-subtitle">Horizontal journey visualization from hosts through fabric to storage arrays</div>
+<!-- SEKME 4: SWITCH DETAY -->
+<div class="tp-page" id="tppage-switchdetail">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <select id="sd-switch-sel" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 12px;outline:none;min-width:200px">
+      <option value="">Switch seçin...</option>
+    </select>
+    <span id="sd-summary" style="font-size:10px;color:var(--text-dim)"></span>
+  </div>
+  <div id="sd-content">
+    <div class="center-state" style="padding:40px">Switch seçerek başlayın</div>
+  </div>
 </div>
-<div class="sl-flow-canvas" id="sl-flow-canvas">
-<svg id="sl-connection-svg" class="sl-connection-layer"></svg>
-<div class="sl-minimap" id="sl-minimap"></div>
-</div>
-</div>
-<div style="margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:10px;">
-<button class="sch-btn" onclick="slFlowReset()">⟲ Reset</button>
-<button class="sch-btn" onclick="slFlowFit()">⛶ Fit All</button>
-<input type="text" id="sl-flow-search" placeholder="Search..." oninput="slFlowSearch()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:4px;width:200px;">
-<label style="color:var(--text-dim);display:flex;align-items:center;gap:6px;cursor:pointer;">
-<input type="checkbox" id="sl-flow-hosts" onchange="slFlowRebuild()" style="accent-color:var(--c-host)"> Show Hosts
-</label>
-<div style="margin-left:auto;color:var(--text-dim)">Scroll horizontal · Click for details · Auto-layout flow</div>
-</div>
-</div>
+
 
 <script src="./storage-utils.js"></script>
 <script src="./nav.js"></script>
@@ -878,378 +834,12 @@ function tpSwitch(name, btn){
 /* ═══════════════════════════════════════════════════════════════
    3D NETWORK SPHERE (NEW DESIGN)
 ═══════════════════════════════════════════════════════════════ */
-const VN3D = {
-  canvas: null,
-  ctx: null,
-  nodes: [],
-  edges: [],
-  camera: { rotX: 0, rotY: 0, zoom: 400 },
-  mouse: { down: false, lastX: 0, lastY: 0 },
-  autoRotate: false,
-  showLabels: true,
-  raf: null,
-};
-
-function vn3dInit() {
-  if (VN3D.canvas) return;
-  const cv = document.getElementById('vn-canvas-3d');
-  if (!cv) return;
-  VN3D.canvas = cv;
-  VN3D.ctx = cv.getContext('2d');
-  const rect = cv.parentElement.getBoundingClientRect();
-  cv.width = rect.width;
-  cv.height = rect.height;
-
-  vn3dBuildData();
-  vn3dAttachEvents();
-  vn3dAnimate();
-}
-
-function vn3dBuildData() {
-  VN3D.nodes = [];
-  VN3D.edges = [];
-  
-  const swKeys = Object.keys(DATA.switchFabric);
-  const storKeys = Object.keys(DATA.storageSwitchMap);
-  
-  // Place switches on sphere
-  const radius = 180;
-  swKeys.forEach((sw, i) => {
-    const theta = (i / swKeys.length) * Math.PI * 2;
-    const phi = Math.PI / 3;
-    VN3D.nodes.push({
-      id: 'sw_' + sw,
-      x: radius * Math.sin(phi) * Math.cos(theta),
-      y: radius * Math.sin(phi) * Math.sin(theta),
-      z: radius * Math.cos(phi),
-      type: 'switch',
-      label: sw.length > 12 ? sw.slice(0, 11) + '…' : sw,
-      color: '#e8b84b',
-      _sw: sw,
-    });
-  });
-  
-  // Place storage at bottom hemisphere
-  storKeys.forEach((sk, i) => {
-    const theta = (i / storKeys.length) * Math.PI * 2;
-    const phi = Math.PI * 0.7;
-    VN3D.nodes.push({
-      id: 'st_' + sk,
-      x: radius * Math.sin(phi) * Math.cos(theta),
-      y: radius * Math.sin(phi) * Math.sin(theta),
-      z: radius * Math.cos(phi),
-      type: 'storage',
-      label: sk.split('|')[1].slice(0, 12),
-      color: '#c084fc',
-      _sk: sk,
-    });
-  });
-  
-  // Build edges
-  storKeys.forEach(sk => {
-    const swSet = DATA.storageSwitchMap[sk];
-    swSet.forEach(sw => {
-      VN3D.edges.push({
-        from: 'sw_' + sw,
-        to: 'st_' + sk,
-        color: '#4be8a080',
-      });
-    });
-  });
-  
-  // Update stats
-  document.getElementById('vn-stat-sw').textContent = swKeys.length;
-  document.getElementById('vn-stat-stor').textContent = storKeys.length;
-  document.getElementById('vn-stat-links').textContent = VN3D.edges.length;
-  document.getElementById('vn-stat-hosts').textContent = Object.keys(DATA.hosts).length;
-}
-
-function vn3dProject(x, y, z) {
-  const { rotX, rotY, zoom } = VN3D.camera;
-  
-  // Rotate Y
-  let cos = Math.cos(rotY), sin = Math.sin(rotY);
-  let x1 = x * cos - z * sin;
-  let z1 = x * sin + z * cos;
-  
-  // Rotate X
-  cos = Math.cos(rotX); sin = Math.sin(rotX);
-  let y1 = y * cos - z1 * sin;
-  let z2 = y * sin + z1 * cos;
-  
-  // Project
-  const scale = zoom / (zoom + z2);
-  return {
-    x: x1 * scale + VN3D.canvas.width / 2,
-    y: y1 * scale + VN3D.canvas.height / 2,
-    scale: scale,
-    z: z2,
-  };
-}
-
-function vn3dDraw() {
-  const ctx = VN3D.ctx;
-  const cv = VN3D.canvas;
-  ctx.clearRect(0, 0, cv.width, cv.height);
-  
-  // Sort by Z
-  const projected = VN3D.nodes.map(n => ({
-    node: n,
-    proj: vn3dProject(n.x, n.y, n.z),
-  })).sort((a, b) => a.proj.z - b.proj.z);
-  
-  // Draw edges
-  ctx.strokeStyle = '#4be8a040';
-  ctx.lineWidth = 1;
-  VN3D.edges.forEach(e => {
-    const a = VN3D.nodes.find(n => n.id === e.from);
-    const b = VN3D.nodes.find(n => n.id === e.to);
-    if (!a || !b) return;
-    const pa = vn3dProject(a.x, a.y, a.z);
-    const pb = vn3dProject(b.x, b.y, b.z);
-    ctx.beginPath();
-    ctx.moveTo(pa.x, pa.y);
-    ctx.lineTo(pb.x, pb.y);
-    ctx.stroke();
-  });
-  
-  // Draw nodes
-  projected.forEach(({ node, proj }) => {
-    const size = 6 * proj.scale;
-    ctx.fillStyle = node.color;
-    ctx.beginPath();
-    ctx.arc(proj.x, proj.y, size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff40';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    
-    if (VN3D.showLabels && proj.scale > 0.8) {
-      ctx.fillStyle = '#e8f2ff';
-      ctx.font = '9px JetBrains Mono';
-      ctx.textAlign = 'center';
-      ctx.fillText(node.label, proj.x, proj.y - size - 4);
-    }
-  });
-}
-
-function vn3dAnimate() {
-  if (VN3D.autoRotate) {
-    VN3D.camera.rotY += 0.005;
-  }
-  vn3dDraw();
-  VN3D.raf = requestAnimationFrame(vn3dAnimate);
-}
-
-function vn3dAttachEvents() {
-  const cv = VN3D.canvas;
-  
-  cv.addEventListener('mousedown', e => {
-    VN3D.mouse.down = true;
-    VN3D.mouse.lastX = e.clientX;
-    VN3D.mouse.lastY = e.clientY;
-    cv.style.cursor = 'grabbing';
-  });
-  
-  cv.addEventListener('mousemove', e => {
-    if (!VN3D.mouse.down) return;
-    const dx = e.clientX - VN3D.mouse.lastX;
-    const dy = e.clientY - VN3D.mouse.lastY;
-    VN3D.camera.rotY += dx * 0.01;
-    VN3D.camera.rotX += dy * 0.01;
-    VN3D.mouse.lastX = e.clientX;
-    VN3D.mouse.lastY = e.clientY;
-  });
-  
-  cv.addEventListener('mouseup', () => {
-    VN3D.mouse.down = false;
-    cv.style.cursor = 'grab';
-  });
-  
-  cv.addEventListener('wheel', e => {
-    e.preventDefault();
-    VN3D.camera.zoom += e.deltaY * -0.5;
-    VN3D.camera.zoom = Math.max(200, Math.min(800, VN3D.camera.zoom));
-  }, { passive: false });
-}
-
-function vn3dRotate() {
-  VN3D.autoRotate = !VN3D.autoRotate;
-}
-
-function vn3dReset() {
-  VN3D.camera = { rotX: 0, rotY: 0, zoom: 400 };
-}
-
-function vn3dToggleLabels() {
-  VN3D.showLabels = !VN3D.showLabels;
-}
+// 3D sphere removed
 
 /* ═══════════════════════════════════════════════════════════════
    TIMELINE FLOW (NEW DESIGN)
 ═══════════════════════════════════════════════════════════════ */
-const SLFLOW = {
-  stages: [],
-  connections: [],
-  selected: null,
-  searchHL: new Set(),
-};
-
-function slFlowInit() {
-  if (SLFLOW.stages.length) return;
-  slFlowBuild();
-}
-
-function slFlowBuild() {
-  const canvas = document.getElementById('sl-flow-canvas');
-  const showHosts = document.getElementById('sl-flow-hosts')?.checked || false;
-  
-  SLFLOW.stages = [];
-  SLFLOW.connections = [];
-  
-  const swA = [], swB = [];
-  Object.keys(DATA.switchFabric).forEach(sw => {
-    const f = DATA.switchFabric[sw];
-    (f.toUpperCase().includes('A') ? swA : swB).push(sw);
-  });
-  
-  const storKeys = Object.keys(DATA.storageSwitchMap);
-  
-  let xOffset = 100;
-  
-  // Stage 1: Hosts (optional)
-  if (showHosts) {
-    const hostList = Object.keys(DATA.hosts).filter(n => (DATA.hostSwitches?.[n]?.size || 0) > 0).slice(0, 20);
-    const stage = document.createElement('div');
-    stage.className = 'sl-stage';
-    stage.style.left = xOffset + 'px';
-    stage.innerHTML = `<div class="sl-stage-label">HOSTS</div>`;
-    
-    hostList.forEach(name => {
-      const card = document.createElement('div');
-      card.className = 'sl-node-card type-host';
-      card.dataset.id = 'host_' + name;
-      card.innerHTML = `
-        <div class="sl-node-icon">💻</div>
-        <div class="sl-node-name">${name.slice(0, 12)}</div>
-        <div class="sl-node-meta">${DATA.hosts[name]?.os || ''}</div>
-      `;
-      card.onclick = () => slFlowSelect(card.dataset.id);
-      stage.appendChild(card);
-    });
-    
-    canvas.appendChild(stage);
-    SLFLOW.stages.push({ type: 'hosts', x: xOffset, nodes: hostList });
-    xOffset += 250;
-  }
-  
-  // Stage 2: Fabric A
-  const stageA = document.createElement('div');
-  stageA.className = 'sl-stage';
-  stageA.style.left = xOffset + 'px';
-  stageA.innerHTML = `<div class="sl-stage-label">FABRIC A</div>`;
-  
-  swA.forEach(sw => {
-    const card = document.createElement('div');
-    card.className = 'sl-node-card type-switch';
-    card.dataset.id = 'sw_' + sw;
-    card.innerHTML = `
-      <div class="sl-node-icon">🔀</div>
-      <div class="sl-node-name">${sw.slice(0, 12)}</div>
-      <div class="sl-node-meta">Fabric A</div>
-    `;
-    card.onclick = () => slFlowSelect(card.dataset.id);
-    stageA.appendChild(card);
-  });
-  
-  canvas.appendChild(stageA);
-  SLFLOW.stages.push({ type: 'fabA', x: xOffset, nodes: swA });
-  xOffset += 250;
-  
-  // Stage 3: Fabric B
-  const stageB = document.createElement('div');
-  stageB.className = 'sl-stage';
-  stageB.style.left = xOffset + 'px';
-  stageB.innerHTML = `<div class="sl-stage-label">FABRIC B</div>`;
-  
-  swB.forEach(sw => {
-    const card = document.createElement('div');
-    card.className = 'sl-node-card type-switch';
-    card.dataset.id = 'sw_' + sw;
-    card.innerHTML = `
-      <div class="sl-node-icon">🔀</div>
-      <div class="sl-node-name">${sw.slice(0, 12)}</div>
-      <div class="sl-node-meta">Fabric B</div>
-    `;
-    card.onclick = () => slFlowSelect(card.dataset.id);
-    stageB.appendChild(card);
-  });
-  
-  canvas.appendChild(stageB);
-  SLFLOW.stages.push({ type: 'fabB', x: xOffset, nodes: swB });
-  xOffset += 250;
-  
-  // Stage 4: Storage
-  const stageStor = document.createElement('div');
-  stageStor.className = 'sl-stage';
-  stageStor.style.left = xOffset + 'px';
-  stageStor.innerHTML = `<div class="sl-stage-label">STORAGE</div>`;
-  
-  storKeys.forEach(sk => {
-    const [vendor, kabinet] = sk.split('|');
-    const card = document.createElement('div');
-    card.className = 'sl-node-card type-storage';
-    card.dataset.id = 'st_' + sk;
-    card.innerHTML = `
-      <div class="sl-node-icon">🗄</div>
-      <div class="sl-node-name">${kabinet.slice(0, 12)}</div>
-      <div class="sl-node-meta">${vendor}</div>
-    `;
-    card.onclick = () => slFlowSelect(card.dataset.id);
-    stageStor.appendChild(card);
-  });
-  
-  canvas.appendChild(stageStor);
-  SLFLOW.stages.push({ type: 'storage', x: xOffset, nodes: storKeys });
-  
-  // Draw connections SVG
-  slFlowDrawConnections();
-}
-
-function slFlowDrawConnections() {
-  // TODO: Draw SVG lines between stages
-}
-
-function slFlowSelect(id) {
-  SLFLOW.selected = SLFLOW.selected === id ? null : id;
-  document.querySelectorAll('.sl-node-card').forEach(c => {
-    c.classList.toggle('selected', c.dataset.id === SLFLOW.selected);
-  });
-}
-
-function slFlowReset() {
-  document.getElementById('sl-flow-canvas').innerHTML = '';
-  SLFLOW.stages = [];
-  slFlowBuild();
-}
-
-function slFlowFit() {
-  document.getElementById('sl-flow-canvas').scrollLeft = 0;
-}
-
-function slFlowSearch() {
-  const q = document.getElementById('sl-flow-search').value.toLowerCase();
-  document.querySelectorAll('.sl-node-card').forEach(c => {
-    const text = c.textContent.toLowerCase();
-    c.style.display = text.includes(q) ? 'block' : 'none';
-  });
-}
-
-function slFlowRebuild() {
-  document.getElementById('sl-flow-canvas').innerHTML = '';
-  SLFLOW.stages = [];
-  slFlowBuild();
-}
+// Timeline flow removed
 
 function toggleGhostFilter(){
 
@@ -2191,4 +1781,209 @@ window.addEventListener('DOMContentLoaded', loadAll);
   StorageNav.init({ title: "Topology", section: "tools" });
 </script>
 </body>
-</html>
+</html><script>
+/* ════════════════════════════════════════════════════════════
+   FABRIC MATRİSİ — Switch × Storage heat-map
+   Hücre değeri: o switch üzerinden o storage'a erişen host sayısı
+════════════════════════════════════════════════════════════ */
+function buildFabricMatrix() {
+  const wrap = document.getElementById('matrix-wrap');
+  if (!wrap) return;
+
+  const switches  = Object.keys(DATA.switchFabric).sort();
+  const storKeys  = Object.keys(DATA.storageSwitchMap).sort();
+
+  if (!switches.length || !storKeys.length) {
+    wrap.innerHTML = '<div class="center-state">Veri yok — SAN taraması gerekli.</div>';
+    return;
+  }
+
+  // Build count matrix
+  const matrix = {};
+  switches.forEach(sw => {
+    matrix[sw] = {};
+    storKeys.forEach(sk => {
+      const detail = DATA.switchStorageDetail[sw] || {};
+      matrix[sw][sk] = detail[sk] ? detail[sk].size : 0;
+    });
+  });
+
+  const allCounts = switches.flatMap(sw => storKeys.map(sk => matrix[sw][sk]));
+  const maxCount  = Math.max(...allCounts, 1);
+
+  // CSS-in-style for the matrix
+  const colW  = Math.max(80, Math.floor(880 / (storKeys.length + 1)));
+  const rowH  = 44;
+
+  let table = `<div style="overflow:auto;max-width:100%"><table style="border-collapse:collapse;font-size:10px;font-family:'JetBrains Mono',monospace;width:100%">`;
+
+  // Header row — storage cabinets
+  table += `<tr><th style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;min-width:120px;text-align:left">SWITCH</th>`;
+  storKeys.forEach(sk => {
+    const [vendor, kab] = sk.split('|');
+    table += `<th style="padding:6px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-size:9px;text-align:center;min-width:${colW}px;max-width:${colW}px;word-break:break-all">
+      <div style="color:var(--purple);font-size:8px;letter-spacing:1px">${esc(vendor)}</div>
+      <div style="color:var(--text-bright)">${esc(kab)}</div>
+    </th>`;
+  });
+  table += `</tr>`;
+
+  // Data rows — one per switch
+  switches.forEach(sw => {
+    const fab   = DATA.switchFabric[sw] || '?';
+    const fabCol = fab === 'A' ? 'var(--c-host)' : fab === 'B' ? 'var(--accent2)' : 'var(--text-dim)';
+
+    table += `<tr>
+      <td style="padding:8px 12px;border:1px solid var(--border);background:var(--surface);white-space:nowrap">
+        <span style="color:${fabCol};font-size:8px;border:1px solid ${fabCol};padding:1px 5px;margin-right:6px">F${esc(fab)}</span>
+        <span style="color:var(--text-bright)">${esc(sw)}</span>
+      </td>`;
+
+    storKeys.forEach(sk => {
+      const count = matrix[sw][sk];
+      const intensity = count > 0 ? Math.max(0.08, count / maxCount) : 0;
+      const bg = count > 0
+        ? `rgba(75,232,160,${intensity.toFixed(2)})`
+        : 'transparent';
+      const textCol = count > 0 ? (intensity > 0.5 ? 'var(--bg)' : 'var(--accent3)') : 'var(--text-dim)';
+      const title = count > 0 ? `${sw} → ${sk}: ${count} host` : 'Bağlantı yok';
+
+      table += `<td style="padding:0;border:1px solid var(--border);text-align:center;cursor:${count>0?'pointer':'default'};background:${bg};height:${rowH}px"
+        title="${esc(title)}"
+        ${count > 0 ? `onclick="matrixDrilldown('${esc(sw)}','${esc(sk)}')"` : ''}>
+        <span style="color:${textCol};font-size:${count>9?'12':'11'}px;font-weight:${count>0?'700':'400'}">${count > 0 ? count : '·'}</span>
+      </td>`;
+    });
+    table += `</tr>`;
+  });
+
+  table += `</table></div>`;
+  table += `<div style="margin-top:12px;font-size:10px;color:var(--text-dim);display:flex;gap:20px;align-items:center">
+    <span>Renk yoğunluğu = bağlantı yoğunluğu (max: ${maxCount} host)</span>
+    <span><span style="color:var(--c-host)">■</span> Fabric A &nbsp; <span style="color:var(--accent2)">■</span> Fabric B</span>
+    <span>Hücreye tıkla → Path Arama'ya filtrele</span>
+  </div>`;
+
+  wrap.innerHTML = table;
+}
+
+function matrixDrilldown(sw, sk) {
+  // Switch to path tab and filter by switch name
+  tpSwitch('path', document.querySelector('.tp-tab[data-tptab="path"]'));
+  const box = document.getElementById('searchBox');
+  if (box) {
+    box.value = sw;
+    renderResults(sw);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SWITCH DETAY — seçili switch için tam port + host + storage tablosu
+════════════════════════════════════════════════════════════ */
+function buildSwitchDetailSelector() {
+  const sel = document.getElementById('sd-switch-sel');
+  if (!sel) return;
+
+  const switches = Object.keys(DATA.switchFabric).sort();
+  sel.innerHTML = '<option value="">Switch seçin...</option>' +
+    switches.map(sw => {
+      const fab = DATA.switchFabric[sw] || '?';
+      const hostCount = Object.values(DATA.switchStorageDetail[sw] || {}).reduce((s,v) => s + v.size, 0);
+      return `<option value="${esc(sw)}">F${esc(fab)} · ${esc(sw)} (${hostCount} host)`;
+    }).join('');
+
+  sel.addEventListener('change', () => renderSwitchDetail(sel.value));
+}
+
+function renderSwitchDetail(sw) {
+  const el  = document.getElementById('sd-content');
+  const sum = document.getElementById('sd-summary');
+  if (!el) return;
+
+  if (!sw) {
+    el.innerHTML = '<div class="center-state" style="padding:40px">Switch seçerek başlayın</div>';
+    sum.textContent = '';
+    return;
+  }
+
+  const fab = DATA.switchFabric[sw] || '?';
+  const storageConnections = DATA.switchStorageDetail[sw] || {};
+  const allHosts = new Set(Object.values(storageConnections).flatMap(s => [...s]));
+  const storKeys = Object.keys(storageConnections).sort();
+
+  sum.textContent = `Fabric ${fab} · ${allHosts.size} host · ${storKeys.length} storage`;
+
+  // Host→Storage assignment table for this switch
+  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">`;
+
+  // Left: connected storage with host counts
+  html += `<div>
+    <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Bağlı Storage Sistemleri</div>`;
+
+  if (storKeys.length === 0) {
+    html += `<div style="color:var(--text-dim);font-size:11px;padding:14px">Bu switch için storage bağlantısı yok</div>`;
+  } else {
+    storKeys.forEach(sk => {
+      const [vendor, kab] = sk.split('|');
+      const hosts = [...(storageConnections[sk] || [])].sort();
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);margin-bottom:8px;padding:10px 14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:var(--text-bright);font-size:11px;font-weight:600">${esc(kab)}</span>
+          <span style="font-size:10px;color:var(--purple)">${esc(vendor)}</span>
+        </div>
+        <div style="font-size:10px;color:var(--accent3);margin-bottom:4px">${hosts.length} host erişiyor</div>
+        <div style="font-size:9px;color:var(--text-dim);line-height:1.8">${hosts.slice(0,8).map(h => esc(h)).join(' · ')}${hosts.length>8?` · +${hosts.length-8} daha`:''}</div>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+
+  // Right: host list with their WWNs on this switch
+  html += `<div>
+    <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Bu Switch Üzerindeki Hostlar (${allHosts.size})</div>
+    <div style="max-height:520px;overflow-y:auto">`;
+
+  const hostList = [...allHosts].sort().slice(0, 60);
+  if (!hostList.length) {
+    html += `<div style="color:var(--text-dim);font-size:11px;padding:14px">Host bulunamadı</div>`;
+  } else {
+    hostList.forEach(hn => {
+      const h = DATA.hosts[hn] || {};
+      const wwns = (DATA.hostWwns[hn] || []).filter(w =>
+        (DATA.wwnToSwitch[w] || []).some(s => s.switch === sw)
+      );
+      const storages = (DATA.hostStorage[hn] || []).map(s => s.kabinet).join(', ');
+      html += `<div style="padding:7px 12px;border-bottom:1px solid rgba(30,45,68,.4);display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <div>
+          <div style="font-size:11px;color:var(--text-bright)">${esc(hn)}</div>
+          <div style="font-size:9px;color:var(--text-dim);margin-top:1px">${esc(h.os||'')} ${storages?'· '+esc(storages):''}</div>
+        </div>
+        <div style="text-align:right;font-size:9px;color:var(--accent2);font-family:monospace">${wwns.slice(0,2).map(w=>esc(w.slice(0,11)+'…')).join('<br>')}</div>
+      </div>`;
+    });
+    if (allHosts.size > 60) {
+      html += `<div style="padding:8px 12px;font-size:10px;color:var(--text-dim)">...ve ${allHosts.size - 60} host daha</div>`;
+    }
+  }
+
+  html += `</div></div></div>`;
+  el.innerHTML = html;
+}
+
+// Hook into tpSwitch to init new tabs
+const _origTpSwitch = tpSwitch;
+function tpSwitch(name, btn) {
+  document.querySelectorAll('.tp-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tp-tabs > .tp-tab').forEach(b => b.classList.remove('active'));
+  const page = document.getElementById('tppage-' + name);
+  if (page) page.classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  if (name === 'schema' && SCH.built) drawSchema();
+  if (name === 'matrix')      buildFabricMatrix();
+  if (name === 'switchdetail') buildSwitchDetailSelector();
+}
+
+// Also remove old vn3d/slFlow calls that no longer exist
+// (they were inside the old tpSwitch — now overridden above)
+</script>

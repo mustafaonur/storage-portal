@@ -4671,7 +4671,7 @@ if ($runSAN) {
                 }
             }
             # SAN Host LastSeen - Artik Write-CSVAndPublish kullaniyoruz (Bug #2 fix)
-            Write-CSVAndPublish -Data ($existingLS.Values | Sort-Object SwitchName, PortWWN) -LocalPath $lastSeenFile -RemotePath (Join-Path $RemoteSan 'SAN_Host_LastSeen.csv') -NoPublish:$NoPublish
+            Write-CSVAndPublish -Data (@($existingLS.Values) | Sort-Object SwitchName, PortWWN) -LocalPath $lastSeenFile -RemotePath (Join-Path $RemoteSan 'SAN_Host_LastSeen.csv') -NoPublish:$NoPublish
         }
     }
 }
