@@ -1798,12 +1798,13 @@ function runCompliance() {
   }).join('');
 }
 
-// Trigger compliance run when tab is activated
-const _origSetTab = typeof setTab !== 'undefined' ? null : null;
-document.querySelector('.tab-btns')?.addEventListener('click', e => {
-  const btn = e.target.closest('.tab-btn[data-tab="compliance"]');
-  if (btn && zoneAudit.length > 0) setTimeout(runCompliance, 50);
-});
+// Trigger compliance run when compliance tab is activated
+// Hook into the existing setTab function which handles all tabs
+const _sanSetTab = setTab;
+function setTab(name, ev) {
+  _sanSetTab(name, ev);
+  if (name === 'compliance') setTimeout(runCompliance, 50);
+}
 
 loadZoneRules();
 

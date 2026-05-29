@@ -771,7 +771,7 @@ tr:hover .del-btn{opacity:1;}
         <div class="kk-row">
           <div><label class="kk-lbl">Not</label><input id="rez-not" class="kk-in" placeholder="Opsiyonel not"></div>
         </div>
-        <button class="kk-btn" onclick="addRezSon()">+ Rezervasyon Ekle</button>
+        <button class="kk-btn" id="btn-add-rezervasyon">+ Rezervasyon Ekle</button>
       </div>
     </div>
 
@@ -787,7 +787,7 @@ tr:hover .del-btn{opacity:1;}
             <option value="saglandi">Sağlandı</option>
             <option value="iptal">İptal</option>
           </select>
-          <button class="kk-btn" onclick="exportRezSon()" style="padding:4px 12px;font-size:10px">⬇ CSV</button>
+          <button class="kk-btn" id="btn-export-rezervasyon" style="padding:4px 12px;font-size:10px">⬇ CSV</button>
         </div>
       </div>
       <div id="rez-list" style="overflow-y:auto;max-height:520px"></div>
@@ -993,7 +993,14 @@ function resetData(){if(!confirm('Tüm veriler sıfırlansın mı?'))return;D=JS
 
 /* ────────────────── RENDER ────────────────── */
 function renderAll(){
-  renderRezSon();renderKesinti();renderDrc();renderUrun();renderChecks();renderCalisma();renderNobet();restoreNk();renderEnvanter();renderKontaklar();renderSam();renderProposals();renderAlarmMail();mUpdateAlarmBadge();kontratInit();}
+  renderRezSon();renderKesinti();renderDrc();renderUrun();renderChecks();renderCalisma();renderNobet();restoreNk();renderEnvanter();renderKontaklar();renderSam();renderProposals();renderAlarmMail();mUpdateAlarmBadge();
+  // kontratInit requires async ASSET_INVENTORY — fire after ready or with delay
+  if (typeof _assetInventoryReady !== 'undefined' && _assetInventoryReady) {
+    kontratInit();
+  } else {
+    document.addEventListener('assetInventoryReady', kontratInit, { once: true });
+  }
+}
 
 function renderKesinti(){
   const b = document.getElementById('b-kesinti');
@@ -1106,7 +1113,7 @@ function renderEnvanter(){
       <td contenteditable="true" style="color:var(--text-dim)">${e(r.kurulusTarihi||'—')}</td>
       ${wVal}
       <td contenteditable="true" style="color:var(--text-dim)">${e(r.not||'')}</td>
-      <td style="text-align:center"><button class="del-btn" onclick="delEnvanter(${realIdx})">×</button></td>
+      <td style="text-align:center"><button class="del-btn" data-action="del-envanter" data-idx="${realIdx}" title="Sil">×</button></td>
     </tr>`;
   }).join('');
 
@@ -1194,7 +1201,7 @@ function renderKontaklar(){
       <div class="kc-field"><div class="kc-label">Telefon</div>${inp('telefon',k.telefon,'+90 5xx xxx xx xx')}</div>
       <div class="kc-field"><div class="kc-label">E-posta</div>${inp('email',k.email,'email@firma.com')}</div>
       <div class="kc-field" style="grid-column:1/-1"><div class="kc-label">Not</div>${inp('not',k.not,'Açıklama...')}</div>
-      <button class="kc-del" onclick="delKontak(${i})">×</button>
+      <button class="kc-del" data-action="del-kontak" data-idx="${i}" title="Sil">×</button>
     </div>`;
   }).join('');
   document.getElementById('kontak-list').innerHTML=html;
@@ -1238,7 +1245,7 @@ function renderSam(){
       <div class="kc-field"><div class="kc-label ${wCls}">Sözleşme Bitiş${s.sozlesmeBitis&&wCls==='env-warranty-exp'?' ⚠️':''}</div>
         ${inp('sozlesmeBitis',s.sozlesmeBitis,'YYYY-AA-GG',wCls)}</div>
       <div class="kc-field" style="grid-column:1/-1"><div class="kc-label">Not</div>${inp('not',s.not,'Açıklama...')}</div>
-      <button class="kc-del" onclick="delSam(${i})">×</button>
+      <button class="kc-del" data-action="del-sam" data-idx="${i}" title="Sil">×</button>
     </div>`;
   }).join('');
   document.getElementById('sam-list').innerHTML=html;
@@ -1955,7 +1962,7 @@ function renderAlarmMail(){
         ${r.not?`<div style="font-size:10px;color:var(--text-dim);margin-top:2px">${kkEsc(r.not)}</div>`:''}
       </div>
       ${i===0?'<span style="font-size:9px;color:var(--accent2);flex-shrink:0;padding:2px 8px;border:1px solid var(--accent2)">BİRİNCİL</span>':''}
-      <button class="del-btn" style="opacity:1;flex-shrink:0" onclick="alarmDelRecipient(${i})" title="Sil">×</button>
+      <button class="del-btn" data-action="del-alarm-recipient" data-idx="${i}" title="Sil" style="opacity:1;flex-shrink:0">×</button>
     </div>`).join('');
 }
 
@@ -2295,7 +2302,7 @@ function renderRezSon() {
               <option value="saglandi"  ${r.durum==='saglandi'?'selected':''}>Sağlandı</option>
               <option value="iptal"     ${r.durum==='iptal'?'selected':''}>İptal</option>
             </select>
-            <button onclick="delRezSon(${realIdx})" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--danger);padding:2px 6px;cursor:pointer">✕</button>
+            <button data-action="del-rezervasyon" data-idx="${realIdx}" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--danger);padding:2px 6px;cursor:pointer">✕</button>
           </div>
         </div>
       </div>
@@ -2361,6 +2368,24 @@ function exportRezSon() {
   const el = document.getElementById('rez-talep-tarih');
   if (el) el.value = new Date().toISOString().slice(0,10);
 })();
+
+
+// ── EVENT DELEGATION for dynamic action buttons ─────────────────────────
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const idx    = parseInt(btn.dataset.idx, 10);
+
+  if (action === 'del-envanter')       { delEnvanter(idx);       return; }
+  if (action === 'del-kontak')         { delKontak(idx);          return; }
+  if (action === 'del-sam')            { delSam(idx);             return; }
+  if (action === 'del-alarm-recipient'){ alarmDelRecipient(idx);  return; }
+  if (action === 'del-rezervasyon')    { delRezSon(idx);          return; }
+});
+
+document.getElementById('btn-add-rezervasyon')?.addEventListener('click', addRezSon);
+document.getElementById('btn-export-rezervasyon')?.addEventListener('click', exportRezSon);
 
 </script>
 

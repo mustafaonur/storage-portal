@@ -510,11 +510,11 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 </div>
 
 <!-- ── QUICK LAUNCH OVERLAY ── -->
-<div class="ql-overlay" id="ql-overlay" onclick="if(event.target===this)closeQL()">
+<div class="ql-overlay" id="ql-overlay">
   <div class="ql-box">
     <div class="ql-input-wrap">
       <span style="color:var(--text-dim);font-size:14px;">⌕</span>
-      <input class="ql-input" id="ql-input" placeholder="Modül ara..." oninput="qlFilter()" onkeydown="qlKey(event)" autocomplete="off">
+      <input class="ql-input" id="ql-input" placeholder="Modül ara..." autocomplete="off">
       <span style="font-size:10px;color:var(--text-dim)">ESC</span>
     </div>
     <div class="ql-hint">Sayfa adı veya kategori yaz · ↑↓ seç · Enter aç</div>
@@ -787,7 +787,7 @@ function qlRender(pages) {
   box.innerHTML = Object.entries(cats).map(([cat, items]) => `
     <div class="ql-section-hdr">${escLabel(cat)}</div>
     ${items.map(p => `
-      <div class="ql-item" data-page="${p.id}" onclick="qlSelect('${p.id}')">
+      <div class="ql-item" data-page="${p.id}">
         <span class="ql-item-icon">${p.icon}</span>
         <div><div class="ql-item-name">${escLabel(p.label)}</div><div class="ql-item-desc">${escLabel(p.desc)}</div></div>
       </div>`).join('')}
@@ -862,6 +862,22 @@ window.addEventListener('DOMContentLoaded', () => routeFromHash());
     if (closeBtn) { e.stopPropagation(); closeTab(e, closeBtn.dataset.tab); return; }
     const tab = e.target.closest('.tab-item[data-tab]');
     if (tab) navigateTab(tab.dataset.tab);
+  });
+
+  // QL overlay — close on backdrop click
+  document.getElementById('ql-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('ql-overlay')) closeQL();
+  });
+  // QL input handlers
+  const qlInputEl = document.getElementById('ql-input');
+  if (qlInputEl) {
+    qlInputEl.addEventListener('input', qlFilter);
+    qlInputEl.addEventListener('keydown', qlKey);
+  }
+  // QL results — event delegation for dynamic items
+  document.getElementById('ql-results').addEventListener('click', e => {
+    const item = e.target.closest('.ql-item[data-page]');
+    if (item) qlSelect(item.dataset.page);
   });
 
   // Home screen quick-launch tiles

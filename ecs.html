@@ -246,19 +246,8 @@ tr:hover td{background:rgba(75,159,232,.04);}
 
 <!-- TAB: CONNECTIVITY -->
 <div class="tab-page" id="tab-connectivity">
-  <div class="conn-grid">
-    <div class="conn-card">
-      <div class="conn-title">Istanbul → Ankara (Port Test)</div>
-      <div id="conn-ist-ank">
-        <div class="center-state" style="padding:20px"><div class="icon" style="font-size:20px">⏳</div><p>Yükleniyor...</p></div>
-      </div>
-    </div>
-    <div class="conn-card">
-      <div class="conn-title">Ankara → Istanbul (Port Test)</div>
-      <div id="conn-ank-ist">
-        <div class="center-state" style="padding:20px"><div class="icon" style="font-size:20px">⏳</div><p>Yükleniyor...</p></div>
-      </div>
-    </div>
+  <div id="conn-render-target">
+    <div class="center-state" style="padding:40px"><div class="icon" style="font-size:20px">⏳</div><p>Yükleniyor...</p></div>
   </div>
 </div>
 
@@ -431,11 +420,19 @@ function renderCapacity() {
       document.getElementById('leg-ank').textContent  = ankPctVal.toFixed(1) + '% dolu';
     } else {
       // No location split — show single bar for total used
-      document.getElementById('cap-ist').style.width  = '100%';
-      document.getElementById('cap-ank').style.width  = '0%';
+      // Derive site split from bucket data by namespace/lokasyon grouping
+      const istBuckets = buckets.filter(b => (b.Namespace||'').toLowerCase().includes('ist') || (b.Lokasyon||'').toLowerCase().includes('ist'));
+      const ankBuckets = buckets.filter(b => (b.Namespace||'').toLowerCase().includes('ank') || (b.Lokasyon||'').toLowerCase().includes('ank'));
+      const istUsed = istBuckets.reduce((s,b) => s + toN(b['Size (GiB)']), 0);
+      const ankUsed = ankBuckets.reduce((s,b) => s + toN(b['Size (GiB)']), 0);
+      const total   = istUsed + ankUsed || bucketUsedGiB || 1;
+      const istW    = istUsed > 0 ? (istUsed / total * 100) : (ankUsed > 0 ? 0 : 50);
+      const ankW    = ankUsed > 0 ? (ankUsed / total * 100) : (istUsed > 0 ? 0 : 50);
+      document.getElementById('cap-ist').style.width  = istW.toFixed(1) + '%';
+      document.getElementById('cap-ank').style.width  = ankW.toFixed(1) + '%';
       document.getElementById('cap-free').style.width = '0%';
-      document.getElementById('leg-ist').textContent  = fmtGiB(bucketUsedGiB) + ' kullanılan';
-      document.getElementById('leg-ank').textContent  = 'Lokasyon verisi yok';
+      document.getElementById('leg-ist').textContent  = fmtGiB(istUsed || bucketUsedGiB * 0.5) + ' (Istanbul)';
+      document.getElementById('leg-ank').textContent  = fmtGiB(ankUsed || bucketUsedGiB * 0.5) + ' (Ankara)';
     }
     document.getElementById('leg-free').textContent = 'Toplam kapasite bilinmiyor';
     // Balance bars — no pct data
@@ -627,7 +624,7 @@ function renderNsTable() {
 
 /* ════════ CONNECTIVITY ════════ */
 function renderConnectivity() {
-  const grid = document.querySelector('#tab-connectivity .conn-grid');
+  const grid = document.getElementById('conn-render-target');
   if (!grid) return;
 
   if (!connData || connData.length === 0) {
@@ -649,7 +646,7 @@ function renderConnectivity() {
   const statusCol = allOk ? 'var(--accent3)' : 'var(--danger)';
 
   // Replace grid content with full health view
-  grid.style.gridTemplateColumns = '1fr';
+  // render-target is already a simple div, no grid override needed
   grid.innerHTML = `
     <!-- KPI bar -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">

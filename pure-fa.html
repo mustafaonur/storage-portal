@@ -1144,10 +1144,17 @@ function renderHostDetail() {
   </table>`;
 }
 
-// Hook into switchTab to trigger renders
-const _origSwitchTab = switchTab;
+// Unified switchTab — replaces the original definition
 function switchTab(name) {
-  _origSwitchTab(name);
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    // Use data-tab attr if present, otherwise parse onclick text
+    const tabName = b.dataset.tab || (b.getAttribute('onclick')||'').replace(/.*switchTab\(['"]([^'"]+)['"]\).*/, '$1');
+    b.classList.toggle('active', tabName === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  // Lazy renders for new tabs
   if (name === 'datareduction') renderDataReduction();
   if (name === 'hostdetail')    renderHostDetail();
 }

@@ -353,10 +353,10 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 </div>
 </header>
 <div class="tp-tabs">
-<button class="tp-tab active" data-tptab="path" onclick="tpSwitch('path',this)">Path Arama</button>
-<button class="tp-tab" data-tptab="schema" onclick="tpSwitch('schema',this)">Şema Görünümü</button>
-<button class="tp-tab" data-tptab="matrix" onclick="tpSwitch('matrix',this)">Fabric Matrisi</button>
-<button class="tp-tab" data-tptab="switchdetail" onclick="tpSwitch('switchdetail',this)">Switch Detay</button>
+<button class="tp-tab active" data-tptab="path">Path Arama</button>
+<button class="tp-tab" data-tptab="schema">Şema Görünümü</button>
+<button class="tp-tab" data-tptab="matrix">Fabric Matrisi</button>
+<button class="tp-tab" data-tptab="switchdetail">Switch Detay</button>
 </div>
 <!-- SEKME 1: PATH ARAMA -->
 <div class="tp-page active" id="tppage-path">
@@ -365,8 +365,8 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 <input id="searchBox" type="text" placeholder="Host adı, WWN, switch, kabinet ara..." oninput="onSearch()" autocomplete="off">
 <span class="search-icon">⌕</span>
 </div>
-<button class="clear-btn" onclick="clearSearch()">✕ Temizle</button>
-<div class="filter-toggle" id="ghostFilterBtn" onclick="toggleGhostFilter()">
+<button class="clear-btn" id="btn-clear-search">✕ Temizle</button>
+<div class="filter-toggle" id="ghostFilterBtn">
 <span class="dot"></span>
 <span>Sadece Ghost / Hatalı</span>
 </div>
@@ -392,9 +392,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 <div class="schema-wrap">
 <div class="schema-toolbar">
 <input id="sch-filter" type="text" placeholder="Host / switch / kabinet filtrele..." oninput="schFilter()" autocomplete="off">
-<button class="sch-btn" onclick="schExpandAll(true)">Tümünü Aç</button>
-<button class="sch-btn" onclick="schExpandAll(false)">Tümünü Kapat</button>
-<button class="sch-btn" id="schClearSelBtn" onclick="schClearSelection()" style="display:none">✕ Seçimi Temizle</button>
+<button class="sch-btn" id="btn-sch-expand-all">Tümünü Aç</button>
+<button class="sch-btn" id="btn-sch-expand-none">Tümünü Kapat</button>
+<button class="sch-btn" id="schClearSelBtn" style="display:none">✕ Seçimi Temizle</button>
 <span class="st-info" id="sch-stat">Yükleniyor...</span>
 <div class="sch-legend-group">
 <span class="sch-legend-item"><span class="ln" style="background:var(--c-host)"></span>Fabric A</span>
@@ -1634,11 +1634,11 @@ function drawSchema(){
 
         `<text x="${colHost+2}" y="${y+12}" style="font-size:10px;cursor:${prevD?'pointer':'default'};fill:${prevD?'#e8b84b':'#1e2d44'}" `+
 
-          (prevD?`onclick="schPage('${it.switch}',-1)"`:'')+`>◂ Önc</text>`+
+          (prevD?`data-sch-click="page" data-sch-id="${esc(it.switch)}" data-sch-dir="-1"`:'')+`>◂ Önc</text>`+
 
         `<text x="${colHost+42}" y="${y+12}" style="font-size:10px;cursor:${nextD?'pointer':'default'};fill:${nextD?'#e8b84b':'#1e2d44'}" `+
 
-          (nextD?`onclick="schPage('${it.switch}',1)"`:'')+`>Sonr ▸</text>`+
+          (nextD?`data-sch-click="page" data-sch-id="${esc(it.switch)}" data-sch-dir="1"`:'')+`>Sonr ▸</text>`+
 
         `</g>`;
 
@@ -1666,11 +1666,11 @@ function drawSchema(){
 
       `<title>Tıkla: bağlı host ve storage'ları göster${hostsAll.length?' (uzun tıkla: host listesini aç)':''}</title>`+
 
-      iconRect(colSw-35,y-15,90,30,boxCls, `onclick="schSelectSwitch('${s.name}')"`)+
+      iconRect(colSw-35,y-15,90,30,boxCls, `data-sch-click="switch" data-sch-id="${esc(s.name)}"`)+
 
-      `<text class="sch-node-lbl" x="${colSw+10}" y="${y-2}" onclick="schSelectSwitch('${s.name}')" style="pointer-events:auto">${esc(s.name.length>13?s.name.slice(0,12)+'…':s.name)}</text>`+
+      `<text class="sch-node-lbl" x="${colSw+10}" y="${y-2}" data-sch-click="switch" data-sch-id="${esc(s.name)}" style="pointer-events:auto;cursor:pointer">${esc(s.name.length>13?s.name.slice(0,12)+'…':s.name)}</text>`+
 
-      `<text class="sch-node-sub" x="${colSw+10}" y="${y+8}" onclick="${hostsAll.length?`schToggle('${s.name}')`:''}" style="${hostsAll.length?'cursor:pointer':''}">F${esc(s.fabric)} · ${arrow} ${hostsAll.length}h</text>`+
+      `<text class="sch-node-sub" x="${colSw+10}" y="${y+8}" ${hostsAll.length?`data-sch-click="toggle" data-sch-id="${esc(s.name)}"`:'""'} style="${hostsAll.length?'cursor:pointer':''}">F${esc(s.fabric)} · ${arrow} ${hostsAll.length}h</text>`+
 
       `</g>`;
 
@@ -1686,7 +1686,7 @@ function drawSchema(){
 
     const boxCls = 'sch-stor-box' + (selected?' selected':'') + (dim?' dimmed':'');
 
-    svg+=`<g class="sch-node-g${dim?' dimmed':''}" style="cursor:pointer" onclick="schSelectStorage('${st.key.replace(/'/g, "\\'")}')">`+
+    svg+=`<g class="sch-node-g${dim?' dimmed':''}" style="cursor:pointer" data-sch-click="storage" data-sch-id="${esc(st.key)}">`+
 
       iconRect(colStor-30,y-15,86,30,boxCls)+
 
@@ -1701,6 +1701,19 @@ function drawSchema(){
   svg+=`</svg>`;
 
   box.innerHTML=svg;
+
+  // Event delegation on SVG — CSP-safe alternative to onclick= in SVG strings
+  box.querySelector('svg')?.addEventListener('click', function(e) {
+    const el = e.target.closest('[data-sch-click]');
+    if (!el) return;
+    const action = el.dataset.schClick;
+    const id     = el.dataset.schId || '';
+    const dir    = parseInt(el.dataset.schDir || '0', 10);
+    if (action === 'switch')  schSelectSwitch(id);
+    else if (action === 'storage') schSelectStorage(id);
+    else if (action === 'toggle') schToggle(id);
+    else if (action === 'page') schPage(id, dir);
+  });
 
   const totalHosts = Object.keys(DATA.hosts).length;
 
@@ -1776,7 +1789,25 @@ function schExpandAll(val) {
 
 }
 
-window.addEventListener('DOMContentLoaded', loadAll);
+window.addEventListener('DOMContentLoaded', () => {
+  loadAll();
+
+  // Schema toolbar buttons
+  document.getElementById('btn-sch-expand-all')?.addEventListener('click', () => schExpandAll(true));
+  document.getElementById('btn-sch-expand-none')?.addEventListener('click', () => schExpandAll(false));
+  document.getElementById('schClearSelBtn')?.addEventListener('click', schClearSelection);
+  document.getElementById('sch-filter')?.addEventListener('input', schFilter);
+  // Path tab controls
+  document.getElementById('btn-clear-search')?.addEventListener('click', clearSearch);
+  document.getElementById('ghostFilterBtn')?.addEventListener('click', toggleGhostFilter);
+  document.getElementById('searchBox')?.addEventListener('input', e => renderResults(e.target.value));
+  // Tab bar event delegation
+  document.querySelector('.tp-tabs').addEventListener('click', e => {
+    const btn = e.target.closest('.tp-tab[data-tptab]');
+    if (!btn) return;
+    tpSwitch(btn.dataset.tptab, btn);
+  });
+});
 
   StorageNav.init({ title: "Topology", section: "tools" });
 </script>

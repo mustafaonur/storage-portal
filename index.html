@@ -1889,36 +1889,103 @@ renderFreshnessBadge('data-fresh-badge', [
 ], true);  // en eski - genel sağlık göstergesi
 
 
-/* ── CAPACITY RUNWAY WIDGET ─────────────────────────────────────── */
+/* ── CAPACITY RUNWAY WIDGET — slope-based ETA ───────────────────
+   Computes per-cabinet linear growth rate from last 14 days of
+   _history CSVs. Cabinets reaching 85% in <60 days are surfaced.
+────────────────────────────────────────────────────────────── */
 async function loadRunway() {
-  try {
-    const r = await fetch('./last-run.json', { cache: 'no-store' });
-    if (!r.ok) return;
-    const d = await r.json();
-    if (!d || !d.runway || !d.runway.length) return;
+  const panel = document.getElementById('runway-panel');
+  const list  = document.getElementById('runway-list');
+  if (!panel || !list) return;
 
-    // Show cabinets with <60 days runway (etaDays != null and < 60)
-    // Since runway in last-run.json doesn't have etaDays (computed by capacity-planner),
-    // show high-utilisation cabinets (>80%) as proxy
-    const critical = (d.runway || []).filter(x => x.pctNow >= 80).sort((a,b)=>b.pctNow-a.pctNow).slice(0,6);
-    if (!critical.length) return;
+  const THRESH    = 85;
+  const WARN_DAYS = 60;
 
-    const panel = document.getElementById('runway-panel');
-    const list  = document.getElementById('runway-list');
-    if (!panel || !list) return;
+  const SOURCES = [
+    { vendor:'Huawei',   url:'./Hw/_history/Dorado_Dashboard_{D}.csv',   cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
+    { vendor:'PowerMax', url:'./Pmax/_history/PmaxPoolDash_{D}.csv',      cabCol:'Array ID', useCol:'Used (TB)', totCol:'Total (TB)' },
+    { vendor:'Pure FA',  url:'./Pure/_history/Pure_Dashboard_{D}.csv',    cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
+    { vendor:'NetApp',   url:'./NetApp/_history/NetApp_Dashboard_{D}.csv',cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
+  ];
 
-    list.innerHTML = critical.map(x => {
-      const col = x.pctNow >= 90 ? 'var(--danger)' : 'var(--warn)';
-      return `<div style="background:var(--surface2);border:1px solid var(--border);border-left:2px solid ${col};padding:10px 14px;min-width:160px;flex:1">
-        <div style="font-size:11px;color:var(--text-bright);font-weight:500">${esc(x.cab)}</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${esc(x.vendor)}</div>
-        <div style="font-size:18px;font-weight:800;color:${col};margin-top:4px">${x.pctNow.toFixed(1)}%</div>
-        <div style="font-size:9px;color:var(--text-dim);margin-top:2px">${x.usedNow.toFixed(1)} / ${x.totNow.toFixed(1)} TB</div>
-      </div>`;
-    }).join('');
+  const dates   = dateRangeBack(14, 'YYYY-MM-DD');
+  const cabData = {};
 
-    panel.style.display = 'block';
-  } catch { /* silent */ }
+  for (const src of SOURCES) {
+    for (let di = 0; di < dates.length; di += 3) {
+      const chunk = dates.slice(di, i => i + 3).slice(0, 3);
+      const chunkDates = dates.slice(di, di + 3);
+      await Promise.allSettled(chunkDates.map(async (d, ci) => {
+        const url  = src.url.replace('{D}', d);
+        const text = await fetchCSVText(url).catch(() => '');
+        if (!text) return;
+        parseCSV(text)
+          .filter(r => isDataRow(r, src.cabCol))
+          .forEach(r => {
+            const cab = (r[src.cabCol] || '').trim();
+            if (!cab) return;
+            const key = src.vendor + '::' + cab;
+            if (!cabData[key]) cabData[key] = { vendor: src.vendor, cab, points: [] };
+            const used = toN(r[src.useCol]);
+            const tot  = toN(r[src.totCol]);
+            if (tot > 0) cabData[key].points.push({ di: di + ci, used, tot });
+          });
+      }));
+    }
+  }
+
+  const results = [];
+  for (const entry of Object.values(cabData)) {
+    const pts = entry.points.sort((a, b) => a.di - b.di);
+    if (!pts.length) continue;
+    const last   = pts[pts.length - 1];
+    const usedNow = last.used;
+    const totNow  = last.tot;
+    const pctNow  = totNow > 0 ? usedNow / totNow * 100 : 0;
+
+    let slope = 0;
+    if (pts.length >= 2) {
+      const n   = pts.length;
+      const sx  = pts.reduce((s, p) => s + p.di,       0);
+      const sy  = pts.reduce((s, p) => s + p.used,     0);
+      const sxy = pts.reduce((s, p) => s + p.di * p.used, 0);
+      const sxx = pts.reduce((s, p) => s + p.di * p.di,  0);
+      const den = n * sxx - sx * sx;
+      slope = den !== 0 ? (n * sxy - sx * sy) / den : 0;
+    }
+
+    const threshTB = totNow * THRESH / 100;
+    let etaDays = null;
+    if (usedNow >= threshTB)   etaDays = 0;
+    else if (slope > 0.01)     etaDays = Math.round((threshTB - usedNow) / slope);
+
+    const show = (etaDays !== null && etaDays <= WARN_DAYS) || pctNow >= 82;
+    if (show) results.push({ ...entry, usedNow, totNow, pctNow, slope, etaDays });
+  }
+
+  if (!results.length) return;
+  results.sort((a, b) => {
+    const ea = a.etaDays === null ? 9999 : a.etaDays;
+    const eb = b.etaDays === null ? 9999 : b.etaDays;
+    return ea - eb;
+  });
+
+  list.innerHTML = results.slice(0, 6).map(x => {
+    const col = (x.etaDays !== null && x.etaDays <= 30) || x.pctNow >= 90
+      ? 'var(--danger)' : 'var(--warn)';
+    const etaStr = x.etaDays === 0 ? 'ŞİMDİ ⚠'
+                 : x.etaDays !== null ? x.etaDays + ' gün'
+                 : x.pctNow.toFixed(1) + '%';
+    const slopeStr = x.slope > 0.01 ? ' · +' + x.slope.toFixed(2) + ' TB/gün' : '';
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-left:2px solid ${col};padding:10px 14px;min-width:160px;flex:1">
+      <div style="font-size:11px;color:var(--text-bright);font-weight:500">${esc(x.cab)}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${esc(x.vendor)}</div>
+      <div style="font-size:18px;font-weight:800;color:${col};margin-top:4px">${esc(etaStr)}</div>
+      <div style="font-size:9px;color:var(--text-dim);margin-top:2px">${x.pctNow.toFixed(1)}% dolu${esc(slopeStr)}</div>
+    </div>`;
+  }).join('');
+
+  panel.style.display = 'block';
 }
 
 /* ── LAST-RUN STATUS ─────────────────────────────────────────────── */

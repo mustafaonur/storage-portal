@@ -705,7 +705,7 @@ function closeDetail() {
 ════════════════════════════════════════════════════ */
 (async function init() {
   // Fetch all CSVs in parallel
-  const texts = await Promise.all(VENDORS.map(v => fetchCSVParsed(v.csv)));
+  const texts = await Promise.all(VENDORS.map(v => fetchCSVParsed(v.csv)));  // returns rows[], not text
 
   let grandTotal = 0, grandUsed = 0, grandFree = 0;
   let critCount = 0, warnCount = 0;
@@ -718,14 +718,9 @@ function closeDetail() {
   };
 
   VENDORS.forEach((vendor, idx) => {
-    const text = texts[idx];
-    let rows = [];
-
-    if (text) {
-      const all = parseCSV(text);
-      rows = vendor.isECS ? all : all.filter(r => isDataRow(r));
-      if (rows.length && rows[0]['Tarih']) dataDate = rows[0]['Tarih'];
-    }
+    const allRows = texts[idx] || [];   // already parsed by fetchCSVParsed
+    let rows = vendor.isECS ? allRows : allRows.filter(r => isDataRow(r));
+    if (rows.length && rows[0]['Tarih']) dataDate = rows[0]['Tarih'];
 
     const { card, pct, totalTB, usedTB, freeTB } = renderLakeCard(vendor, rows);
     grids[vendor.group].appendChild(card);
