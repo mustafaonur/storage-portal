@@ -41,6 +41,48 @@
 .agg-type-SATA { background:rgba(232,184,75,.15);  color:var(--accent); }
 .agg-type-HDD  { background:rgba(232,132,75,.15);  color:var(--warn); }
 .agg-type-na   { background:rgba(90,112,144,.15);  color:var(--text-dim); }
+
+  /* ── CARD-WIDTH FIX: prevent orphan cards from stretching wider ──────────
+     auto-fit collapses empty tracks so a lone last card expands to 1fr of
+     the full row.  Override with a fixed column count at each breakpoint so
+     every row is always fully occupied (or gracefully wraps to fewer cols).
+  ────────────────────────────────────────────────────────────────────────── */
+
+  /* Global summary — NetApp always renders exactly 5 stat-cards */
+  #global-summary {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  @media (max-width: 1200px) {
+    #global-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    #global-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* Aggregate tab summary — always 4 agg-stat-cards */
+  #agg-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  @media (max-width: 1100px) {
+    #agg-summary { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  }
+  @media (max-width: 600px) {
+    #agg-summary { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+  }
+
+  /* Cabinet/cluster cards — count varies per location.
+     Cap max-width so a lone orphan card never spans the full viewport.
+     680 px ≈ 2 × 340 px (the minmax floor), giving visual parity with a
+     2-card row while still allowing the card to breathe on smaller screens. */
+  .cabinet-card {
+    max-width: 680px;
+  }
+
+  /* Snapshot summary tab — always 3 cards; repeat(3,1fr) is fine but add
+     a responsive fallback so cards don't overflow on narrow screens */
+  @media (max-width: 760px) {
+    #na-snap-summary { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+  }
   </style>
 <script src="./assets/js/storage-utils.js"></script>
 <script src="./assets/js/nav.js"></script>
@@ -130,7 +172,7 @@
 
   <div class="tab-panel" id="tab-aggregates">
     <div class="section-title">Aggregate Envanteri</div>
-    <div id="agg-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px"></div>
+    <div id="agg-summary" style="display:grid;gap:12px;margin-bottom:18px"></div>
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
