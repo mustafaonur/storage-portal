@@ -321,12 +321,12 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
   </header>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-    <button class="tab-btn" onclick="switchTab('hosts')">SVM Listesi</button>
-    <button class="tab-btn" onclick="switchTab('luns')">Volumes</button>
-    <button class="tab-btn" onclick="switchTab('aggregates')">Aggregates</button>
-    <button class="tab-btn" onclick="switchTab('snapshots')">Snapshot Policy</button>
-    <button class="tab-btn" onclick="switchTab('metrocluster')">MetroCluster</button>
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="hosts">SVM Listesi</button>
+    <button class="tab-btn" data-tab="luns">Volumes</button>
+    <button class="tab-btn" data-tab="aggregates">Aggregates</button>
+    <button class="tab-btn" data-tab="snapshots">Snapshot Policy</button>
+    <button class="tab-btn" data-tab="metrocluster">MetroCluster</button>
   </div>
 
   <div class="tab-panel active" id="tab-overview">
@@ -340,18 +340,18 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="SVM ara..." id="host-search" oninput="__db_renderHostTable()">
+        <input type="text" placeholder="SVM ara..." id="host-search">
       </div>
-      <select class="filter-select" id="host-location" onchange="renderHostTable()"><option value="">Tum Lokasyonlar</option></select>
-      <select class="filter-select" id="host-cabinet" onchange="renderHostTable()"><option value="">Tum Kabinetler</option></select>
-      <select class="filter-select" id="host-os" onchange="renderHostTable()">
+      <select class="filter-select" id="host-location"><option value="">Tum Lokasyonlar</option></select>
+      <select class="filter-select" id="host-cabinet"><option value="">Tum Kabinetler</option></select>
+      <select class="filter-select" id="host-os">
         <option value="">Tum Protokoller</option>
         <option value="CIFS">CIFS</option>
         <option value="NFS">NFS</option>
         <option value="iSCSI">iSCSI</option>
         <option value="FCP">FCP</option>
       </select>
-      <select class="filter-select" id="host-map" onchange="renderHostTable()">
+      <select class="filter-select" id="host-map">
         <option value="">Tum Durumlar</option>
         <option value="Mapped">running</option>
         <option value="Unmapped">offline</option>
@@ -365,10 +365,10 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Volume ara..." id="lun-search" oninput="__db_renderLunTable()">
+        <input type="text" placeholder="Volume ara..." id="lun-search">
       </div>
-      <select class="filter-select" id="lun-location" onchange="renderLunTable()"><option value="">Tum Lokasyonlar</option></select>
-      <select class="filter-select" id="lun-cabinet" onchange="renderLunTable()"><option value="">Tum Kabinetler</option></select>
+      <select class="filter-select" id="lun-location"><option value="">Tum Lokasyonlar</option></select>
+      <select class="filter-select" id="lun-cabinet"><option value="">Tum Kabinetler</option></select>
     </div>
     <div id="lun-table-wrap"></div>
   </div>
@@ -379,18 +379,18 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Aggregate, Node ara..." id="agg-search" oninput="__db_renderAggTable()">
+        <input type="text" placeholder="Aggregate, Node ara..." id="agg-search">
       </div>
-      <select class="filter-select" id="agg-location" onchange="renderAggTable()"><option value="">Tum Lokasyonlar</option></select>
-      <select class="filter-select" id="agg-cabinet" onchange="renderAggTable()"><option value="">Tum Cluster'lar</option></select>
-      <select class="filter-select" id="agg-node" onchange="renderAggTable()"><option value="">Tum Node'lar</option></select>
-      <select class="filter-select" id="agg-state" onchange="renderAggTable()">
+      <select class="filter-select" id="agg-location"><option value="">Tum Lokasyonlar</option></select>
+      <select class="filter-select" id="agg-cabinet"><option value="">Tum Cluster'lar</option></select>
+      <select class="filter-select" id="agg-node"><option value="">Tum Node'lar</option></select>
+      <select class="filter-select" id="agg-state">
         <option value="">Tum Durumlar</option>
         <option value="online">online</option>
         <option value="offline">offline</option>
         <option value="restricted">restricted</option>
       </select>
-      <select class="filter-select" id="agg-fill" onchange="renderAggTable()">
+      <select class="filter-select" id="agg-fill">
         <option value="">Tum Doluluk</option>
         <option value="crit">Kritik (&ge;80%)</option>
         <option value="warn">Uyari (70-80%)</option>
@@ -406,10 +406,10 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Policy adı, volume, SVM ara..." id="na-snap-search" oninput="__db_renderNaSnap()">
+        <input type="text" placeholder="Policy adı, volume, SVM ara..." id="na-snap-search">
       </div>
-      <select class="filter-select" id="na-snap-cab" onchange="renderNaSnap()"><option value="">Tüm Cluster'lar</option></select>
-      <select class="filter-select" id="na-snap-svm" onchange="renderNaSnap()"><option value="">Tüm SVM'ler</option></select>
+      <select class="filter-select" id="na-snap-cab"><option value="">Tüm Cluster'lar</option></select>
+      <select class="filter-select" id="na-snap-svm"><option value="">Tüm SVM'ler</option></select>
     </div>
     <div id="na-snap-table-wrap"></div>
   </div>
@@ -418,16 +418,16 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div class="section-title">MetroCluster Durumu</div>
     <div id="mc-cluster-info" style="margin-bottom:20px"></div>
     <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px">
-      <button class="sbtn active" id="mc-tab-nodes"  onclick="mcSubTab('nodes')" >Node'lar</button>
-      <button class="sbtn"        id="mc-tab-vols"   onclick="mcSubTab('vols')"  >Volume'lar</button>
-      <button class="sbtn"        id="mc-tab-repl"   onclick="mcSubTab('repl')"  >Replication</button>
+      <button class="sbtn active" id="mc-tab-nodes"  >Node'lar</button>
+      <button class="sbtn"        id="mc-tab-vols"    >Volume'lar</button>
+      <button class="sbtn"        id="mc-tab-repl"    >Replication</button>
     </div>
     <div class="filter-row" style="margin-bottom:14px">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Node, volume, SVM, kaynak, hedef ara..." id="mc-search" oninput="__db_renderMc()">
+        <input type="text" placeholder="Node, volume, SVM, kaynak, hedef ara..." id="mc-search">
       </div>
-      <select class="filter-select" id="mc-cab" onchange="renderMc()"><option value="">Tüm Cluster'lar</option></select>
+      <select class="filter-select" id="mc-cab"><option value="">Tüm Cluster'lar</option></select>
     </div>
     <div id="mc-table-wrap"></div>
   </div>
@@ -439,25 +439,25 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
 </div>
 
 <!-- WWN MODAL -->
-<div class="modal-backdrop" id="wwnModal" onclick="if(event.target===this)closeWwnModal()">
+<div class="modal-backdrop" id="wwnModal" id="wwnModal">
   <div class="modal-card">
     <div class="modal-header">
       <div>
         <div class="modal-title">Host WWN'ler</div>
         <div class="modal-host" id="modalHostName">-</div>
       </div>
-      <button class="modal-close" onclick="closeWwnModal()" title="Kapat">&times;</button>
+      <button class="modal-close" id="wwnModalClose" title="Kapat">&times;</button>
     </div>
     <div class="modal-body">
       <div class="wwn-format-toggle">
-        <button class="wwn-format-btn active" id="fmtColon" onclick="setWwnFormat('colon')">aa:aa:aa:aa</button>
-        <button class="wwn-format-btn" id="fmtPlain" onclick="setWwnFormat('plain')">aaaaaaaa</button>
+        <button class="wwn-format-btn active" id="fmtColon">aa:aa:aa:aa</button>
+        <button class="wwn-format-btn" id="fmtPlain">aaaaaaaa</button>
       </div>
       <div id="wwnList"></div>
     </div>
     <div class="modal-actions">
-      <button class="modal-btn" onclick="copyAllWwns()">Hepsini Kopyala</button>
-      <button class="modal-btn primary" onclick="closeWwnModal()">Kapat</button>
+      <button class="modal-btn" id="wwnCopyAll">Hepsini Kopyala</button>
+      <button class="modal-btn primary" id="wwnClosePrimary">Kapat</button>
     </div>
   </div>
 </div>
@@ -616,7 +616,7 @@ async function loadCSVs() {
       <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
         <div style="font-size:32px;margin-bottom:16px">⚠</div>
         <div style="font-family:'Syne',sans-serif;font-size:16px;color:var(--warn);margin-bottom:12px">CSV Dosyaları Bulunamadı</div>
-        <button onclick="loadCSVs()" style="margin-top:24px;background:transparent;color:var(--accent);border:1px solid var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;padding:8px 20px;cursor:pointer">YENİDEN DENE</button>
+        <button id="btn-retry-load" style="margin-top:24px;background:transparent;color:var(--accent);border:1px solid var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;padding:8px 20px;cursor:pointer">YENİDEN DENE</button>
       </div>`;
     return;
   }
@@ -684,7 +684,7 @@ function buildSummary() {
     <div class="stat-card blue"><div class="stat-label">Kullanilan</div><div class="stat-value">${(totUsed/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">Ort. %${avgPct}</div></div>
     <div class="stat-card green"><div class="stat-label">Bos Alan</div><div class="stat-value">${(totFree/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">${totFree.toFixed(0)} TB</div></div>
     <div class="stat-card ${crit>0?'red':(warn>0?'gold':'green')}"><div class="stat-label">Alarm Durumu</div><div class="stat-value">${crit}<span class="stat-unit">kritik</span></div><div class="stat-sub">${warn} uyari &middot; esik %${WARN}/%${CRIT}</div></div>
-    <div class="stat-card blue stat-card-click" onclick="applyHostFilter({label:'Tum SVMler'})"><div class="stat-label">Toplam SVM</div><div class="stat-value">${totSvm}</div><div class="stat-sub">${locs} lokasyon &middot; tikla &rarr;</div></div>`;
+    <div class="stat-card blue stat-card-click" data-host-filter='{"label":"Tum SVMler"}'><div class="stat-label">Toplam SVM</div><div class="stat-value">${totSvm}</div><div class="stat-sub">${locs} lokasyon &middot; tikla &rarr;</div></div>`;
 }
 
 function cabinetCard(c) {
@@ -699,7 +699,7 @@ function cabinetCard(c) {
   const osBars = osKeys.map(k => `<div class="os-bar-wrap"><div class="os-bar ${osBarMap[k]||'os-linux'}" style="height:${totOS>0?c.os[k]/totOS*100:0}%"></div></div>`).join('');
   const osLegend = osKeys.map(k => {
     const safeK = k.replace(/'/g, "\\'");
-    return `<div class="os-legend-item os-legend-clickable" onclick="event.stopPropagation();applyHostFilter({label:'${c.name} - ${k}', cabinet:'${c.name}', os:'${safeK}'})"><div class="os-dot" style="background:${dotColors[(osBarMap[k]||'os-linux').replace('os-','')]}"></div><span>${k}: ${c.os[k]}</span></div>`;
+    return `<div class="os-legend-item os-legend-clickable" data-host-filter='{"label":"${c.name} - ${k}","cabinet":"${c.name}","os":"${safeK"}'><div class="os-dot" style="background:${dotColors[(osBarMap[k]||'os-linux').replace('os-','')]}"></div><span>${k}: ${c.os[k]}</span></div>`;
   }).join('');
 
   const svmCount = c.hostCount;
@@ -710,8 +710,7 @@ function cabinetCard(c) {
   const aggHtml = buildAggSummary(c, cAggs);
 
   return `
-    <div class="${typeof spCabinetClass === 'function' ? spCabinetClass(c.pct) : 'cabinet-card'} cabinet-card-click" onclick="applyHostFilter({label:'${c.name} - Tum SVMler', cabinet:'${c.name}'})">
-      <div class="card-header"><div><div class="card-name">${c.name}</div><div class="card-ip">${c.location} · ${c.ip}</div></div>${statusBadge(c.pct)}</div>
+    <div class="${typeof spCabinetClass === 'function' ? spCabinetClass(c.pct) : 'cabinet-card'} cabinet-card-click" data-host-filter='{"label":"${c.name} - Tum SVMler","cabinet":"${c.name}"}'>      <div class="card-header"><div><div class="card-name">${c.name}</div><div class="card-ip">${c.location} · ${c.ip}</div></div>${statusBadge(c.pct)}</div>
       <div class="card-body">
         <div class="cap-row"><span class="cap-label">Doluluk</span><span class="cap-pct" style="color:${pctColor(c.pct)}">%${c.pct}</span></div>
         <div class="bar-track"><div class="bar-fill ${barClass(c.pct)}" style="width:${c.pct}%"></div></div>
@@ -771,12 +770,10 @@ function buildAggSummary(c, cAggs) {
   // Uyari satiri: en dolu kritikse goster
   let topAlert = '';
   if (top && top.pct >= CRIT) {
-    topAlert = `<div class="agg-alert agg-alert-crit" onclick="event.stopPropagation();switchTab('aggregates');filterAggToCab('${c.name}')">
-      ! En dolu: <strong>${esc(top.name)}</strong> %${top.pct}
+    topAlert = `<div class="agg-alert agg-alert-crit" data-agg-cab="${c.name}">      ! En dolu: <strong>${esc(top.name)}</strong> %${top.pct}
     </div>`;
   } else if (top && top.pct >= WARN) {
-    topAlert = `<div class="agg-alert agg-alert-warn" onclick="event.stopPropagation();switchTab('aggregates');filterAggToCab('${c.name}')">
-      En dolu: <strong>${esc(top.name)}</strong> %${top.pct}
+    topAlert = `<div class="agg-alert agg-alert-warn" data-agg-cab="${c.name}">      En dolu: <strong>${esc(top.name)}</strong> %${top.pct}
     </div>`;
   }
 
@@ -887,9 +884,9 @@ function renderHostTable() {
     </div>
     <table>
       <thead><tr>
-        <th onclick="sortHost('location')">Lokasyon</th>
-        <th onclick="sortHost('cabinet')">Cluster</th>
-        <th onclick="sortHost('host')">SVM</th>
+        <th data-sort="location">Lokasyon</th>
+        <th data-sort="cabinet">Cluster</th>
+        <th data-sort="host">SVM</th>
         <th>Protokoller</th>
         <th>Durum</th>
       </tr></thead>
@@ -937,8 +934,8 @@ function renderLunTable() {
         <th>Lokasyon</th>
         <th>Cluster</th>
         <th>SVM</th>
-        <th onclick="lunSort.col='name';lunSort.dir=lunSort.dir==='asc'?'desc':'asc';renderLunTable()">Volume</th>
-        <th onclick="lunSort.col='capacity';lunSort.dir=lunSort.dir==='asc'?'desc':'asc';renderLunTable()" style="text-align:right">Boyut (TB)</th>
+        <th data-lun-sort="name">Volume</th>
+        <th data-lun-sort="capacity" style="text-align:right">Boyut (TB)</th>
         <th style="text-align:center">Tip</th>
       </tr></thead>
       <tbody>${tbody || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody>
@@ -1039,7 +1036,7 @@ function renderAggTable() {
   const sortable = (col, label, align) => {
     const arrow = aggSort.col === col ? (aggSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
     const style = align ? `style="text-align:${align}"` : '';
-    return `<th ${style} onclick="aggSort.col='${col}';aggSort.dir=aggSort.dir==='asc'?'desc':'asc';renderAggTable()">${label}${arrow}</th>`;
+    return `<th ${style} data-agg-sort="${col}">${label}${arrow}</th>`;
   };
 
   const typeClass = (t) => {
@@ -1125,7 +1122,7 @@ function renderHostFilterChips(opts) {
   box.style.display = 'flex';
   box.innerHTML = chips.map(c =>
     `<span class="filter-chip">${c.key === 'label' ? `<strong>${c.val}</strong>` : `${c.key}: <strong>${c.val}</strong>`}</span>`
-  ).join('') + `<button class="filter-chip-clear" onclick="clearHostFilters()">Temizle</button>`;
+  ).join('') + `<button class="filter-chip-clear" id="netapp-chip-clear">Temizle</button>`;
 }
 
 function clearHostFilters() {
@@ -1393,6 +1390,102 @@ if (typeof renderFreshnessBadge === 'function') {
   const __db_renderMc = debounce(renderMc);
 
   StorageNav.init({ title: "NetApp ONTAP", section: "vendor" });
+
+/* ════════════ EVENT DELEGATION — netapp.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+
+  // Tabs
+  const tabBar = document.querySelector('.tabs');
+  if (tabBar) tabBar.addEventListener('click', e => {
+    const btn = e.target.closest('[data-tab]');
+    if (btn) switchTab(btn.dataset.tab);
+  });
+
+  // MetroCluster sub-tabs (have existing IDs)
+  ['mc-tab-nodes','mc-tab-vols','mc-tab-repl'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', () => mcSubTab(el.id.replace('mc-tab-','')));
+  });
+
+  // Filter inputs
+  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el) el.addEventListener(ev, fn); };
+  wire('host-search',   db(renderHostTable), 'input');
+  wire('host-location', renderHostTable, 'change');
+  wire('host-cabinet',  renderHostTable, 'change');
+  wire('host-os',       renderHostTable, 'change');
+  wire('host-map',      renderHostTable, 'change');
+  wire('lun-search',    db(renderLunTable), 'input');
+  wire('lun-location',  renderLunTable, 'change');
+  wire('lun-cabinet',   renderLunTable, 'change');
+  wire('agg-search',    db(renderAggTable), 'input');
+  wire('agg-location',  renderAggTable, 'change');
+  wire('agg-cabinet',   renderAggTable, 'change');
+  wire('agg-node',      renderAggTable, 'change');
+  wire('agg-state',     renderAggTable, 'change');
+  wire('agg-fill',      renderAggTable, 'change');
+  wire('na-snap-search',db(renderNaSnap), 'input');
+  wire('na-snap-cab',   renderNaSnap, 'change');
+  wire('na-snap-svm',   renderNaSnap, 'change');
+  wire('mc-search',     db(renderMc), 'input');
+  wire('mc-cab',        renderMc, 'change');
+
+  // WWN modal
+
+  // WWN modal — backdrop + close + format buttons + copy all + close primary
+  const wwnModal = document.getElementById('wwnModal');
+  if (wwnModal) {
+    wwnModal.addEventListener('click', e => { if (e.target === wwnModal) closeWwnModal(); });
+  }
+  const _wire = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  _wire('wwnModalClose', closeWwnModal);
+  _wire('fmtColon', () => setWwnFormat('colon'));
+  _wire('fmtPlain', () => setWwnFormat('plain'));
+  _wire('wwnCopyAll', copyAllWwns);
+  _wire('wwnClosePrimary', closeWwnModal);
+
+  // Retry load
+  const retry = document.getElementById('btn-retry-load');
+  if (retry) retry.addEventListener('click', loadCSVs);
+
+  // Host filter delegation (stat card, cabinet cards, os-legend)
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-host-filter]');
+    if (el) { e.stopPropagation(); try { applyHostFilter(JSON.parse(el.dataset.hostFilter)); } catch{} }
+  });
+
+  // Agg alert delegation
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-agg-cab]');
+    if (el) { e.stopPropagation(); switchTab('aggregates'); filterAggToCab(el.dataset.aggCab); }
+  });
+
+  // Sort headers (static th[data-sort])
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => sortHost(th.dataset.sort));
+  });
+  document.querySelectorAll('th[data-lun-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      lunSort.col = th.dataset.lunSort;
+      lunSort.dir = lunSort.dir === 'asc' ? 'desc' : 'asc';
+      renderLunTable();
+    });
+  });
+  // Agg sort th (dynamically rendered — delegate)
+  document.addEventListener('click', e => {
+    const th = e.target.closest('th[data-agg-sort]');
+    if (!th) return;
+    aggSort.col = th.dataset.aggSort;
+    aggSort.dir = aggSort.dir === 'asc' ? 'desc' : 'asc';
+    renderAggTable();
+  });
+
+  // Chip clear (dynamically rendered)
+  document.addEventListener('click', e => {
+    if (e.target.closest('#netapp-chip-clear')) clearHostFilters();
+  });
+})();
+
 </script>
 </body>
 </html>

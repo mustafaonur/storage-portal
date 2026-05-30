@@ -362,7 +362,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 <div class="tp-page active" id="tppage-path">
 <div class="search-row">
 <div class="search-wrap">
-<input id="searchBox" type="text" placeholder="Host adı, WWN, switch, kabinet ara..." oninput="onSearch()" autocomplete="off">
+<input id="searchBox" type="text" placeholder="Host adı, WWN, switch, kabinet ara..." autocomplete="off">
 <span class="search-icon">⌕</span>
 </div>
 <button class="clear-btn" id="btn-clear-search">✕ Temizle</button>
@@ -391,7 +391,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 <div class="tp-page" id="tppage-schema">
 <div class="schema-wrap">
 <div class="schema-toolbar">
-<input id="sch-filter" type="text" placeholder="Host / switch / kabinet filtrele..." oninput="schFilter()" autocomplete="off">
+<input id="sch-filter" type="text" placeholder="Host / switch / kabinet filtrele..." autocomplete="off">
 <button class="sch-btn" id="btn-sch-expand-all">Tümünü Aç</button>
 <button class="sch-btn" id="btn-sch-expand-none">Tümünü Kapat</button>
 <button class="sch-btn" id="schClearSelBtn" style="display:none">✕ Seçimi Temizle</button>
@@ -975,7 +975,7 @@ function renderHostCard(name){
 
   return `
 <div class="${cardCls}">
-<div class="path-header" onclick="toggleCard(this)">
+<div class="path-header" role="button" tabindex="0">
 <div style="flex:1;min-width:0">
 <div class="path-host-name">${esc(name)} <span style="font-size:11px;color:var(--text-dim);font-weight:400">(${esc(h.os||'?')})</span></div>
 <div class="path-meta">Storage: ${esc(vendors)} · Kapasite: ${totalCap} TB · ${wwns.length} HBA Port · ${rows.length} Path</div>
@@ -1881,7 +1881,7 @@ function buildFabricMatrix() {
 
       table += `<td style="padding:0;border:1px solid var(--border);text-align:center;cursor:${count>0?'pointer':'default'};background:${bg};height:${rowH}px"
         title="${esc(title)}"
-        ${count > 0 ? `onclick="matrixDrilldown('${esc(sw)}','${esc(sk)}')"` : ''}>
+        ${count > 0 ? `data-matrix-sw="${esc(sw)}" data-matrix-sk="${esc(sk)}"` : ''}>
         <span style="color:${textCol};font-size:${count>9?'12':'11'}px;font-weight:${count>0?'700':'400'}">${count > 0 ? count : '·'}</span>
       </td>`;
     });
@@ -2017,4 +2017,30 @@ function tpSwitch(name, btn) {
 
 // Also remove old vn3d/slFlow calls that no longer exist
 // (they were inside the old tpSwitch — now overridden above)
+
+/* ════════════ EVENT DELEGATION — topology.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el && fn) el.addEventListener(ev, fn); };
+  wire('searchBox',  db(onSearch), 'input');
+  wire('sch-filter', db(schFilter), 'input');
+
+  // Path-header accordion (event delegation — many cards)
+  document.addEventListener('click', e => {
+    const hdr = e.target.closest('.path-header');
+    if (hdr) toggleCard(hdr);
+  });
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('path-header')) {
+      e.preventDefault(); toggleCard(e.target);
+    }
+  });
+
+  // Matrix drilldown (dynamically rendered SVG cells)
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-matrix-sw]');
+    if (el) matrixDrilldown(el.dataset.matrixSw, el.dataset.matrixSk);
+  });
+})();
+
 </script>

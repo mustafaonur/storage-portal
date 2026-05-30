@@ -332,7 +332,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   <div class="detail-panel" id="detail-panel">
     <div class="dp-head">
       <div class="dp-title" id="dp-title">—</div>
-      <button class="dp-close" onclick="closeDetail()">&times;</button>
+      <button class="dp-close" id="btn-close-detail">&times;</button>
     </div>
     <div class="dp-body">
       <table class="dp-table" id="dp-table">
@@ -771,6 +771,13 @@ function closeDetail() {
 })();
 
   StorageNav.init({ title: "Storage Lake", section: "analytics" });
+
+/* ════════════ EVENT DELEGATION — lake.html ════════════ */
+(function wireEvents() {
+  const btn = document.getElementById('btn-close-detail');
+  if (btn) btn.addEventListener('click', closeDetail);
+})();
+
 </script>
 </body>
 </html>

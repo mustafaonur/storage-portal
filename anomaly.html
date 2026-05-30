@@ -107,7 +107,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 <div class="toolbar">
   <div>
     <label>Vendor</label>
-    <select id="f-vendor" onchange="runDetection()">
+    <select id="f-vendor">
       <option value="all">Tüm Vendor'lar</option>
       <option value="huawei">Huawei</option>
       <option value="pmax">PowerMax</option>
@@ -119,24 +119,24 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   </div>
   <div>
     <label>Metrik</label>
-    <select id="f-metric" onchange="runDetection()">
+    <select id="f-metric">
       <option value="used">Kullanılan Kapasite</option>
       <option value="pct">Doluluk %</option>
     </select>
   </div>
   <div>
     <label>Sigma Eşiği (σ)</label>
-    <select id="f-sigma" onchange="runDetection()">
+    <select id="f-sigma">
       <option value="3" selected>3σ (klasik, az alarm)</option>
       <option value="2">2σ (orta hassasiyet)</option>
       <option value="2.5">2.5σ</option>
     </select>
   </div>
   <div style="align-self:flex-end">
-    <button class="btn primary" onclick="reloadAll()">↻ Yeniden Tara</button>
+    <button class="btn primary" id="btn-reload">↻ Yeniden Tara</button>
   </div>
   <div style="align-self:flex-end;margin-left:auto">
-    <button class="btn" onclick="exportAnomCSV()">⭳ CSV Aktar</button>
+    <button class="btn" id="btn-export">⭳ CSV Aktar</button>
   </div>
 </div>
 
@@ -392,6 +392,17 @@ function gapWarningHtml(datesWithData) {
     gaps.map(g => esc(g.from) + '→' + esc(g.to) + '(' + g.days + 'g)').join(', ') +
     '</div>';
 }
+
+/* ════════════ EVENT DELEGATION — anomaly.html ════════════ */
+(function wireEvents() {
+  ['f-vendor','f-metric','f-sigma'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.addEventListener('change', runDetection);
+  });
+  const _w = (id, fn) => { const el=document.getElementById(id); if(el) el.addEventListener('click', fn); };
+  _w('btn-reload', reloadAll);
+  _w('btn-export', exportAnomCSV);
+})();
+
 </script>
 </body>
 </html>

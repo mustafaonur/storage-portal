@@ -221,7 +221,7 @@
   <div class="status-bar" id="statusBar">
     <div class="status-dot loading" id="statusDot"></div>
     <span class="status-text" id="statusText">CSV yukleniyor...</span>
-    <button class="reload-btn" onclick="loadCSV()">&#8634; Yenile</button>
+    <button class="reload-btn" id="btn-reload">&#8634; Yenile</button>
   </div>
 
   <div class="search-wrap">
@@ -457,6 +457,13 @@ function updateStats(count) {
 loadCSV();
 
   StorageNav.init({ title: "Cabinet Finder", section: "tools" });
+
+/* ════════════ EVENT DELEGATION — cabinet-finder.html ════════════ */
+(function wireEvents() {
+  const btn = document.getElementById('btn-reload');
+  if (btn) btn.addEventListener('click', loadCSV);
+})();
+
 </script>
 </body>
 </html>

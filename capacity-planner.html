@@ -153,14 +153,14 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
         </div>
 
         <div class="preset-row">
-          <span class="preset" onclick="preset(50,'all')">+50 TB dağıt</span>
-          <span class="preset" onclick="preset(100,'biggest')">+100 TB en büyük</span>
-          <span class="preset" onclick="preset(-20,'fullest')">-20 TB arşiv</span>
-          <span class="preset" onclick="preset(0,'all')">Sıfırla</span>
+          <span class="preset" data-preset-tb="50" data-preset-mode="all">+50 TB dağıt</span>
+          <span class="preset" data-preset-tb="100" data-preset-mode="biggest">+100 TB en büyük</span>
+          <span class="preset" data-preset-tb="-20" data-preset-mode="fullest">-20 TB arşiv</span>
+          <span class="preset" data-preset-tb="0" data-preset-mode="all">Sıfırla</span>
         </div>
 
-        <button class="btn" onclick="runPlan()">▸ Projeksiyonu Hesapla</button>
-        <button class="btn sec" onclick="reloadAll()">↻ History Yeniden Yükle</button>
+        <button class="btn" id="btn-run-plan">▸ Projeksiyonu Hesapla</button>
+        <button class="btn sec" id="btn-reload">↻ History Yeniden Yükle</button>
       </div>
     </div>
   </div>
@@ -371,6 +371,17 @@ function reloadAll(){ CACHE={}; toast('History yeniden yüklenecek'); runPlan();
 runPlan();
 
   StorageNav.init({ title: "Capacity Planner", section: "analytics" });
+
+/* ════════════ EVENT DELEGATION — capacity-planner.html ════════════ */
+(function wireEvents() {
+  document.querySelectorAll('[data-preset-tb]').forEach(el => {
+    el.addEventListener('click', () => preset(+el.dataset.presetTb, el.dataset.presetMode));
+  });
+  const _w = (id, fn) => { const el=document.getElementById(id); if(el) el.addEventListener('click', fn); };
+  _w('btn-run-plan', runPlan);
+  _w('btn-reload',   reloadAll);
+})();
+
 </script>
 </body>
 </html>

@@ -122,14 +122,14 @@ tr:hover td{background:rgba(232,83,59,.04);}
 </div>
 
 <div class="toolbar">
-  <select id="f-loc" onchange="renderTable()">
+  <select id="f-loc">
     <option value="">Tüm Lokasyonlar (PROD+DR)</option>
     <option value="PROD">Sadece PROD</option>
     <option value="DR">Sadece DR</option>
   </select>
-  <input id="f-search" placeholder="Kabinet / pool ara..." oninput="filterDeb()" autocomplete="off">
-  <button class="btn" onclick="reloadAll()">↻ Yenile</button>
-  <button class="btn" onclick="exportCSV()">⭳ CSV Aktar</button>
+  <input id="f-search" placeholder="Kabinet / pool ara..." autocomplete="off">
+  <button class="btn" id="btn-reload">↻ Yenile</button>
+  <button class="btn" id="btn-export">⭳ CSV Aktar</button>
 </div>
 
 <div class="panel">
@@ -137,13 +137,13 @@ tr:hover td{background:rgba(232,83,59,.04);}
   <div class="tbl-wrap">
     <table>
       <thead><tr>
-        <th onclick="sortBy('kabinet')">Kabinet</th>
-        <th onclick="sortBy('loc')">Lokasyon</th>
-        <th onclick="sortBy('pool')">Pool</th>
-        <th onclick="sortBy('tot')">Total (TB)</th>
-        <th onclick="sortBy('used')">Used (TB)</th>
-        <th onclick="sortBy('free')">Free (TB)</th>
-        <th onclick="sortBy('pct')">Doluluk</th>
+        <th data-sort="kabinet">Kabinet</th>
+        <th data-sort="loc">Lokasyon</th>
+        <th data-sort="pool">Pool</th>
+        <th data-sort="tot">Total (TB)</th>
+        <th data-sort="used">Used (TB)</th>
+        <th data-sort="free">Free (TB)</th>
+        <th data-sort="pct">Doluluk</th>
       </tr></thead>
       <tbody id="tbody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-dim)">Yükleniyor...</td></tr></tbody>
     </table>
@@ -315,6 +315,21 @@ function reloadAll(){ toast('Yeniden yükleniyor'); loadAll(); }
 loadAll();
 
   StorageNav.init({ title: "Hitachi", section: "vendor" });
+
+/* ════════════ EVENT DELEGATION — hitachi.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el && fn) el.addEventListener(ev, fn); };
+  wire('f-loc',    renderTable, 'change');
+  wire('f-search', db(filterDeb), 'input');
+  const _w = (id, fn) => { const el=document.getElementById(id); if(el) el.addEventListener('click', fn); };
+  _w('btn-reload', reloadAll);
+  _w('btn-export', exportCSV);
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => sortBy(th.dataset.sort));
+  });
+})();
+
 </script>
 </body>
 </html>

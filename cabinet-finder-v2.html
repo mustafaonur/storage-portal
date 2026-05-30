@@ -140,8 +140,8 @@ tr.highlight td:first-child{border-left:2px solid var(--accent);}
 <div class="search-wrap">
   <input class="search-box" id="searchBox" type="text"
     placeholder="Host, volume, bucket, kabinet adı ara... (min 2 karakter)"
-    oninput="onSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
-  <button class="clear-btn" onclick="clearSearch()">✕ Temizle</button> </div>
+    autocomplete="off" autocorrect="off" spellcheck="false">
+  <button class="clear-btn" id="btn-clear-search">✕ Temizle</button> </div>
 
 <!-- STATUS -->
 <div class="status-bar" id="statusBar" style="display:none">
@@ -152,15 +152,15 @@ tr.highlight td:first-child{border-left:2px solid var(--accent);}
 
 <!-- TABS -->
 <div class="tab-bar">
-  <button class="tab-btn active san" data-tab="san" onclick="setTab('san',this)">
+  <button class="tab-btn active san" data-tab="san">
     SAN / Block
     <span class="tab-count" id="cnt-san">—</span>
   </button>
-  <button class="tab-btn nas" data-tab="nas" onclick="setTab('nas',this)">
+  <button class="tab-btn nas" data-tab="nas">
     NAS / File
     <span class="tab-count" id="cnt-nas">—</span>
   </button>
-  <button class="tab-btn s3" data-tab="s3" onclick="setTab('s3',this)">
+  <button class="tab-btn s3" data-tab="s3">
     S3 / Object
     <span class="tab-count" id="cnt-s3">—</span>
   </button>
@@ -310,8 +310,8 @@ function renderTab(tab, rows, q) {
   const isS3  = tab === 's3';
 
   const sizeHeader  = tab === 's3'
-    ? '<th onclick="colSort(\'s3\',\'size\')">Boyut ↕</th>'
-    : `<th onclick="colSort('${tab}','size')">Provisioned / Size ↕</th>`;
+    ? '<th data-col-sort-tab="s3" data-col-sort-col="size">Boyut ↕</th>'
+    : `<th data-col-sort-tab="${tab}" data-col-sort-col="size">Provisioned / Size ↕</th>`;
 
   const tbody = rows.map(r => {
     const pct    = maxSize > 0 ? (r.size / maxSize * 100) : 0;
@@ -355,9 +355,9 @@ function renderTab(tab, rows, q) {
     </div>
     <table>
       <thead><tr>
-        <th onclick="colSort('${tab}','vendor')">Vendor</th>
-        <th onclick="colSort('${tab}','name')">${nameLabel}</th>
-        <th onclick="colSort('${tab}','kabinet')">Kabinet</th>
+        <th data-col-sort-tab="${tab}" data-col-sort-col="vendor">Vendor</th>
+        <th data-col-sort-tab="${tab}" data-col-sort-col="name">${nameLabel}</th>
+        <th data-col-sort-tab="${tab}" data-col-sort-col="kabinet">Kabinet</th>
         ${extraTh}
         <th>Lokasyon</th>
         ${sizeHeader}
@@ -450,6 +450,29 @@ function clearSearch() {
 loadAll();
 
   StorageNav.init({ title: "Cabinet Finder v2", section: "tools" });
+
+/* ════════════ EVENT DELEGATION — cabinet-finder-v2.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+  const searchInput = document.querySelector('input[id], input[placeholder]');
+  if (searchInput) searchInput.addEventListener('input', db(onSearch));
+  const clearBtn = document.getElementById('btn-clear-search');
+  if (clearBtn) clearBtn.addEventListener('click', clearSearch);
+
+  // Tab buttons (have data-tab already)
+  const tabBar = document.querySelector('.tab-bar');
+  if (tabBar) tabBar.addEventListener('click', e => {
+    const btn = e.target.closest('[data-tab]');
+    if (btn) setTab(btn.dataset.tab, btn);
+  });
+
+  // Col sort (dynamically rendered th)
+  document.addEventListener('click', e => {
+    const th = e.target.closest('th[data-col-sort-tab]');
+    if (th) colSort(th.dataset.colSortTab, th.dataset.colSortCol);
+  });
+})();
+
 </script>
 </body>
 </html>

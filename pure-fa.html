@@ -282,11 +282,11 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
   </header>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-    <button class="tab-btn" onclick="switchTab('hosts')">Host Listesi</button>
-    <button class="tab-btn" onclick="switchTab('luns')">Volumes</button>
-    <button class="tab-btn" onclick="switchTab('datareduction')">Data Reduction</button>
-    <button class="tab-btn" onclick="switchTab('hostdetail')">Host Detay (IQN/WWN)</button>
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="hosts">Host Listesi</button>
+    <button class="tab-btn" data-tab="luns">Volumes</button>
+    <button class="tab-btn" data-tab="datareduction">Data Reduction</button>
+    <button class="tab-btn" data-tab="hostdetail">Host Detay (IQN/WWN)</button>
   </div>
 
   <div class="tab-panel active" id="tab-overview">
@@ -301,18 +301,18 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Host ara..." id="host-search" oninput="__db_renderHostTable()">
+        <input type="text" placeholder="Host ara..." id="host-search">
       </div>
-      <select class="filter-select" id="host-location" onchange="renderHostTable()"><option value="">Tum Lokasyonlar</option></select>
-      <select class="filter-select" id="host-cabinet" onchange="renderHostTable()"><option value="">Tum Kabinetler</option></select>
-      <select class="filter-select" id="host-os" onchange="renderHostTable()">
+      <select class="filter-select" id="host-location"><option value="">Tum Lokasyonlar</option></select>
+      <select class="filter-select" id="host-cabinet"><option value="">Tum Kabinetler</option></select>
+      <select class="filter-select" id="host-os">
         <option value="">Tum OS</option>
         <option>Linux</option><option>Windows</option><option>VMware ESX</option><option>AIX</option>
       </select>
-      <select class="filter-select" id="host-protocol" onchange="renderHostTable()">
+      <select class="filter-select" id="host-protocol">
         <option value="">Tum Protokoller</option><option>FC</option><option>iSCSI</option>
       </select>
-      <select class="filter-select" id="host-map" onchange="renderHostTable()" class="sp-hidden">
+      <select class="filter-select" id="host-map" class="sp-hidden">
         <option value="">Tum Durumlar</option><option>Mapped</option><option>Unmapped</option>
       </select>
     </div>
@@ -324,10 +324,10 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div class="filter-row">
       <div class="search-box">
         <span class="search-icon">&#9906;</span>
-        <input type="text" placeholder="Volume ara..." id="lun-search" oninput="__db_renderLunTable()">
+        <input type="text" placeholder="Volume ara..." id="lun-search">
       </div>
-      <select class="filter-select" id="lun-location" onchange="renderLunTable()"><option value="">Tum Lokasyonlar</option></select>
-      <select class="filter-select" id="lun-cabinet" onchange="renderLunTable()"><option value="">Tum Kabinetler</option></select>
+      <select class="filter-select" id="lun-location"><option value="">Tum Lokasyonlar</option></select>
+      <select class="filter-select" id="lun-cabinet"><option value="">Tum Kabinetler</option></select>
     </div>
     <div id="lun-table-wrap"></div>
   </div>
@@ -343,7 +343,7 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div style="margin-bottom:14px;display:flex;gap:8px">
       <div class="search-box" style="flex:1;max-width:380px">
         <span class="search-icon">⌕</span>
-        <input type="text" placeholder="Host veya IQN/WWN ara..." id="hd-search" oninput="renderHostDetail()">
+        <input type="text" placeholder="Host veya IQN/WWN ara..." id="hd-search">
       </div>
       <select class="filter-select" id="hd-proto">
         <option value="">Tüm Protokoller</option>
@@ -361,25 +361,25 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
 </div>
 
 <!-- WWN MODAL -->
-<div class="modal-backdrop" id="wwnModal" onclick="if(event.target===this)closeWwnModal()">
+<div class="modal-backdrop" id="wwnModal" id="wwnModal">
   <div class="modal-card">
     <div class="modal-header">
       <div>
         <div class="modal-title">Host WWN'ler</div>
         <div class="modal-host" id="modalHostName">-</div>
       </div>
-      <button class="modal-close" onclick="closeWwnModal()" title="Kapat">&times;</button>
+      <button class="modal-close" id="wwnModalClose" title="Kapat">&times;</button>
     </div>
     <div class="modal-body">
       <div class="wwn-format-toggle">
-        <button class="wwn-format-btn active" id="fmtColon" onclick="setWwnFormat('colon')">aa:aa:aa:aa</button>
-        <button class="wwn-format-btn" id="fmtPlain" onclick="setWwnFormat('plain')">aaaaaaaa</button>
+        <button class="wwn-format-btn active" id="fmtColon">aa:aa:aa:aa</button>
+        <button class="wwn-format-btn" id="fmtPlain">aaaaaaaa</button>
       </div>
       <div id="wwnList"></div>
     </div>
     <div class="modal-actions">
-      <button class="modal-btn" onclick="copyAllWwns()">Hepsini Kopyala</button>
-      <button class="modal-btn primary" onclick="closeWwnModal()">Kapat</button>
+      <button class="modal-btn" id="wwnCopyAll">Hepsini Kopyala</button>
+      <button class="modal-btn primary" id="wwnClosePrimary">Kapat</button>
     </div>
   </div>
 </div>
@@ -519,7 +519,7 @@ async function loadCSVs() {
         <div style="font-size:36px;color:var(--danger);margin-bottom:16px">!</div>
         <div style="font-family:'Syne',sans-serif;font-size:18px;color:var(--text-bright);margin-bottom:12px">CSV Yuklenemedi</div>
         <div style="font-size:12px;color:var(--danger);padding:8px 14px;background:rgba(232,75,75,.1);border:1px solid rgba(232,75,75,.3);margin-bottom:20px">${err.message}</div>
-        <button onclick="loadCSVs()" style="margin-top:24px;background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:10px 24px;cursor:pointer">YENIDEN DENE</button>
+        <button id="btn-retry-load" style="margin-top:24px;background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:10px 24px;cursor:pointer">YENIDEN DENE</button>
       </div>`);
   }
 }
@@ -570,7 +570,7 @@ function buildSummary() {
     <div class="stat-card blue"><div class="stat-label">Kullanilan</div><div class="stat-value">${(totUsed/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">Ort. %${avgPct}</div></div>
     <div class="stat-card green"><div class="stat-label">Bos Alan</div><div class="stat-value">${(totFree/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">${totFree.toFixed(0)} TB</div></div>
     <div class="stat-card ${crit>0?'red':'gold'}"><div class="stat-label">Alarm Durumu</div><div class="stat-value">${crit}<span class="stat-unit">kritik</span></div><div class="stat-sub">${warn} uyari</div></div>
-    <div class="stat-card blue stat-card-click" onclick="applyHostFilter({label:'Tum Hostlar'})"><div class="stat-label">Toplam Host</div><div class="stat-value">${totHost}</div><div class="stat-sub">${locs} lokasyon &middot; tikla &rarr;</div></div>`;
+    <div class="stat-card blue stat-card-click" data-host-filter='{"label":"Tum Hostlar"}'><div class="stat-label">Toplam Host</div><div class="stat-value">${totHost}</div><div class="stat-sub">${locs} lokasyon &middot; tikla &rarr;</div></div>`;
 }
 
 function cabinetCard(c) {
@@ -586,11 +586,11 @@ function cabinetCard(c) {
   // OS legend tiklanabilir: o kabinet + o OS filtresi
   const osLegend = osKeys.map(k => {
     const safeK = k.replace(/'/g, "\\'");
-    return `<div class="os-legend-item os-legend-clickable" onclick="event.stopPropagation();applyHostFilter({label:'${c.name} - ${k}', cabinet:'${c.name}', os:'${safeK}'})"><div class="os-dot" style="background:${dotColors[(osBarMap[k]||'os-linux').replace('os-','')]}"></div><span>${k}: ${c.os[k]}</span></div>`;
+    return `<div class="os-legend-item os-legend-clickable" data-host-filter='{"label":"${c.name} - ${k}","cabinet":"${c.name}","os":"${safeK}"}'><div class="os-dot" style="background:${dotColors[(osBarMap[k]||'os-linux').replace('os-','')]}"></div><span>${k}: ${c.os[k]}</span></div>`;
   }).join('');
 
   return `
-    <div class="${c.pct>=65?'cabinet-card warn-high':'cabinet-card'} cabinet-card-click" onclick="applyHostFilter({label:'${c.name} - Tum Hostlar', cabinet:'${c.name}'})">
+    <div class="${c.pct>=65?'cabinet-card warn-high':'cabinet-card'} cabinet-card-click" data-host-filter='{"label":"${c.name} - ${c.name}","cabinet":"${c.name}"}'>
       <div class="card-header"><div><div class="card-name">${c.name}</div><div class="card-ip">${c.location} · ${c.ip}</div></div>${statusBadge(c.pct)}</div>
       <div class="card-body">
         <div class="cap-row"><span class="cap-label">Doluluk</span><span class="cap-pct" style="color:${pctColor(c.pct)}">%${c.pct}</span></div>
@@ -662,7 +662,7 @@ function renderHostTable() {
   const tbody = data.map((h, idx) => {
     const hasWwns = h.wwns && h.wwns.length > 0;
     const cellClass = hasWwns ? 'wwn-cell-clickable' : '';
-    const onclick = hasWwns ? `onclick="openWwnModalByIdx(${idx})"` : '';
+    const wwnDataAttr = hasWwns ? `data-wwn-idx="${idx}"` : '';
     const title = hasWwns ? 'title="Tikla ve kopyala"' : '';
     const provStr = h.provTB > 0
       ? `<span style="color:var(--accent3);font-weight:500">${h.provTB.toFixed(2)}</span>`
@@ -682,7 +682,7 @@ function renderHostTable() {
       <td>${hgStr}</td>
       <td style="text-align:center">${protoStr}</td>
       <td class="sp-right">${provStr}</td>
-      <td class="${cellClass}" ${title} ${onclick}>${formatWwnCell(h.wwns)}</td>
+      <td class="${cellClass}" ${title} ${wwnDataAttr}>${formatWwnCell(h.wwns)}</td>
     </tr>`;
   }).join('');
 
@@ -696,7 +696,7 @@ function renderHostTable() {
         ${mappedHosts.length} Mapped host &nbsp;·&nbsp;
         Toplam: <strong style="color:var(--accent3)">${totalProv.toFixed(2)} TB</strong>
        </span>
-       <button onclick="exportMappedHosts('purefa')" style="background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;" onmouseover="this.style.background='var(--accent)';this.style.color='var(--bg)'" onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">
+       <button id="btn-export-mapped" style="background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;">
          &#8615; Mapped Export
        </button>`
     : '';
@@ -707,9 +707,9 @@ function renderHostTable() {
     </div>
     <table>
       <thead><tr>
-        <th onclick="sortHost('location')">Lokasyon</th>
-        <th onclick="sortHost('cabinet')">Kabinet</th>
-        <th onclick="sortHost('host')">Host Name</th>
+        <th data-sort="location">Lokasyon</th>
+        <th data-sort="cabinet">Kabinet</th>
+        <th data-sort="host">Host Name</th>
         <th>OS</th>
         <th>Host Group</th>
         <th style="text-align:center">Protokol</th>
@@ -822,7 +822,7 @@ function renderWwnList() {
       <div class="wwn-row">
         <span class="wwn-index">${i + 1}.</span>
         <span class="wwn-value">${formatted}</span>
-        <button class="wwn-copy-btn" onclick="copyOne(this, ${i})">Kopyala</button>
+        <button class="wwn-copy-btn" data-wwn-copy-idx="${i}">Kopyala</button>
       </div>`;
   }).join('');
 }
@@ -946,7 +946,7 @@ function renderHostFilterChips(opts) {
   box.style.display = 'flex';
   box.innerHTML = chips.map(c =>
     `<span class="filter-chip">${c.key === 'label' ? `<strong>${c.val}</strong>` : `${c.key}: <strong>${c.val}</strong>`}</span>`
-  ).join('') + `<button class="filter-chip-clear" onclick="clearHostFilters()">Temizle</button>`;
+  ).join('') + `<button class="filter-chip-clear" id="fa-chip-clear">Temizle</button>`;
 }
 
 function clearHostFilters() {
@@ -1158,6 +1158,86 @@ function switchTab(name) {
   if (name === 'datareduction') renderDataReduction();
   if (name === 'hostdetail')    renderHostDetail();
 }
+
+
+/* ════════════ EVENT DELEGATION — pure-fa.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+
+  // Tabs
+  const tabBar = document.querySelector('.tabs');
+  if (tabBar) tabBar.addEventListener('click', e => {
+    const btn = e.target.closest('[data-tab]');
+    if (btn) switchTab(btn.dataset.tab);
+  });
+
+  // Filter inputs
+  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el) el.addEventListener(ev, fn); };
+  wire('host-search',   db(renderHostTable), 'input');
+  wire('host-location', renderHostTable, 'change');
+  wire('host-cabinet',  renderHostTable, 'change');
+  wire('host-os',       renderHostTable, 'change');
+  wire('host-protocol', renderHostTable, 'change');
+  wire('host-map',      renderHostTable, 'change');
+  wire('lun-search',    db(renderLunTable), 'input');
+  wire('lun-location',  renderLunTable, 'change');
+  wire('lun-cabinet',   renderLunTable, 'change');
+  wire('hd-search',     typeof renderHostDetail === 'function' ? db(renderHostDetail) : null, 'input');
+  wire('pmax-snap-search', typeof __db_renderPmaxSnap === 'function' ? db(typeof renderPmaxSnap === 'function' ? renderPmaxSnap : ()=>{}) : null, 'input');
+  wire('pmax-snap-cab',    typeof renderPmaxSnap === 'function' ? renderPmaxSnap : null, 'change');
+  wire('pmax-snap-status', typeof renderPmaxSnap === 'function' ? renderPmaxSnap : null, 'change');
+  
+
+  // WWN modal
+
+  // WWN modal — backdrop + close + format buttons + copy all + close primary
+  const wwnModal = document.getElementById('wwnModal');
+  if (wwnModal) {
+    wwnModal.addEventListener('click', e => { if (e.target === wwnModal) closeWwnModal(); });
+  }
+  const _wire = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  _wire('wwnModalClose', closeWwnModal);
+  _wire('fmtColon', () => setWwnFormat('colon'));
+  _wire('fmtPlain', () => setWwnFormat('plain'));
+  _wire('wwnCopyAll', copyAllWwns);
+  _wire('wwnClosePrimary', closeWwnModal);
+
+  // Retry
+  const retry = document.getElementById('btn-retry-load');
+  if (retry) retry.addEventListener('click', typeof loadCSVs === 'function' ? loadCSVs : () => window.location.reload());
+
+  // Export mapped hosts
+  const expBtn = document.getElementById('btn-export-mapped');
+  if (expBtn) expBtn.addEventListener('click', () => exportMappedHosts('purefa'));
+
+  // Host filter delegation (stat card, cabinet cards, os-legend)
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-host-filter]');
+    if (el) { e.stopPropagation(); try { applyHostFilter(JSON.parse(el.dataset.hostFilter)); } catch{} }
+  });
+
+  // WWN cell click (table rows — dynamically built)
+  document.addEventListener('click', e => {
+    const td = e.target.closest('[data-wwn-idx]');
+    if (td) openWwnModalByIdx(parseInt(td.dataset.wwnIdx, 10));
+  });
+
+  // WWN copy single button (modal)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-wwn-copy-idx]');
+    if (btn) copyOne(btn, parseInt(btn.dataset.wwnCopyIdx, 10));
+  });
+
+  // Sort headers
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => sortHost(th.dataset.sort));
+  });
+
+  // Chip clear
+  document.addEventListener('click', e => {
+    if (e.target.closest('#fa-chip-clear')) clearHostFilters();
+  });
+})();
 
 </script>
 </body>

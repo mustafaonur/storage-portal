@@ -278,10 +278,10 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
 </div>
 </header>
 <div class="tabs">
-<button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-<button class="tab-btn" onclick="switchTab('hosts')">Bucket Listesi</button>
-<button class="tab-btn" onclick="switchTab('luns')">File Systems</button>
-<button class="tab-btn" onclick="switchTab('replication')">Replikasyon</button>
+<button class="tab-btn active" data-tab="overview">Overview</button>
+<button class="tab-btn" data-tab="hosts">Bucket Listesi</button>
+<button class="tab-btn" data-tab="luns">File Systems</button>
+<button class="tab-btn" data-tab="replication">Replikasyon</button>
 </div>
 <div class="tab-panel active" id="tab-overview">
 <div class="summary-grid" id="global-summary"></div>
@@ -293,10 +293,10 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
 <div class="filter-row">
 <div class="search-box">
 <span class="search-icon">&#9906;</span>
-<input type="text" placeholder="Bucket ara..." id="host-search" oninput="renderHostTable()">
+<input type="text" placeholder="Bucket ara..." id="host-search">
 </div>
-<select class="filter-select" id="host-location" onchange="renderHostTable()"><option value="">Tum Lokasyonlar</option></select>
-<select class="filter-select" id="host-cabinet" onchange="renderHostTable()"><option value="">Tum Kabinetler</option></select>
+<select class="filter-select" id="host-location"><option value="">Tum Lokasyonlar</option></select>
+<select class="filter-select" id="host-cabinet"><option value="">Tum Kabinetler</option></select>
 </div>
 <div id="host-table-wrap"></div>
 </div>
@@ -305,10 +305,10 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
 <div class="filter-row">
 <div class="search-box">
 <span class="search-icon">&#9906;</span>
-<input type="text" placeholder="Volume ara..." id="lun-search" oninput="renderLunTable()">
+<input type="text" placeholder="Volume ara..." id="lun-search">
 </div>
-<select class="filter-select" id="lun-location" onchange="renderLunTable()"><option value="">Tum Lokasyonlar</option></select>
-<select class="filter-select" id="lun-cabinet" onchange="renderLunTable()"><option value="">Tum Kabinetler</option></select>
+<select class="filter-select" id="lun-location"><option value="">Tum Lokasyonlar</option></select>
+<select class="filter-select" id="lun-cabinet"><option value="">Tum Kabinetler</option></select>
 </div>
 <div id="lun-table-wrap"></div>
 </div>
@@ -318,9 +318,9 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
 <div class="filter-row">
 <div class="search-box">
 <span class="search-icon">&#9906;</span>
-<input type="text" placeholder="Bucket, hedef ara..." id="fb-repl-search" oninput="renderFbRepl()">
+<input type="text" placeholder="Bucket, hedef ara..." id="fb-repl-search">
 </div>
-<select class="filter-select" id="fb-repl-status" onchange="renderFbRepl()">
+<select class="filter-select" id="fb-repl-status">
 <option value="">Tüm Durumlar</option>
 <option value="Replike Ediliyor">Replike Ediliyor</option>
 <option value="Remote">Remote</option>
@@ -710,7 +710,7 @@ async function loadCSVs() {
 <div style="font-size:36px;color:var(--danger);margin-bottom:16px">!</div>
 <div style="font-family:'Syne',sans-serif;font-size:18px;color:var(--text-bright);margin-bottom:12px">CSV Yuklenemedi</div>
 <div style="font-size:12px;color:var(--danger);padding:8px 14px;background:rgba(232,75,75,.1);border:1px solid rgba(232,75,75,.3);margin-bottom:20px">${err.message}</div>
-<button onclick="window.location.reload()" style="margin-top:24px;background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:10px 24px;cursor:pointer">YENIDEN DENE</button>
+<button id="btn-retry-load" style="margin-top:24px;background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:10px 24px;cursor:pointer">YENIDEN DENE</button>
 </div>`);
 
   }
@@ -792,7 +792,7 @@ function buildSummary() {
 <div class="stat-card blue"><div class="stat-label">Kullanilan</div><div class="stat-value">${(totUsed/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">Ort. %${avgPct}</div></div>
 <div class="stat-card green"><div class="stat-label">Bos Alan</div><div class="stat-value">${(totFree/1024).toFixed(2)}<span class="stat-unit">PB</span></div><div class="stat-sub">${totFree.toFixed(0)} TB</div></div>
 <div class="stat-card ${crit>0?'red':'gold'}"><div class="stat-label">Alarm Durumu</div><div class="stat-value">${crit}<span class="stat-unit">kritik</span></div><div class="stat-sub">${warn} uyari</div></div>
-<div class="stat-card blue stat-card-click" onclick="applyHostFilter({label:'Tum Bucketlar'})"><div class="stat-label">Toplam Bucket</div><div class="stat-value">${totalBuckets}</div><div class="stat-sub">${locs} lokasyon &middot; tikla &rarr;</div></div>`;
+<div class="stat-card blue stat-card-click" data-host-filter='{"label":"Tum Bucketlar"}'><div class="stat-label">Toplam Bucket</div><div class="stat-value">${totalBuckets}</div><div class="stat-sub">${locs} lokasyon &middot; tikla &rarr;</div></div>`;
 
 }
 
@@ -807,7 +807,7 @@ function cabinetCard(c) {
   const cabinetBuckets = hosts.filter(h => h.cabinet === c.name).length;
 
   return `
-<div class="${c.pct>=65?'cabinet-card warn-high':'cabinet-card'} cabinet-card-click" onclick="applyHostFilter({label:'${c.name} - Tum Bucketlar', cabinet:'${c.name}'})">
+<div class="${c.pct>=65?'cabinet-card warn-high':'cabinet-card'} cabinet-card-click" data-host-filter='{"label":"${c.name} - Tum Bucketlar","cabinet":"${c.name}"}'>
 <div class="card-header"><div><div class="card-name">${c.name}</div><div class="card-ip">${c.location} · ${c.ip}</div></div>${statusBadge(c.pct)}</div>
 <div class="card-body">
 <div class="cap-row"><span class="cap-label">Doluluk</span><span class="cap-pct" style="color:${pctColor(c.pct)}">%${c.pct}</span></div>
@@ -985,15 +985,15 @@ function renderHostTable() {
 </div>
 <table>
 <thead><tr>
-<th onclick="toggleSort('host', 'location')">Lokasyon${getSortIcon(hostSort, 'location')}</th>
-<th onclick="toggleSort('host', 'cabinet')">Kabinet${getSortIcon(hostSort, 'cabinet')}</th>
-<th onclick="toggleSort('host', 'host')">Bucket${getSortIcon(hostSort, 'host')}</th>
-<th onclick="toggleSort('host', 'os')">Account${getSortIcon(hostSort, 'os')}</th>
-<th style="text-align:right;" onclick="toggleSort('host', 'provTB')">Virtual (TB)${getSortIcon(hostSort, 'provTB')}</th>
-<th style="text-align:right;" onclick="toggleSort('host', 'uniqueTB')">Unique (TB)${getSortIcon(hostSort, 'uniqueTB')}</th>
-<th style="text-align:right;" onclick="toggleSort('host', 'snapTB')">Snapshot (TB)${getSortIcon(hostSort, 'snapTB')}</th>
-<th style="text-align:right;" onclick="toggleSort('host', 'dr')">DR${getSortIcon(hostSort, 'dr')}</th>
-<th style="text-align:right;" onclick="toggleSort('host', 'objCount')">Nesne Sayısı${getSortIcon(hostSort, 'objCount')}</th>
+<th data-ts-table="host" data-ts-col="location">Lokasyon${getSortIcon(hostSort, 'location')}</th>
+<th data-ts-table="host" data-ts-col="cabinet">Kabinet${getSortIcon(hostSort, 'cabinet')}</th>
+<th data-ts-table="host" data-ts-col="host">Bucket${getSortIcon(hostSort, 'host')}</th>
+<th data-ts-table="host" data-ts-col="os">Account${getSortIcon(hostSort, 'os')}</th>
+<th style="text-align:right;" data-ts-table="host" data-ts-col="provTB">Virtual (TB)${getSortIcon(hostSort, 'provTB')}</th>
+<th style="text-align:right;" data-ts-table="host" data-ts-col="uniqueTB">Unique (TB)${getSortIcon(hostSort, 'uniqueTB')}</th>
+<th style="text-align:right;" data-ts-table="host" data-ts-col="snapTB">Snapshot (TB)${getSortIcon(hostSort, 'snapTB')}</th>
+<th style="text-align:right;" data-ts-table="host" data-ts-col="dr">DR${getSortIcon(hostSort, 'dr')}</th>
+<th style="text-align:right;" data-ts-table="host" data-ts-col="objCount">Nesne Sayısı${getSortIcon(hostSort, 'objCount')}</th>
 <th title="${historyDateUsed ? 'Karsilastirma: '+historyDateUsed : 'Snapshot bulunamadi'}">Aylık Delta${historyDateUsed ? ' <span style=\"font-size:9px;color:var(--text-dim)\">('+historyDateUsed+')</span>' : ''}</th>
 </tr></thead>
 <tbody>${tbody || '<tr><td colspan="10" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody>
@@ -1084,14 +1084,14 @@ function renderLunTable() {
 </div>
 <table>
 <thead><tr>
-<th onclick="toggleSort('lun', 'location')">Lokasyon${getSortIcon(lunSort, 'location')}</th>
-<th onclick="toggleSort('lun', 'cabinet')">Kabinet${getSortIcon(lunSort, 'cabinet')}</th>
-<th onclick="toggleSort('lun', 'name')">File System${getSortIcon(lunSort, 'name')}</th>
-<th onclick="toggleSort('lun', 'protocols')">Protokol${getSortIcon(lunSort, 'protocols')}</th>
-<th style="text-align:right;" onclick="toggleSort('lun', 'capacity')">Virtual (TB)${getSortIcon(lunSort, 'capacity')}</th>
-<th style="text-align:right;" onclick="toggleSort('lun', 'sizeTB')">Size (TB)${getSortIcon(lunSort, 'sizeTB')}</th>
+<th data-ts-table="lun" data-ts-col="location">Lokasyon${getSortIcon(lunSort, 'location')}</th>
+<th data-ts-table="lun" data-ts-col="cabinet">Kabinet${getSortIcon(lunSort, 'cabinet')}</th>
+<th data-ts-table="lun" data-ts-col="name">File System${getSortIcon(lunSort, 'name')}</th>
+<th data-ts-table="lun" data-ts-col="protocols">Protokol${getSortIcon(lunSort, 'protocols')}</th>
+<th style="text-align:right;" data-ts-table="lun" data-ts-col="capacity">Virtual (TB)${getSortIcon(lunSort, 'capacity')}</th>
+<th style="text-align:right;" data-ts-table="lun" data-ts-col="sizeTB">Size (TB)${getSortIcon(lunSort, 'sizeTB')}</th>
 <th style="text-align:right;">Doluluk</th>
-<th style="text-align:right;" onclick="toggleSort('lun', 'snapTB')">Snapshot (TB)${getSortIcon(lunSort, 'snapTB')}</th>
+<th style="text-align:right;" data-ts-table="lun" data-ts-col="snapTB">Snapshot (TB)${getSortIcon(lunSort, 'snapTB')}</th>
 </tr></thead>
 <tbody>${tbody || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody>
 </table>`;
@@ -1215,7 +1215,7 @@ function renderFbRepl() {
         <span style="color:var(--danger);font-weight:700">⚠ Dikkat:</span>
         ${unhealthy>0?`<span style="color:var(--text-dim);margin-left:8px">${unhealthy} sağlıksız replikasyon linki var.</span>`:''}
         ${highLag>0?`<span style="color:var(--text-dim);margin-left:8px">${highLag} link yüksek gecikme raporluyor.</span>`:''}
-        <span style="color:var(--accent2);margin-left:8px;cursor:pointer" onclick="document.getElementById('fb-repl-status').value='Sagliksiz';renderFbRepl()">→ Filtrele</span>
+        <span style="color:var(--accent2);margin-left:8px;cursor:pointer" id="fb-repl-filter-unhealthy" style="color:var(--accent2);margin-left:8px;cursor:pointer">→ Filtrele</span>
       </div>` : ''}`;
 
   }
@@ -1246,13 +1246,13 @@ function renderFbRepl() {
 
   el.innerHTML = `<div style="padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim)">${data.length} filtrelenmiş replikasyon linki</div>
 <table><thead><tr>
-<th onclick="toggleSort('repl', 'kabinet')">Kabinet${getSortIcon(replSort, 'kabinet')}</th>
-<th onclick="toggleSort('repl', 'yerel')">Yerel Bucket${getSortIcon(replSort, 'yerel')}</th>
-<th onclick="toggleSort('repl', 'uzak')">Uzak Bucket${getSortIcon(replSort, 'uzak')}</th>
-<th onclick="toggleSort('repl', 'hedef')">Hedef${getSortIcon(replSort, 'hedef')}</th>
-<th onclick="toggleSort('repl', 'yon')">Yön${getSortIcon(replSort, 'yon')}</th>
-<th onclick="toggleSort('repl', 'durum')">Durum${getSortIcon(replSort, 'durum')}</th>
-<th onclick="toggleSort('repl', 'lag')">Gecikme${getSortIcon(replSort, 'lag')}</th>
+<th data-ts-table="repl" data-ts-col="kabinet">Kabinet${getSortIcon(replSort, 'kabinet')}</th>
+<th data-ts-table="repl" data-ts-col="yerel">Yerel Bucket${getSortIcon(replSort, 'yerel')}</th>
+<th data-ts-table="repl" data-ts-col="uzak">Uzak Bucket${getSortIcon(replSort, 'uzak')}</th>
+<th data-ts-table="repl" data-ts-col="hedef">Hedef${getSortIcon(replSort, 'hedef')}</th>
+<th data-ts-table="repl" data-ts-col="yon">Yön${getSortIcon(replSort, 'yon')}</th>
+<th data-ts-table="repl" data-ts-col="durum">Durum${getSortIcon(replSort, 'durum')}</th>
+<th data-ts-table="repl" data-ts-col="lag">Gecikme${getSortIcon(replSort, 'lag')}</th>
 </tr></thead><tbody>${rows || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">Veri yok</td></tr>'}</tbody></table>`;
 
 }
@@ -1285,7 +1285,7 @@ function renderHostFilterChips(opts) {
 
     `<span class="filter-chip">${c.key === 'label' ? `<strong>${c.val}</strong>` : `${c.key}: <strong>${c.val}</strong>`}</span>`
 
-  ).join('') + `<button class="filter-chip-clear" onclick="clearHostFilters()">Temizle</button>`;
+  ).join('') + `<button class="filter-chip-clear" id="fb-chip-clear">Temizle</button>`;
 
 }
 
@@ -1296,6 +1296,57 @@ renderFreshnessBadge('data-fresh-badge', [CSV_DASHBOARD, CSV_HOSTS]);
 // Stale data check handled globally by storage-utils.js autoCheckFreshness()
 
   StorageNav.init({ title: "Pure FlashBlade", section: "vendor" });
+
+/* ════════════ EVENT DELEGATION — pure-fb.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+
+  // Tabs
+  const tabBar = document.querySelector('.tabs');
+  if (tabBar) tabBar.addEventListener('click', e => {
+    const btn = e.target.closest('[data-tab]');
+    if (btn) switchTab(btn.dataset.tab);
+  });
+
+  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el && fn) el.addEventListener(ev, fn); };
+  wire('host-search',   db(renderHostTable), 'input');
+  wire('host-location', renderHostTable, 'change');
+  wire('host-cabinet',  renderHostTable, 'change');
+  wire('lun-search',    db(renderLunTable), 'input');
+  wire('lun-location',  renderLunTable, 'change');
+  wire('lun-cabinet',   renderLunTable, 'change');
+  wire('fb-repl-search',db(renderFbRepl), 'input');
+  wire('fb-repl-status',renderFbRepl, 'change');
+
+  // Retry
+  const retry = document.getElementById('btn-retry-load');
+  if (retry) retry.addEventListener('click', () => window.location.reload());
+
+  // Host filter delegation
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-host-filter]');
+    if (el) { e.stopPropagation(); try { applyHostFilter(JSON.parse(el.dataset.hostFilter)); } catch{} }
+  });
+
+  // toggleSort th delegation (data-ts-table + data-ts-col)
+  document.addEventListener('click', e => {
+    const th = e.target.closest('th[data-ts-table]');
+    if (th) toggleSort(th.dataset.tsTable, th.dataset.tsCol);
+  });
+
+  // Unhealthy repl filter span
+  const replFilter = document.getElementById('fb-repl-filter-unhealthy');
+  if (replFilter) replFilter.addEventListener('click', () => {
+    document.getElementById('fb-repl-status').value = 'Sagliksiz';
+    renderFbRepl();
+  });
+
+  // Chip clear
+  document.addEventListener('click', e => {
+    if (e.target.closest('#fb-chip-clear')) clearHostFilters();
+  });
+})();
+
 </script>
 </body>
 </html>

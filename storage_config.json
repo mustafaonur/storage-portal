@@ -5,68 +5,68 @@
   "paths": {
     "plinkExe":   "C:\\PLINK\\plink.exe",
     "localBase":  "C:\\Scripts\\Storage",
-    "remoteBase": "\\\\btprdsrc01\\source_drive\\genel\\StorageScriptOutput"
+    "remoteBase": "\\\\<FILE-SERVER>\\source_drive\\genel\\StorageScriptOutput"
   },
 
   "Huawei": [
-    { "Name": "HW007",      "IP": "10.81.164.37",  "Lokasyon": "Istanbul" },
-    { "Name": "HW005",      "IP": "10.81.164.39",  "Lokasyon": "Istanbul" },
-    { "Name": "HW004",      "IP": "10.81.165.96",  "Lokasyon": "Istanbul" },
-    { "Name": "HW002",      "IP": "10.81.165.68",  "Lokasyon": "Istanbul" },
-    { "Name": "HW005_DE39", "IP": "10.81.164.190", "Lokasyon": "Istanbul" },
-    { "Name": "HW001_AT32", "IP": "10.81.165.4",   "Lokasyon": "Istanbul" },
-    { "Name": "HW005_AT37", "IP": "10.81.165.143", "Lokasyon": "Istanbul" },
-    { "Name": "HW005_IBT",  "IP": "10.131.9.62",   "Lokasyon": "IBTech"   },
-    { "Name": "HW001_ANK",  "IP": "10.25.166.137", "Lokasyon": "Ankara",  "DisplayName": "HW001" },
-    { "Name": "HW005_ANK",  "IP": "10.25.166.213", "Lokasyon": "Ankara",  "DisplayName": "HW005" },
-    { "Name": "HW001_SOL5", "IP": "10.25.166.128", "Lokasyon": "Ankara"   },
-    { "Name": "HW002_SOL5", "IP": "10.25.166.130", "Lokasyon": "Ankara"   }
+    { "Name": "HW007",      "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "HW005",      "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "HW004",      "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "HW002",      "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "HW005_DE39", "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "HW001_AT32", "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "HW005_AT37", "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "HW005_IBT",  "IP": "10.x.x.x", "Lokasyon": "IBTech"   },
+    { "Name": "HW001_ANK",  "IP": "10.x.x.x", "Lokasyon": "Ankara",  "DisplayName": "HW001" },
+    { "Name": "HW005_ANK",  "IP": "10.x.x.x", "Lokasyon": "Ankara",  "DisplayName": "HW005" },
+    { "Name": "HW001_SOL5", "IP": "10.x.x.x", "Lokasyon": "Ankara"   },
+    { "Name": "HW002_SOL5", "IP": "10.x.x.x", "Lokasyon": "Ankara"   }
   ],
 
   "PowerMax": [
-    { "Name": "IST_PMAX", "IP": "stoprdapp04" },
-    { "Name": "ANK_PMAX", "IP": "stodrcapp02" },
-    { "Name": "KOS_PMAX", "IP": "stoprdapp05" }
+    { "Name": "IST_PMAX", "IP": "<pmax-hostname-ist>" },
+    { "Name": "ANK_PMAX", "IP": "<pmax-hostname-ank>" },
+    { "Name": "KOS_PMAX", "IP": "<pmax-hostname-kos>" }
   ],
 
   "PureFA": [
-    { "Name": "PURE_07B", "IP": "10.81.167.91",  "Lokasyon": "Istanbul" },
-    { "Name": "PURE_008", "IP": "10.81.167.110", "Lokasyon": "Istanbul" },
-    { "Name": "PURE_005", "IP": "10.81.167.101", "Lokasyon": "Istanbul" }
+    { "Name": "PURE_07B", "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "PURE_008", "IP": "10.x.x.x", "Lokasyon": "Istanbul" },
+    { "Name": "PURE_005", "IP": "10.x.x.x", "Lokasyon": "Istanbul" }
   ],
 
   "PureFB": [
-    { "Name": "FB_UOM", "IP": "10.81.165.243", "Lokasyon": "Istanbul", "SshOnly": true },
-    { "Name": "FB_ANK", "IP": "10.25.167.185", "Lokasyon": "Ankara",   "SshOnly": true }
+    { "Name": "FB_UOM", "IP": "10.x.x.x", "Lokasyon": "Istanbul", "SshOnly": true },
+    { "Name": "FB_ANK", "IP": "10.x.x.x", "Lokasyon": "Ankara",   "SshOnly": true }
   ],
 
   "NetApp": [
-    { "Name": "UMR_CLS",        "IP": "10.81.165.236", "Lokasyon": "Istanbul", "User": "admin" },
-    { "Name": "UOM_AFF_CLS_01", "IP": "10.81.166.145", "Lokasyon": "Istanbul", "User": "admin" },
-    { "Name": "UOM_AFF_CLS_02", "IP": "10.81.166.150", "Lokasyon": "Istanbul", "User": "admin" },
-    { "Name": "ANK_CLS",        "IP": "10.25.166.88",  "Lokasyon": "Ankara",   "User": "admin" },
-    { "Name": "ANK_AFF_CLS_01", "IP": "10.25.167.238", "Lokasyon": "Ankara",   "User": "admin" },
-    { "Name": "ANK_AFF_CLS_02", "IP": "10.25.167.239", "Lokasyon": "Ankara",   "User": "admin" }
+    { "Name": "UMR_CLS",        "IP": "10.x.x.x", "Lokasyon": "Istanbul", "User": "admin" },
+    { "Name": "UOM_AFF_CLS_01", "IP": "10.x.x.x", "Lokasyon": "Istanbul", "User": "admin" },
+    { "Name": "UOM_AFF_CLS_02", "IP": "10.x.x.x", "Lokasyon": "Istanbul", "User": "admin" },
+    { "Name": "ANK_CLS",        "IP": "10.x.x.x", "Lokasyon": "Ankara",   "User": "admin" },
+    { "Name": "ANK_AFF_CLS_01", "IP": "10.x.x.x", "Lokasyon": "Ankara",   "User": "admin" },
+    { "Name": "ANK_AFF_CLS_02", "IP": "10.x.x.x", "Lokasyon": "Ankara",   "User": "admin" }
   ],
 
   "ECS": {
     "Istanbul": {
-      "ManagementIP": "10.81.39.224",
+      "ManagementIP": "10.x.x.x",
       "Nodes": [
-        "10.81.39.140","10.81.39.141","10.81.39.142","10.81.39.143",
-        "10.81.39.144","10.81.39.145","10.81.39.146","10.81.39.224",
-        "10.81.39.225","10.81.39.226","10.81.39.227","10.81.39.228",
-        "10.81.39.229","10.81.39.230"
+        "10.x.x.x","10.x.x.x","10.x.x.x","10.x.x.x",
+        "10.x.x.x","10.x.x.x","10.x.x.x","10.x.x.x",
+        "10.x.x.x","10.x.x.x","10.x.x.x","10.x.x.x",
+        "10.x.x.x","10.x.x.x"
       ],
       "Lokasyon": "Istanbul"
     },
     "Ankara": {
-      "ManagementIP": "10.25.165.201",
+      "ManagementIP": "10.x.x.x",
       "Nodes": [
-        "10.25.165.201","10.25.165.202","10.25.165.203","10.25.165.204",
-        "10.25.165.205","10.25.165.206","10.25.165.207","10.25.165.208",
-        "10.25.165.209","10.25.165.210","10.25.165.211","10.25.165.212",
-        "10.25.165.213","10.25.165.214","10.25.165.228","10.25.165.229"
+        "10.x.x.x","10.x.x.x","10.x.x.x","10.x.x.x",
+        "10.x.x.x","10.x.x.x","10.x.x.x","10.x.x.x",
+        "10.x.x.x","10.x.x.x","10.x.x.x","10.x.x.x",
+        "10.x.x.x","10.x.x.x","10.x.x.x","10.x.x.x"
       ],
       "Lokasyon": "Ankara"
     },
@@ -76,24 +76,24 @@
   },
 
   "SAN": [
-    { "Name": "AI18FC187",  "IP": "10.81.165.187", "Lokasyon": "Istanbul",    "Fabric": "A" },
-    { "Name": "AI25FC190",  "IP": "10.81.165.190", "Lokasyon": "Istanbul",    "Fabric": "B" },
-    { "Name": "EO17FC184",  "IP": "10.81.165.184", "Lokasyon": "Istanbul",    "Fabric": "A" },
-    { "Name": "EO24FC193",  "IP": "10.81.165.193", "Lokasyon": "Istanbul",    "Fabric": "B" },
-    { "Name": "CN39FC196",  "IP": "10.81.165.196", "Lokasyon": "Istanbul",    "Fabric": "A" },
-    { "Name": "CO39FC206",  "IP": "10.81.165.206", "Lokasyon": "Istanbul",    "Fabric": "B" },
-    { "Name": "CO39FC37",   "IP": "10.81.165.37",  "Lokasyon": "Istanbul",    "Fabric": "A" },
-    { "Name": "CN39FC209",  "IP": "10.81.165.209", "Lokasyon": "Istanbul",    "Fabric": "B" },
-    { "Name": "DR707FC215", "IP": "10.25.167.215", "Lokasyon": "Ankara",      "Fabric": "A" },
-    { "Name": "DR712FC218", "IP": "10.25.167.218", "Lokasyon": "Ankara",      "Fabric": "B" },
-    { "Name": "DR406FC221", "IP": "10.25.167.221", "Lokasyon": "Ankara",      "Fabric": "A" },
-    { "Name": "DR412FC224", "IP": "10.25.167.224", "Lokasyon": "Ankara",      "Fabric": "B" },
-    { "Name": "DR815FC188", "IP": "10.25.167.188", "Lokasyon": "Ankara",      "Fabric": "A" },
-    { "Name": "DR810FC191", "IP": "10.25.167.191", "Lokasyon": "Ankara",      "Fabric": "B" },
-    { "Name": "DR712FC194", "IP": "10.25.167.194", "Lokasyon": "Ankara",      "Fabric": "A" },
-    { "Name": "DR707FC197", "IP": "10.25.167.197", "Lokasyon": "Ankara",      "Fabric": "B" },
-    { "Name": "DL21KOS126", "IP": "10.81.167.126", "Lokasyon": "Kos",         "Fabric": "A" },
-    { "Name": "KKSAN01A1",  "IP": "10.85.7.61",    "Lokasyon": "KristalKule", "Fabric": "A" },
-    { "Name": "KKSAN02A2",  "IP": "10.85.7.62",    "Lokasyon": "KristalKule", "Fabric": "B" }
+    { "Name": "AI18FC187",  "IP": "10.x.x.x", "Lokasyon": "Istanbul",    "Fabric": "A" },
+    { "Name": "AI25FC190",  "IP": "10.x.x.x", "Lokasyon": "Istanbul",    "Fabric": "B" },
+    { "Name": "EO17FC184",  "IP": "10.x.x.x", "Lokasyon": "Istanbul",    "Fabric": "A" },
+    { "Name": "EO24FC193",  "IP": "10.x.x.x", "Lokasyon": "Istanbul",    "Fabric": "B" },
+    { "Name": "CN39FC196",  "IP": "10.x.x.x", "Lokasyon": "Istanbul",    "Fabric": "A" },
+    { "Name": "CO39FC206",  "IP": "10.x.x.x", "Lokasyon": "Istanbul",    "Fabric": "B" },
+    { "Name": "CO39FC37",   "IP": "10.x.x.x", "Lokasyon": "Istanbul",    "Fabric": "A" },
+    { "Name": "CN39FC209",  "IP": "10.x.x.x", "Lokasyon": "Istanbul",    "Fabric": "B" },
+    { "Name": "DR707FC215", "IP": "10.x.x.x", "Lokasyon": "Ankara",      "Fabric": "A" },
+    { "Name": "DR712FC218", "IP": "10.x.x.x", "Lokasyon": "Ankara",      "Fabric": "B" },
+    { "Name": "DR406FC221", "IP": "10.x.x.x", "Lokasyon": "Ankara",      "Fabric": "A" },
+    { "Name": "DR412FC224", "IP": "10.x.x.x", "Lokasyon": "Ankara",      "Fabric": "B" },
+    { "Name": "DR815FC188", "IP": "10.x.x.x", "Lokasyon": "Ankara",      "Fabric": "A" },
+    { "Name": "DR810FC191", "IP": "10.x.x.x", "Lokasyon": "Ankara",      "Fabric": "B" },
+    { "Name": "DR712FC194", "IP": "10.x.x.x", "Lokasyon": "Ankara",      "Fabric": "A" },
+    { "Name": "DR707FC197", "IP": "10.x.x.x", "Lokasyon": "Ankara",      "Fabric": "B" },
+    { "Name": "DL21KOS126", "IP": "10.x.x.x", "Lokasyon": "Kos",         "Fabric": "A" },
+    { "Name": "KKSAN01A1",  "IP": "10.x.x.x", "Lokasyon": "KristalKule", "Fabric": "A" },
+    { "Name": "KKSAN02A2",  "IP": "10.x.x.x", "Lokasyon": "KristalKule", "Fabric": "B" }
   ]
 }

@@ -84,7 +84,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     <div class="report-date" id="report-date">—</div>
     <div>Otomatik oluşturuldu · Storage Portal</div>
     <div class="no-print" style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end">
-      <button onclick="window.print()" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:1px">🖨 YAZDIR</button>
+      <button id="btn-print" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:1px">🖨 YAZDIR</button>
       <a href="./index.html" style="font-size:9px;color:var(--accent2);text-decoration:none;border:1px solid rgba(75,159,232,.35);padding:4px 12px">← Dashboard</a>
     </div>
   </div>
@@ -361,6 +361,13 @@ async function main() {
 
 main();
 StorageNav.init({ title: 'Executive Summary', section: 'tools' });
+
+/* ════════════ EVENT DELEGATION — executive.html ════════════ */
+(function wireEvents() {
+  const btn = document.getElementById('btn-print');
+  if (btn) btn.addEventListener('click', () => window.print());
+})();
+
 </script>
 </body>
 </html>

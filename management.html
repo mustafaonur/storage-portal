@@ -632,9 +632,9 @@ tr:hover .del-btn{opacity:1;}
     <div class="ph">
       <div class="ph-title">Kontrat Takip — QNB/Enpara Dell EMC Asset Listesi</div>
       <div class="ph-acts" style="flex-wrap:wrap;gap:6px">
-        <input id="kt-search" type="text" placeholder="Asset / ürün ara..." oninput="ktFilter()"
+        <input id="kt-search" type="text" placeholder="Asset / ürün ara..."
           style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 10px;outline:none;width:180px">
-        <select id="kt-cat" onchange="ktFilter()"
+        <select id="kt-cat"
           style="background:var(--bg);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 8px;outline:none">
           <option value="">Tüm Kategoriler</option>
           <option value="PowerMax">PowerMax</option>
@@ -644,7 +644,7 @@ tr:hover .del-btn{opacity:1;}
           <option value="Pure FB">Pure FB</option>
           <option value="NetApp">NetApp</option>
         </select>
-        <select id="kt-status" onchange="ktFilter()"
+        <select id="kt-status"
           style="background:var(--bg);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 8px;outline:none">
           <option value="">Tüm Durumlar</option>
           <option value="critical">Kritik (&lt;180g)</option>
@@ -780,7 +780,7 @@ tr:hover .del-btn{opacity:1;}
       <div class="panel-hdr" style="display:flex;justify-content:space-between;align-items:center">
         <span>Rezervasyon Listesi</span>
         <div style="display:flex;gap:8px">
-          <select id="rez-filter" class="kk-in" style="padding:4px 8px;font-size:10px" onchange="renderRezSon()">
+          <select id="rez-filter" class="kk-in" style="padding:4px 8px;font-size:10px">
             <option value="">Tüm Durumlar</option>
             <option value="beklemede">Beklemede</option>
             <option value="onaylandi">Onaylandı</option>
@@ -1189,10 +1189,10 @@ function renderKontaklar(){
   if(!D.kontaklar) D.kontaklar=[];
   const html=D.kontaklar.map((k,i)=>{
     const cls=VENDOR_CLS[k.vendor]||'vc-diger';
-    const inp=(f,v,ph)=>`<input class="kc-val" data-kf="${f}" value="${e(v)}" placeholder="${ph}" onchange="saveData()">`;
+    const inp=(f,v,ph)=>`<input class="kc-val kc-autosave" data-kf="${f}" value="${e(v)}" placeholder="${ph}">`;
     return `<div class="kontak-card ${cls}" data-ki="${i}">
       <div class="kc-vendor">
-        <select data-kf="vendor" class="kc-val" onchange="collectKontaklar();renderKontaklar()">
+        <select data-kf="vendor" class="kc-val kc-vendor-kontakt">
           ${['Huawei','Dell EMC','Pure Storage','NetApp','Brocade','Cisco','HPE','IBM','Diğer'].map(v=>`<option${k.vendor===v?' selected':''}>${v}</option>`).join('')}
         </select>
       </div>
@@ -1231,10 +1231,10 @@ function renderSam(){
   const html=D.sam.map((s,i)=>{
     const cls=VENDOR_CLS[s.vendor]||'vc-diger';
     const wCls=warrantyClass(s.sozlesmeBitis);
-    const inp=(f,v,ph,extra)=>`<input class="kc-val${extra?' '+extra:''}" data-sf="${f}" value="${e(v)}" placeholder="${ph}" onchange="saveData()">`;
+    const inp=(f,v,ph,extra)=>`<input class="kc-val${extra?' '+extra:''} kc-autosave" data-sf="${f}" value="${e(v)}" placeholder="${ph}">`;
     return `<div class="kontak-card ${cls}" data-si="${i}">
       <div class="kc-vendor">
-        <select data-sf="vendor" class="kc-val" onchange="collectSam();renderSam()">
+        <select data-sf="vendor" class="kc-val kc-vendor-sam">
           ${['Huawei','Dell EMC','Pure Storage','NetApp','Brocade','Cisco','HPE','IBM','Diğer'].map(v=>`<option${s.vendor===v?' selected':''}>${v}</option>`).join('')}
         </select>
       </div>
@@ -1906,7 +1906,7 @@ function renderAlarmMail(){
     vw.innerHTML=ALARM_VENDOR_LIST.map(([k,lbl])=>{
       const on=a.vendors[k]!==false;
       return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;background:var(--bg);border:1px solid ${on?'var(--accent3)':'var(--border)'};font-size:11px">
-        <input type="checkbox" ${on?'checked':''} onchange="alarmToggleVendor('${k}')" style="width:14px;height:14px;cursor:pointer">
+        <input type="checkbox" ${on?'checked':''} data-alarm-vendor="${k}" style="width:14px;height:14px;cursor:pointer">
         <span style="color:${on?'var(--text-bright)':'var(--text-dim)'}">${lbl}</span>
       </label>`;
     }).join('');
@@ -1954,7 +1954,7 @@ function renderAlarmMail(){
     a.recipients.map((r,i)=>`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--grid);border:1px solid var(--border);border-left:3px solid ${r.active?'var(--accent3)':'var(--text-dim)'};margin-bottom:6px">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0">
-        <input type="checkbox" ${r.active?'checked':''} onchange="alarmToggleRecipient(${i})" style="width:15px;height:15px;cursor:pointer">
+        <input type="checkbox" ${r.active?'checked':''} data-alarm-recipient="${i}" style="width:15px;height:15px;cursor:pointer">
         <span style="font-size:9px;color:${r.active?'var(--accent3)':'var(--text-dim)'};letter-spacing:1px">${r.active?'AKTİF':'PASİF'}</span>
       </label>
       <div style="flex:1;min-width:0">
@@ -2296,7 +2296,7 @@ function renderRezSon() {
           <span style="font-size:9px;color:${col};border:1px solid ${col};padding:2px 7px">${durumLbl[r.durum]||r.durum}</span>
           <div style="display:flex;gap:4px">
             <select style="font-size:9px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:2px 4px"
-              onchange="changeRezDurum(${realIdx}, this.value)">
+              data-rez-idx="${realIdx}">
               <option value="beklemede" ${r.durum==='beklemede'?'selected':''}>Beklemede</option>
               <option value="onaylandi" ${r.durum==='onaylandi'?'selected':''}>Onaylandı</option>
               <option value="saglandi"  ${r.durum==='saglandi'?'selected':''}>Sağlandı</option>
@@ -2386,6 +2386,39 @@ document.addEventListener('click', function(e) {
 
 document.getElementById('btn-add-rezervasyon')?.addEventListener('click', addRezSon);
 document.getElementById('btn-export-rezervasyon')?.addEventListener('click', exportRezSon);
+
+
+/* ════════════ EVENT DELEGATION — management.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+
+  // Static filter inputs
+  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el && fn) el.addEventListener(ev, fn); };
+  wire('kt-search', db(ktFilter), 'input');
+  wire('kt-cat',    ktFilter, 'change');
+  wire('kt-status', ktFilter, 'change');
+  wire('rez-filter',typeof renderRezSon === 'function' ? renderRezSon : null, 'change');
+
+  // Dynamically rendered autosave inputs (delegate from document)
+  document.addEventListener('input', e => {
+    if (e.target.classList.contains('kc-autosave')) saveData();
+  });
+  document.addEventListener('change', e => {
+    if (e.target.classList.contains('kc-autosave')) saveData();
+    if (e.target.classList.contains('kc-vendor-kontakt')) { collectKontaklar(); renderKontaklar(); }
+    if (e.target.classList.contains('kc-vendor-sam'))     { collectSam(); renderSam(); }
+    // Alarm vendor checkboxes
+    if (e.target.dataset.alarmVendor) alarmToggleVendor(e.target.dataset.alarmVendor);
+    // Alarm recipient checkboxes
+    if (e.target.dataset.alarmRecipient !== undefined && e.target.dataset.alarmRecipient !== '') {
+      alarmToggleRecipient(parseInt(e.target.dataset.alarmRecipient, 10));
+    }
+    // Rez durum selects
+    if (e.target.dataset.rezIdx !== undefined && e.target.dataset.rezIdx !== '') {
+      changeRezDurum(parseInt(e.target.dataset.rezIdx, 10), e.target.value);
+    }
+  });
+})();
 
 </script>
 

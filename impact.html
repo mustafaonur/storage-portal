@@ -100,7 +100,7 @@ tr:hover td{background:rgba(192,132,252,.04);}
   <div class="panel">
     <div class="panel-hdr"><span>Storage Kabinetleri</span><span id="cab-cnt" style="font-size:9px;color:var(--text-dim);font-weight:normal"></span></div>
     <div class="panel-body">
-      <input class="cab-search" id="cab-search" placeholder="Kabinet ara..." oninput="renderCabList()" autocomplete="off">
+      <input class="cab-search" id="cab-search" placeholder="Kabinet ara..." autocomplete="off">
       <div class="cab-list" id="cab-list"><div style="text-align:center;padding:30px;color:var(--text-dim);font-size:11px">Yükleniyor...</div></div>
     </div>
   </div>
@@ -216,7 +216,7 @@ function renderCabList(){
   }
   box.innerHTML=cabs.map(c=>{
     const sel=SELECTED===c.key?'sel':'';
-    return `<div class="cab-item ${sel}" onclick="selectCab('${esc(c.key).replace(/'/g,"\\'")}')">
+    return `<div class="cab-item ${sel}" data-cab-key="${esc(c.key).replace(/'/g,'&#39;')}">
       <div class="cab-name">${esc(c.kabinet)}</div>
       <div class="cab-meta">${esc(c.vendor)}${c.lokasyon?' · '+esc(c.lokasyon):''} · ${c.hostCount} host · ${c.provTB.toFixed(1)} TB</div>
     </div>`;
@@ -267,8 +267,8 @@ function renderImpact(){
     </div>
 
     <div class="imp-toolbar">
-      <input id="host-filter" placeholder="Etkilenen host filtrele..." oninput="filterImpactRows()">
-      <button class="btn" onclick="exportImpactCSV()">⭳ CSV Aktar</button>
+      <input id="host-filter" placeholder="Etkilenen host filtrele...">
+      <button class="btn" id="btn-export">⭳ CSV Aktar</button>
     </div>
 
     <div class="tbl-wrap">
@@ -335,6 +335,24 @@ function exportImpactCSV(){
 loadAll();
 
   StorageNav.init({ title: "Impact", section: "analytics" });
+
+/* ════════════ EVENT DELEGATION — impact.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el && fn) el.addEventListener(ev, fn); };
+  wire('cab-search',   db(renderCabList), 'input');
+  wire('host-filter',  db(filterImpactRows), 'input');
+  const expBtn = document.getElementById('btn-export');
+  if (expBtn) expBtn.addEventListener('click', exportImpactCSV);
+
+  // Cabinet list (dynamically rendered)
+  const cabList = document.getElementById('cab-list');
+  if (cabList) cabList.addEventListener('click', e => {
+    const item = e.target.closest('[data-cab-key]');
+    if (item) selectCab(item.dataset.cabKey);
+  });
+})();
+
 </script>
 </body>
 </html>

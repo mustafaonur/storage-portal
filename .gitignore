@@ -1,2 +1,11 @@
-*.bak
+# macOS metadata
 .DS_Store
+
+# Backup files
+*.bak
+
+# Sensitive config files — keep real versions local only.
+# Commit only the .example.json templates.
+storage_config.json
+alert-config.json
+asset-inventory.json

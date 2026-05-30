@@ -212,8 +212,8 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 
 <!-- SEKME BAR -->
 <div class="zb-tabs">
-  <button class="zb-tab active" data-zbtab="kanban" onclick="zbSwitch('kanban',this)">Kanban (Görsel Seçim)</button>
-  <button class="zb-tab" data-zbtab="klasik" onclick="zbSwitch('klasik',this)">Klasik Form</button>
+  <button class="zb-tab active" data-zbtab="kanban">Kanban (Görsel Seçim)</button>
+  <button class="zb-tab" data-zbtab="klasik">Klasik Form</button>
 </div>
 
 <!-- ═══════ SEKME: KANBAN ═══════ -->
@@ -224,7 +224,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     <div class="kb-col col-host">
       <div class="kb-col-hdr"><span><span class="kb-step">1</span>HOST SEÇ</span><span id="kb-host-cnt" style="font-size:9px;color:var(--text-dim)"></span></div>
       <div class="kb-body">
-        <input class="kb-search" id="kb-host-search" placeholder="Host ara..." oninput="kbRenderHosts()" autocomplete="off">
+        <input class="kb-search" id="kb-host-search" placeholder="Host ara..." autocomplete="off">
         <div id="kb-host-list"><div class="kb-empty">Yükleniyor...</div></div>
       </div>
     </div>
@@ -241,7 +241,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     <div class="kb-col col-stor">
       <div class="kb-col-hdr"><span><span class="kb-step">3</span>STORAGE + PG</span><span id="kb-stor-cnt" style="font-size:9px;color:var(--text-dim)"></span></div>
       <div class="kb-body">
-        <input class="kb-search" id="kb-stor-search" placeholder="Kabinet ara..." oninput="kbRenderStorage()" autocomplete="off">
+        <input class="kb-search" id="kb-stor-search" placeholder="Kabinet ara..." autocomplete="off">
         <div id="kb-stor-list"><div class="kb-empty">Yükleniyor...</div></div>
       </div>
     </div>
@@ -254,7 +254,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     <div class="kb-sum-item">Fabric: <b id="kb-s-fab" class="miss">—</b></div>
     <div class="kb-sum-item">Storage: <b id="kb-s-stor" class="miss">—</b></div>
     <div class="kb-sum-item">PG: <b id="kb-s-pg" class="miss">—</b></div>
-    <button class="kb-gen-btn" id="kb-gen" disabled onclick="kbGenerate()">Zone Komutlarını Üret →</button>
+    <button class="kb-gen-btn" id="kb-gen" disabled id="kb-gen-btn">Zone Komutlarını Üret →</button>
   </div>
 
   <!-- KANBAN ÇIKTI -->
@@ -264,11 +264,11 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="panel output-panel">
-        <div class="panel-hdr" style="border-bottom-color:var(--accent3)"><span>Fabric A</span><button class="btn" onclick="kbCopy('A')">Kopyala</button></div>
+        <div class="panel-hdr" style="border-bottom-color:var(--accent3)"><span>Fabric A</span><button class="btn" id="kb-copy-a">Kopyala</button></div>
         <pre class="output-pre" id="kb-outA"><div class="output-empty">—</div></pre>
       </div>
       <div class="panel output-panel">
-        <div class="panel-hdr" style="border-bottom-color:var(--accent2)"><span>Fabric B</span><button class="btn" onclick="kbCopy('B')">Kopyala</button></div>
+        <div class="panel-hdr" style="border-bottom-color:var(--accent2)"><span>Fabric B</span><button class="btn" id="kb-copy-b">Kopyala</button></div>
         <pre class="output-pre" id="kb-outB"><div class="output-empty">—</div></pre>
       </div>
     </div>
@@ -327,11 +327,11 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
       <div id="newHostBlock">
         <div class="form-row">
           <label class="form-label">Host Adı <span class="hint">orn: LSXPRDDB05</span></label>
-          <input class="form-input" id="hostName" placeholder="HOSTISMI" oninput="rebuild()">
+          <input class="form-input" id="hostName" placeholder="HOSTISMI">
         </div>
         <div class="form-row">
           <label class="form-label">Host WWN'leri <span class="hint">her satıra 1 WWN (16 hex veya kolonlu)</span></label>
-          <textarea class="form-textarea" id="wwnInput" placeholder="10:00:00:90:fa:..:..:01&#10;10:00:00:90:fa:..:..:02&#10;..." oninput="rebuild()"></textarea>
+          <textarea class="form-textarea" id="wwnInput" placeholder="10:00:00:90:fa:..:..:01&#10;10:00:00:90:fa:..:..:02&#10;..."></textarea>
         </div>
       </div>
 
@@ -339,7 +339,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
       <div id="existingHostBlock" style="display:none">
         <div class="form-row">
           <label class="form-label">Mevcut Host <span class="hint">SAN'da bulunan online host'lar</span></label>
-          <select class="form-select" id="existingHostSel" onchange="loadExistingHost()">
+          <select class="form-select" id="existingHostSel">
             <option value="">— Host sec —</option>
           </select>
         </div>
@@ -368,19 +368,19 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     <div class="panel-body">
       <div class="form-row">
         <label class="form-label">Kabinet</label>
-        <select class="form-select" id="cabinetSel" onchange="onCabinetChange()">
+        <select class="form-select" id="cabinetSel">
           <option value="">— Kabinet sec —</option>
         </select>
       </div>
       <div class="form-row">
         <label class="form-label">Port Group <span class="hint" id="pgHint"></span></label>
-        <select class="form-select" id="pgSel" onchange="onPgChange()">
+        <select class="form-select" id="pgSel">
           <option value="">— Once kabinet sec —</option>
         </select>
       </div>
       <div class="form-row">
         <label class="form-label">Storage Alias Prefix <span class="hint">PG WWN'lerine verilen alias prefix'i</span></label>
-        <input class="form-input" id="storageAlias" placeholder="HW007_PG_Win_A (otomatik)" oninput="rebuild()">
+        <input class="form-input" id="storageAlias" placeholder="HW007_PG_Win_A (otomatik)">
       </div>
       <div id="pgPreview" style="margin-top:8px"></div>
     </div>
@@ -393,7 +393,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
   <div class="panel-hdr">
     <span>Komut Cikti</span>
     <div style="display:flex;gap:6px">
-      <button class="btn" onclick="copyAll()">&#9112; Tum Komutlari Kopyala</button>
+      <button class="btn" id="kb-copy-all">&#9112; Tum Komutlari Kopyala</button>
     </div>
   </div>
 </div>
@@ -404,7 +404,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
   <div class="panel output-panel">
     <div class="output-hdr fab-a">
       <span>FABRIC A</span>
-      <button class="btn btn-a" onclick="copyOutput('A')" style="padding:5px 12px">&#9112; Kopyala</button>
+      <button class="btn btn-a" id="kb-out-a" style="padding:5px 12px">&#9112; Kopyala</button>
     </div>
     <pre class="output-pre" id="outA"><div class="output-empty">Host adı ve WWN giriniz...</div></pre>
   </div>
@@ -413,7 +413,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
   <div class="panel output-panel">
     <div class="output-hdr fab-b">
       <span>FABRIC B</span>
-      <button class="btn btn-b" onclick="copyOutput('B')" style="padding:5px 12px">&#9112; Kopyala</button>
+      <button class="btn btn-b" id="kb-out-b" style="padding:5px 12px">&#9112; Kopyala</button>
     </div>
     <pre class="output-pre" id="outB"><div class="output-empty">Host adı ve WWN giriniz...</div></pre>
   </div>
@@ -1267,7 +1267,7 @@ function kbRenderHosts(){
   if(hosts.length===0){ box.innerHTML='<div class="kb-empty">Eşleşen host yok</div>'; return; }
   box.innerHTML=hosts.slice(0,200).map(h=>{
     const sel=KB.host&&KB.host.name===h.name?'sel':'';
-    return `<div class="kb-item ${sel}" onclick="kbPickHost('${esc(h.name).replace(/'/g,"\\'")}')">
+    return `<div class="kb-item ${sel}" data-kb-host="${esc(h.name).replace(/'/g,'&#39;')}">
       <div class="kb-item-title">${esc(h.name)}</div>
       <div class="kb-item-sub">${esc(h.vendor)} · ${esc(h.kabinet||'—')} · ${h.wwns.length} WWN</div>
     </div>`;
@@ -1331,7 +1331,7 @@ function kbRenderStorage(){
   box.innerHTML=cabs.map(c=>{
     const isSelCab=KB.cabKey===c.key;
     const pgs=STATE.portGroups[c.key]||[];
-    let html=`<div class="kb-item ${isSelCab&&!KB.pg?'sel stor':''}" onclick="kbPickCab('${esc(c.key).replace(/'/g,"\\'")}')">
+    let html=`<div class="kb-item ${isSelCab&&!KB.pg?'sel stor':''}" data-kb-cab="${esc(c.key).replace(/'/g,'&#39;')}">
       <div class="kb-item-title">${esc(c.cab)}</div>
       <div class="kb-item-sub">${esc(c.vendor)}${c.loc?' · '+esc(c.loc):''} · ${pgs.length} PG</div>
     </div>`;
@@ -1341,7 +1341,7 @@ function kbRenderStorage(){
       } else {
         html+=pgs.map(p=>{
           const ps=KB.pg&&KB.pg.pg===p.pg&&KB.cabKey===c.key?'sel stor':'';
-          return `<div class="kb-item ${ps}" style="margin-left:14px" onclick="event.stopPropagation();kbPickPg('${esc(c.key).replace(/'/g,"\\'")}','${esc(p.pg).replace(/'/g,"\\'")}')">
+          return `<div class="kb-item ${ps}" style="margin-left:14px" data-kb-cab="${esc(c.key).replace(/'/g,'&#39;')}" data-kb-pg="${esc(p.pg).replace(/'/g,'&#39;')}">
             <div class="kb-item-title">&rsaquo; ${esc(p.pg)}</div>
             <div class="kb-item-sub">${esc(p.alias||'alias yok')} · ${(p.wwns||[]).length} WWN</div>
           </div>`;
@@ -1448,6 +1448,53 @@ function showToast(msg) {
 loadAllData();
 
   StorageNav.init({ title: "Zone Builder", section: "tools" });
+
+/* ════════════ EVENT DELEGATION — zone-builder.html ════════════ */
+(function wireEvents() {
+  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
+
+  // Tab switcher
+  const tabBar = document.querySelector('.zb-tabs');
+  if (tabBar) tabBar.addEventListener('click', e => {
+    const btn = e.target.closest('.zb-tab[data-zbtab]');
+    if (btn) zbSwitch(btn.dataset.zbtab, btn);
+  });
+
+  // Static inputs
+  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el && fn) el.addEventListener(ev, fn); };
+  wire('kb-host-search', db(kbRenderHosts), 'input');
+  wire('kb-stor-search', db(kbRenderStorage), 'input');
+  wire('hostName',       db(rebuild), 'input');
+  wire('wwnInput',       db(rebuild), 'input');
+  wire('storageAlias',   db(rebuild), 'input');
+  wire('existingHostSel',loadExistingHost, 'change');
+  wire('cabinetSel',     onCabinetChange, 'change');
+  wire('pgSel',          onPgChange, 'change');
+
+  // Action buttons
+  const _w = (id, fn) => { const el=document.getElementById(id); if(el) el.addEventListener('click', fn); };
+  _w('kb-gen-btn',  kbGenerate);
+  _w('kb-copy-a',   () => kbCopy('A'));
+  _w('kb-copy-b',   () => kbCopy('B'));
+  _w('kb-copy-all', copyAll);
+  _w('kb-out-a',    () => copyOutput('A'));
+  _w('kb-out-b',    () => copyOutput('B'));
+
+  // Kanban host/storage/pg selection (dynamically rendered)
+  const kbHost = document.getElementById('kb-host-list');
+  const kbStor = document.getElementById('kb-stor-list');
+  if (kbHost) kbHost.addEventListener('click', e => {
+    const el = e.target.closest('[data-kb-host]');
+    if (el) kbPickHost(el.dataset.kbHost);
+  });
+  if (kbStor) kbStor.addEventListener('click', e => {
+    const pg = e.target.closest('[data-kb-pg]');
+    if (pg) { e.stopPropagation(); kbPickPg(pg.dataset.kbCab, pg.dataset.kbPg); return; }
+    const cab = e.target.closest('[data-kb-cab]');
+    if (cab) kbPickCab(cab.dataset.kbCab);
+  });
+})();
+
 </script>
 </body>
 </html>
