@@ -255,6 +255,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     <div class="kb-sum-item">PG: <b id="kb-s-pg" class="miss">—</b></div>
     <button class="kb-gen-btn" id="kb-gen-btn" disabled>Zone Komutlarını Üret →</button>
   </div>
+  <div id="kb-rule-warn" style="display:none;font-size:10px;color:var(--warn,#e8844b);padding:6px 14px;background:rgba(232,132,75,.08);border-top:1px solid rgba(232,132,75,.2);letter-spacing:.3px;"></div>
 
   <!-- KANBAN ÇIKTI -->
   <div id="kb-output" style="margin-top:18px;display:none">
@@ -1436,8 +1437,24 @@ function rebuild() {
     result = buildNormal(host, pg, cabName, storPrefix);
   }
 
-  outA.innerHTML = result.A || '<div class="output-empty">FAB A icin uygun WWN yok</div>';
-  outB.innerHTML = result.B || '<div class="output-empty">FAB B icin uygun WWN yok</div>';
+  // NPIV kural kontrolü: per-fabric 4 WWN gerekli
+  let ruleWarn = '';
+  if (STATE.zoneType === 'npiv') {
+    const anyDetected = host.wwns.some(w => detectFabric(w).fabric !== null);
+    const fabACount = anyDetected
+      ? host.wwns.filter(w => detectFabric(w).fabric === 'A').length
+      : Math.ceil(host.wwns.length / 2);
+    const fabBCount = anyDetected
+      ? host.wwns.filter(w => detectFabric(w).fabric === 'B').length
+      : Math.floor(host.wwns.length / 2);
+    const warns = [];
+    if (fabACount < 4) warns.push(`Fabric A: ${fabACount} WWN (NPIV için 4 gerekli, eksik zone'lar boş kalacak)`);
+    if (fabBCount < 4) warns.push(`Fabric B: ${fabBCount} WWN (NPIV için 4 gerekli, eksik zone'lar boş kalacak)`);
+    if (warns.length) ruleWarn = `<div style="font-size:10px;color:var(--warn,#e8844b);padding:6px 0;margin-bottom:6px">⚠ ${warns.join(' · ')}</div>`;
+  }
+
+  outA.innerHTML = (ruleWarn || '') + (result.A || '<div class="output-empty">FAB A icin uygun WWN yok</div>');
+  outB.innerHTML = (ruleWarn || '') + (result.B || '<div class="output-empty">FAB B icin uygun WWN yok</div>');
 }
 
 function renderWwnStatus(wwns) {
@@ -1483,84 +1500,130 @@ function getCfgName(wwns, fab) {
    NPIV ZONE BUILD: 8 port × 2 WWN = 16 WWN; 2 WWN/port aynı fabric
    Her port = 1 host alias + 1 storage alias → 1 zone
 ════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   NPIV ZONE BUILD — Kural:
+   - Her fabric için tam 4 zone (toplam 8 zone)
+   - Zone isimlendirme: HOST_NPIV_{1-8}_{PREFIX}
+   - Initiator alias: HOST_NPIV_01 .. HOST_NPIV_08 (zero-padded)
+   - Port dağılımı per fabric (4 zone):
+       Zone 1,2 → E0_H portları (Fab-A High / Fab-B High)
+       Zone 3,4 → E0_L portları (Fab-A Low  / Fab-B Low)
+     Fabric A: zone index 1-4, Fabric B: zone index 5-8
+════════════════════════════════════════════════════════════ */
 function buildNPIV(host, pg, cabName, storPrefix) {
-  // 2'şerli grupla portları grupla
-  const ports = [];
-  for (let i = 0; i + 1 < host.wwns.length; i += 2) {
-    ports.push([host.wwns[i], host.wwns[i+1]]);
-  }
-  if (host.wwns.length % 2 === 1) {
-    ports.push([host.wwns[host.wwns.length - 1]]);
-  }
-
   return {
-    A: buildNpivFabric('A', host, ports, pg.wwns, cabName, storPrefix),
-    B: buildNpivFabric('B', host, ports, pg.wwns, cabName, storPrefix),
+    A: buildNpivFabric('A', host, pg.wwns, cabName, storPrefix),
+    B: buildNpivFabric('B', host, pg.wwns, cabName, storPrefix),
   };
 }
 
-function buildNpivFabric(fab, host, ports, pgWwns, cabName, storPrefix) {
+function buildNpivFabric(fab, host, pgWwns, cabName, storPrefix) {
   if (!pgWwns || pgWwns.length === 0) return '';
 
-  // Bu fabric'e ait portları bul
-  const fabPorts = [];
-  const anyDetected = host.wwns.some(w => detectFabric(w).fabric !== null);
-
-  ports.forEach((wwnPair, idx) => {
-    const hasInFab = wwnPair.some(w => detectFabric(w).fabric === fab);
-    const isUnknown = wwnPair.every(w => detectFabric(w).fabric === null);
-    
-    // Eğer login bilgisi varsa ona göre, yoksa (offline/yeni host) sıralı dağıt
-    if (hasInFab || (!anyDetected && ((idx % 2 === 0 && fab === 'A') || (idx % 2 === 1 && fab === 'B')))) {
-      fabPorts.push({ idx: idx + 1, wwns: wwnPair });
-    }
-  });
-  if (fabPorts.length === 0) return '';
-
-  let fabPgWwns = pgWwns.filter(w => detectFabric(w).fabric === fab);
-  if (fabPgWwns.length === 0) fabPgWwns = pgWwns; // Fallback to all if specific fabric ports not found
-
-  const allHostWwns = ports.flat();
-  const cfgName = getCfgName(allHostWwns, fab);
   const prefix = storPrefix || (cabName + '_PG');
+
+  // Fabric A: zone index 1-4, Fabric B: zone index 5-8
+  const baseIdx = fab === 'A' ? 1 : 5;
+
+  // Bu fabric'e ait storage portlarını tier'a göre ayır
+  // Tier belirleme: alias içinde E0_H/E0_L/E1_H/E1_L varsa ona göre,
+  // yoksa detectFabric + sıra ile fallback
+  let fabPgWwns = pgWwns.filter(w => detectFabric(w).fabric === fab);
+  if (fabPgWwns.length === 0) fabPgWwns = pgWwns;
+
+  // High tier: ilk yarı, Low tier: ikinci yarı (veya alias'tan tespit)
+  const highPorts = fabPgWwns.filter((w, i) => {
+    if (/_(E[01])_H\d/i.test(w)) return true;
+    if (/_(E[01])_L\d/i.test(w)) return false;
+    return i < Math.ceil(fabPgWwns.length / 2);
+  });
+  const lowPorts = fabPgWwns.filter((w, i) => {
+    if (/_(E[01])_H\d/i.test(w)) return false;
+    if (/_(E[01])_L\d/i.test(w)) return true;
+    return i >= Math.ceil(fabPgWwns.length / 2);
+  });
+
+  // Fallback: yeterli port yoksa tümünü kullan
+  const getPort = (tier, pos) => {
+    const arr = tier === 'H' ? (highPorts.length ? highPorts : fabPgWwns) :
+                               (lowPorts.length  ? lowPorts  : fabPgWwns);
+    return arr[pos % arr.length];
+  };
+
+  // Host WWN'lerini fabric'e göre dağıt
+  // Fabric A → çift indexli (0,2,4...), Fabric B → tek indexli (1,3,5...)
+  // Login tespiti varsa ona göre, yoksa sırayla
+  const anyDetected = host.wwns.some(w => detectFabric(w).fabric !== null);
+  let fabHostWwns;
+  if (anyDetected) {
+    fabHostWwns = host.wwns.filter(w => detectFabric(w).fabric === fab);
+  } else {
+    fabHostWwns = host.wwns.filter((_, i) => fab === 'A' ? i % 2 === 0 : i % 2 === 1);
+  }
+  // NPIV için her host WWN çifti 1 virtual initiator → 2 zone
+  // 4 zone per fabric: port çifti yoksa single WWN ile devam et
+  const npivPorts = [];
+  for (let i = 0; i < 4; i++) {
+    npivPorts.push(fabHostWwns[i] || null);
+  }
+
+  const allHostWwns = host.wwns;
+  const cfgName = getCfgName(allHostWwns, fab);
   const lines = [];
   const a = (s) => lines.push(s);
 
   a(`<span class="cmd-comment"># ============================================================</span>`);
-  a(`<span class="cmd-comment"># FABRIC ${fab} — ${esc(host.name)} → ${esc(cabName)} / ${esc(prefix)} (NPIV)</span>`);
-  a(`<span class="cmd-comment"># Host port: ${fabPorts.length} · Storage WWN: ${fabPgWwns.length}</span>`);
+  a(`<span class="cmd-comment"># FABRIC ${fab} — ${esc(host.name)} → ${esc(cabName)} / ${esc(prefix)} (NPIV · 4 zone)</span>`);
+  a(`<span class="cmd-comment"># Zone index: ${baseIdx}-${baseIdx+3} · Toplam 8 zone (her fabric 4)</span>`);
   a(`<span class="cmd-comment"># ============================================================</span>`);
   a('');
 
-  // Host alias — her port için 1 alias (2 WWN)
-  a(`<span class="cmd-comment"># Host alias'lari</span>`);
-  fabPorts.forEach(p => {
-    const wwnStr = p.wwns.filter(w => w).join('; ');
-    a(`<span class="cmd-alicreate">alicreate</span> "${host.name}_NPIV_P${p.idx}", "${wwnStr}"`);
+  // alicreate — NPIV virtual initiator alias'ları (zero-padded: _01.._08)
+  a(`<span class="cmd-comment"># Host NPIV alias'lari (zero-padded)</span>`);
+  npivPorts.forEach((w, i) => {
+    const zoneNum = baseIdx + i;
+    const aliasName = `${host.name}_NPIV_${String(zoneNum).padStart(2,'0')}`;
+    if (w) {
+      a(`<span class="cmd-alicreate">alicreate</span> "${aliasName}", "${w}"`);
+    } else {
+      a(`<span class="cmd-comment"># alicreate "${aliasName}", "&lt;WWN_${fab}${i+1}&gt;" — WWN eksik</span>`);
+    }
   });
   a('');
 
-  // Storage alias — her PG WWN için 1 alias
-  a(`<span class="cmd-comment"># Storage alias'lari</span>`);
-  const storAliases = fabPgWwns.map((w, i) => {
+  // Storage alias'ları (zaten var kabul, ama yeni host için üret)
+  a(`<span class="cmd-comment"># Storage alias'lari (varsa atlayın)</span>`);
+  const storAliasMap = {}; // wwn -> alias
+  fabPgWwns.forEach((w, i) => {
     const an = `${prefix}_${i + 1}`;
+    storAliasMap[w] = an;
     a(`<span class="cmd-alicreate">alicreate</span> "${an}", "${w}"`);
-    return an;
   });
   a('');
 
-  // Zone'lar: her port → 1 zone (storage alias sırayla döner)
-  a(`<span class="cmd-comment"># Zone'lar — her port 1 zone</span>`);
+  // Zone'lar: kural → zone 1,2 → high tier port; zone 3,4 → low tier port
+  // Her zone: 1 NPIV initiator alias + 1 storage port alias
+  a(`<span class="cmd-comment"># Zone'lar — kural: 1,2→High tier · 3,4→Low tier (per fabric)</span>`);
   const zoneNames = [];
-  fabPorts.forEach((p, i) => {
-    const storAlias = storAliases[i % storAliases.length];
-    const zoneName = `${host.name}_NPIV_${p.idx}_${prefix}`;
+  npivPorts.forEach((w, i) => {
+    const zoneNum = baseIdx + i;
+    const initiatorAlias = `${host.name}_NPIV_${String(zoneNum).padStart(2,'0')}`;
+    // i=0,1 → High tier; i=2,3 → Low tier
+    const tier = i < 2 ? 'H' : 'L';
+    const storPort = getPort(tier, i % 2);
+    const storAlias = storAliasMap[storPort] || `${prefix}_${i + 1}`;
+    const zoneName = `${host.name}_NPIV_${zoneNum}_${prefix}`;
     zoneNames.push(zoneName);
-    a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${host.name}_NPIV_P${p.idx}; ${storAlias}"`);
+    const warnComment = !w ? ` <span class="cmd-comment"># ⚠ WWN eksik</span>` : '';
+    a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${initiatorAlias}; ${storAlias}"${warnComment}`);
   });
   a('');
 
-  // CFG add
+  // Validation: tam 4 zone oldu mu
+  if (zoneNames.length !== 4) {
+    a(`<span class="cmd-comment"># ⚠ UYARI: Bu fabric için ${zoneNames.length} zone üretildi (beklenen: 4)</span>`);
+  }
+
   const cfgNote = cfgName === 'CFG_NAME'
     ? `<span class="cmd-comment"># Aktif CFG bulunamadi — cfgshow ile kontrol et</span>\n`
     : `<span class="cmd-comment"># Aktif CFG: ${esc(cfgName)}</span>\n`;
@@ -1720,31 +1783,43 @@ function buildMultiInitFabric(fab, host, hostWwns, pgWwns, cabName, storPrefix, 
   const targetsPerZone = Math.max(1, Math.floor(4 / hostWwns.length));
 
   if (splitZones) {
-    // Separate zone per initiator (matches YNPRDCLN04 sample)
+    // Kural (YNPRDCLN04 sample): her initiator için ayrı zone
+    // Zone ismi: HOST_01_PREFIX — host alias zaten HOST_01 formatında
+    // Fabric A → High tier (E0_H, E1_H), Fabric B → Low tier (E0_L, E1_L)
+    const highPgWwns = fabPgWwns.filter(w => /_(E[01])_H\d/i.test(w));
+    const lowPgWwns  = fabPgWwns.filter(w => /_(E[01])_L\d/i.test(w));
+    const tierPool   = fab === 'A'
+      ? (highPgWwns.length ? highPgWwns : fabPgWwns)
+      : (lowPgWwns.length  ? lowPgWwns  : fabPgWwns);
+
     hostAliases.forEach((ha, i) => {
       const zoneName = `${ha}_${prefix}`;
       zoneNames.push(zoneName);
-      const startIdx = (i * targetsPerZone) % storAliases.length;
       const myTargets = [];
       for (let j = 0; j < targetsPerZone; j++) {
-        myTargets.push(storAliases[(startIdx + j) % storAliases.length]);
+        const w = tierPool[(i * targetsPerZone + j) % tierPool.length];
+        myTargets.push(storAliases[fabPgWwns.indexOf(w)] || storAliases[j % storAliases.length]);
       }
-      a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${ha}; ${myTargets.join('; ')}"`);
+      a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${ha}; ${[...new Set(myTargets)].join('; ')}"`);
     });
   } else {
-    // Single zone for all initiators (matches ALOPRDKFK10 sample)
+    // Single zone — tüm initiator'lar bir zone'da (ALOPRDKFK10 sample)
+    // Zone ismi: HOST_PREFIX (fabric suffix yok — her iki fabric de bu zone'u paylaşır)
     const zoneName = `${host.name}_${prefix}`;
     zoneNames.push(zoneName);
-    // Limit targets to maintain 4 paths per fabric (e.g., 2 initiators * 2 targets = 4 paths)
     const targetLimit = hostWwns.length > 0 ? Math.max(1, Math.floor(4 / hostWwns.length)) * hostWwns.length : 4;
     const myTargets = storAliases.slice(0, Math.min(storAliases.length, targetLimit));
     a(`<span class="cmd-zonecreate">zonecreate</span> "${zoneName}", "${hostAliases.join('; ')}; ${myTargets.join('; ')}"`);
   }
   a('');
 
-  const cfgNote = cfgName === 'CFG_NAME' ? `# Aktif CFG bulunamadı` : `# Aktif CFG: ${cfgName}`;
-  a(`<span class="cmd-comment">${cfgNote}</span>`);
-  a(`<span class="cmd-cfgadd">cfgadd</span> "${cfgName}", "${zoneNames.join('; ')}"`);
+  const cfgNote = cfgName === 'CFG_NAME'
+    ? `<span class="cmd-comment"># Aktif CFG bulunamadi — cfgshow ile kontrol et</span>\n`
+    : `<span class="cmd-comment"># Aktif CFG: ${esc(cfgName)}</span>\n`;
+  a(cfgNote + `<span class="cmd-cfgadd">cfgadd</span> "${cfgName}", "${zoneNames.join('; ')}"`);
+  a('');
+  a(`<span class="cmd-comment"># cfgsave</span>`);
+  a(`<span class="cmd-comment"># cfgenable "${cfgName}"</span>`);
   return lines.join('\n');
 }
 
@@ -1931,6 +2006,22 @@ function kbUpdateSummary(){
   const ready = KB.host && fabOk && cab && KB.pg;
   const btn=document.getElementById('kb-gen-btn');
   if(btn) btn.disabled=!ready;
+
+  // NPIV kural kontrolü: 8 zone için yeterli WWN var mı?
+  const warnEl = document.getElementById('kb-rule-warn');
+  if (warnEl) {
+    let warnMsg = '';
+    if (KB.host && STATE.zoneType === 'npiv') {
+      const totalWwns = (KB.host.wwns || []).length;
+      // Per fabric 4 zone gerekiyor, her zone için 1 WWN → her fabrictende 4 WWN
+      const fabAWwns = KB._fabA ? KB._fabA.length : Math.ceil(totalWwns / 2);
+      const fabBWwns = KB._fabB ? KB._fabB.length : Math.floor(totalWwns / 2);
+      if (fabAWwns < 4) warnMsg += `⚠ Fabric A: ${fabAWwns} WWN (NPIV için 4 gerekli). `;
+      if (fabBWwns < 4) warnMsg += `⚠ Fabric B: ${fabBWwns} WWN (NPIV için 4 gerekli). `;
+    }
+    warnEl.textContent = warnMsg;
+    warnEl.style.display = warnMsg ? '' : 'none';
+  }
 }
 
 // ── ZONE ÜRET (Kanban) — NPIV/NORMAL seçimine saygı duyar ──
