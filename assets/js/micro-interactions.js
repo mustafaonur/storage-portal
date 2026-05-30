@@ -11,7 +11,6 @@
  *   6.  G+key keyboard navigation (Gmail-style)
  *   7.  Right-click context menu on cards
  *   8.  Ambient idle scan beam
- *   9.  Data staleness desaturation
  */
 (function MicroInteractions() {
   'use strict';
@@ -452,50 +451,6 @@
     goIdle(); // arm immediately
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     9. DATA STALENESS DESATURATION
-     Checks data-stale-vendor attributes on cards and compares
-     to the last-modified header of the corresponding CSV.
-     Falls back gracefully when files aren't accessible.
-  ═══════════════════════════════════════════════════════════ */
-  function initStaleness() {
-    var STALE_MS = 28 * 60 * 60 * 1000; // 28 hours
-    var VENDOR_CSV = {
-      'type-huawei':  './data/Hw/Dorado_Dashboard.csv',
-      'type-pmax':    './data/Pmax/PmaxPoolDash.csv',
-      'type-pure':    './data/Pure/Pure_Dashboard.csv',
-      'type-netapp':  './data/NetApp/NetApp_Dashboard.csv',
-      'type-ecs':     './data/Ecs/ECS_Dashboard.csv',
-      'type-san':     './data/San/SAN_Director_Dashboard.csv',
-      'type-hitachi': './data/Hitachi/Hitachi_PROD.csv'
-    };
-
-    Object.keys(VENDOR_CSV).forEach(function (cls) {
-      var url = VENDOR_CSV[cls];
-      fetch(url, { method: 'HEAD', cache: 'no-store' })
-        .then(function (r) {
-          var lastMod = r.headers.get('last-modified');
-          if (!lastMod) return;
-          var age = Date.now() - new Date(lastMod).getTime();
-          if (age > STALE_MS) {
-            document.querySelectorAll('.app-card.' + cls).forEach(function (card) {
-              card.classList.add('data-stale');
-              // Add a small staleness marker to footer
-              var footer = card.querySelector('.footer-label');
-              if (footer && !footer.querySelector('.stale-mark')) {
-                var mark = document.createElement('span');
-                mark.className = 'stale-mark';
-                mark.style.cssText = 'color:var(--warn);margin-left:6px;font-size:9px';
-                mark.title = 'Data older than 28h';
-                mark.textContent = '⚠ stale';
-                footer.appendChild(mark);
-              }
-            });
-          }
-        })
-        .catch(function () { /* file server may not support HEAD — silent */ });
-    });
-  }
 
   /* ═══════════════════════════════════════════════════════════
      BOOT
@@ -505,7 +460,6 @@
     initKeyboardNav();
     initContextMenu();
     initScanBeam();
-    initStaleness();
 
     setTimeout(function () {
       initCardTilt();

@@ -1519,7 +1519,8 @@ td, th, .sp-num, .footer-open,
 .section-zone > * { position: relative; z-index: 1; }
 
 /* ── 7. SECTION TITLE: gradient rule draws in on scroll ── */
-.section-title { border-bottom: none !important; padding-bottom: 9px; }
+.section-title { padding-bottom: 9px; }
+.section-title.title-visible { border-bottom: none; }
 .section-title::after {
   content: ''; display: block; height: 1px; width: 0%; margin-top: 8px;
   background: linear-gradient(90deg, var(--accent) 0%, rgba(232,184,75,.4) 35%, transparent 68%);
@@ -1677,4 +1678,4 @@ td, th, .sp-num, .footer-open,
   transition: transform .22s ease, color .15s;
   transform-origin: left center;
 }
-.stat-card:hover .stat-value { transform: scale(1.04); color: var(--text-bright); }
+.shell .stat-card:hover .stat-value { transform: scale(1.04); color: var(--text-bright); }
