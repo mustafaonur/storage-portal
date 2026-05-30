@@ -181,9 +181,9 @@ tr:hover td{background:rgba(75,159,232,.04);}
 
 <!-- TABS -->
 <div class="tab-bar">
-  <button class="tab-btn active">Bucket Listesi</button>
-  <button class="tab-btn">Kapasite & Denge</button>
-  <button class="tab-btn">Bağlantı Durumu</button>
+  <button class="tab-btn active" data-tab="buckets">Bucket Listesi</button>
+  <button class="tab-btn" data-tab="capacity">Kapasite & Denge</button>
+  <button class="tab-btn" data-tab="connectivity">Bağlantı Durumu</button>
 </div>
 
 <!-- TAB: BUCKETS -->
@@ -738,10 +738,10 @@ renderFreshnessBadge('data-fresh-badge', ['./Ecs/ECS_Dashboard.csv', './Ecs/ECS_
 /* ════════════ EVENT DELEGATION — ecs.html ════════════ */
 (function wireEvents() {
   const db = typeof debounce === 'function' ? debounce : (fn) => fn;
-  const tabBar = document.querySelector('.tabs');
+  const tabBar = document.querySelector('.tab-bar');
   if (tabBar) tabBar.addEventListener('click', e => {
     const btn = e.target.closest('.tab-btn');
-    if (btn) setTab(btn.textContent.trim().toLowerCase().split(' ')[0], btn);
+    if (btn) setTab(btn.dataset.tab || btn.textContent.trim().split(' ')[0].toLowerCase(), btn);
   });
   const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el && fn) el.addEventListener(ev, fn); };
   wire('bucket-search', db(renderBuckets), 'input');

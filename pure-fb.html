@@ -369,7 +369,7 @@ window.switchTab = function(name) {
 
   document.querySelectorAll('.tab-btn').forEach(b => {
 
-    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${name}'`));
+    b.classList.toggle('active', b.dataset.tab === name);
 
   });
 
