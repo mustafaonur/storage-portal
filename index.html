@@ -375,21 +375,17 @@
     position:relative;
     display:flex; align-items:center; justify-content:center;
   }
-  /* Storage rack - outer frame */
+  /* Storage rack - outer frame — uses CSS vars so theme-aware */
   .ld-spinner::before {
     content:'';
     position:absolute;
     width:64px; height:64px;
-    border:2px solid rgba(75,159,232,.3);
-    background:linear-gradient(180deg, 
-      rgba(13,20,32,.6) 0%, 
-      rgba(17,27,46,.4) 50%, 
-      rgba(13,20,32,.6) 100%);
+    border:2px solid var(--border);
+    background:var(--surface2);
     box-shadow:
-      0 0 20px rgba(75,159,232,.1),
-      inset 0 0 20px rgba(0,0,0,.3),
-      inset 0 2px 0 rgba(75,159,232,.2),
-      inset 0 -2px 0 rgba(75,159,232,.2);
+      0 0 20px rgba(75,159,232,.08),
+      inset 0 2px 0 var(--border),
+      inset 0 -2px 0 var(--border);
   }
   /* Storage disks container */
   .ld-spinner .disk {
@@ -400,18 +396,16 @@
     gap:3px;
     z-index:2;
   }
-  /* Individual disk slots */
+  /* Individual disk slots — accent2 based, visible on both themes */
   .ld-spinner .disk-slot {
     height:4px;
     background:linear-gradient(90deg,
       transparent 0%,
-      rgba(75,159,232,.6) 3%,
-      rgba(75,159,232,.8) 50%,
-      rgba(75,159,232,.6) 97%,
+      var(--accent2) 3%,
+      var(--accent2) 97%,
       transparent 100%);
-    box-shadow:
-      0 0 6px rgba(75,159,232,.4),
-      inset 0 1px 0 rgba(255,255,255,.1);
+    opacity:0.5;
+    border-radius:1px;
     animation:disk-pulse 2s ease-in-out infinite;
   }
   .ld-spinner .disk-slot:nth-child(1) { animation-delay:0s; }
@@ -423,10 +417,8 @@
   .ld-spinner::after {
     content:'';
     position:absolute;
-    top:6px;
-    right:6px;
-    width:6px;
-    height:6px;
+    top:6px; right:6px;
+    width:6px; height:6px;
     background:var(--accent3);
     border-radius:50%;
     box-shadow:0 0 8px var(--accent3);
@@ -434,12 +426,12 @@
     z-index:3;
   }
   @keyframes disk-pulse {
-    0%, 100% { opacity:0.4; transform:scaleX(0.95); }
-    50% { opacity:1; transform:scaleX(1); }
+    0%, 100% { opacity:0.25; transform:scaleX(0.95); }
+    50%       { opacity:0.9;  transform:scaleX(1); }
   }
   @keyframes status-blink {
     0%, 100% { opacity:1; }
-    50% { opacity:0.3; }
+    50%       { opacity:0.3; }
   }
   #app-loading .ld-msg {
     font-size:11px; color:var(--text-dim); letter-spacing:2px;
@@ -449,7 +441,7 @@
     width:260px; height:3px; background:var(--border); overflow:hidden;
   }
   #app-loading .ld-bar {
-    height:100%; width:0%; background:var(--accent);
+    height:100%; width:0%; background:var(--accent2);
     transition:width .3s ease; border-radius:2px;
   }
 </style>
@@ -1219,7 +1211,7 @@
   <div id="dbg-out"></div>
 
   <!-- ALARM MODAL -->
-  <div id="alarm-modal" style="display:none;position:fixed;inset:0;background:rgba(8,12,20,.9);z-index:1000;align-items:center;justify-content:center;" id="alarm-modal-backdrop">
+  <div id="alarm-modal" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;" id="alarm-modal-backdrop">
     <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);width:90%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;">
       <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">&#9888; Kapasite Alarm Listesi</div>
@@ -1237,7 +1229,7 @@
 
 
 <!-- LAST-RUN MODAL -->
-<div id="last-run-modal" style="display:none;position:fixed;inset:0;background:rgba(8,12,20,.92);z-index:500;display:none;align-items:center;justify-content:center">
+<div id="last-run-modal" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;display:none;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);max-width:640px;width:90%;max-height:80vh;overflow-y:auto">
     <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Son Tarama Detayı</div>

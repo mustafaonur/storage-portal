@@ -100,7 +100,7 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   .sidebar { position:fixed; top:var(--topbar-h); bottom:0; left:0; transform:translateX(-100%); }
   .sidebar.open { transform:translateX(0); box-shadow:8px 0 30px rgba(0,0,0,.6); }
   .sidebar-toggle { display:block; }
-  .sidebar-backdrop { display:none; position:fixed; inset:0; top:var(--topbar-h); background:rgba(8,12,20,.7); z-index:89; }
+  .sidebar-backdrop { display:none; position:fixed; inset:0; top:var(--topbar-h); background:var(--bg); z-index:89; }
   .sidebar-backdrop.show { display:block; }
 }
 
@@ -244,7 +244,7 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 /* Quick-launch overlay */
 .ql-overlay {
   display:none; position:fixed; inset:0; z-index:999;
-  background:rgba(8,12,20,.85);
+  background:var(--bg);
   align-items:flex-start; justify-content:center;
   padding-top:80px;
 }

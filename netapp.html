@@ -19,7 +19,7 @@
   }
 
   #loading-overlay {
-    position:fixed; inset:0; background:rgba(8,12,20,.96); z-index:999;
+    position:fixed; inset:0; background:var(--bg); z-index:999;
     display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
   }
   .spinner { width:40px; height:40px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
@@ -203,7 +203,7 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
   }
 
   .modal-backdrop {
-    position:fixed; inset:0; background:rgba(8,12,20,.85); z-index:1000;
+    position:fixed; inset:0; background:var(--bg); z-index:1000;
     display:none; align-items:center; justify-content:center;
     animation:fadeIn .2s ease;
   }

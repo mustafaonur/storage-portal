@@ -1410,3 +1410,33 @@ header {
   gap: 5px;
 }
 .theme-toggle:hover { border-color: var(--accent2); color: var(--accent2); }
+
+/* ════════════════════════════════════════════════════════════
+   LOADING OVERLAY — theme-aware global fix
+   Overrides inline rgba(8,12,20,...) dark backgrounds on
+   all page loading overlays when light theme is active.
+════════════════════════════════════════════════════════════ */
+[data-theme="light"] #loading-overlay,
+[data-theme="light"] .loading-overlay {
+  background: rgba(242,244,247,.97) !important;
+}
+
+/* sidebar backdrop (portal.html) */
+[data-theme="light"] .sidebar-backdrop {
+  background: rgba(180,190,210,.6) !important;
+}
+
+/* portal.html nav tooltip dark bg */
+[data-theme="light"] [style*="rgba(8,12,20"] {
+  /* can't target inline styles reliably — handled per component above */
+}
+
+/* Modal backdrops — light mode semi-transparent overlay */
+[data-theme="light"] #alarm-modal,
+[data-theme="light"] #last-run-modal,
+[data-theme="light"] .modal-bg,
+[data-theme="light"] #loading-overlay,
+[data-theme="light"] .loading-overlay {
+  background: rgba(200,210,225,.82) !important;
+  backdrop-filter: blur(3px);
+}
