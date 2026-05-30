@@ -212,6 +212,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 <div class="zb-tabs">
   <button class="zb-tab active" data-zbtab="kanban">Kanban (Görsel Seçim)</button>
   <button class="zb-tab" data-zbtab="klasik">Klasik Form</button>
+  <button class="zb-tab" data-zbtab="analyzer">Zone Analyzer</button>
 </div>
 
 <!-- ═══════ SEKME: KANBAN ═══════ -->
@@ -420,7 +421,554 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 
 </div><!-- /zbpage-klasik -->
 
-<div class="toast" id="toast"></div>
+<!-- ══════════════════════════════════════════════════════
+     ZONE ANALYZER TAB
+     Parses existing zone config text, validates NPIV rules,
+     renders host matrix, exports commands.
+     ══════════════════════════════════════════════════════ -->
+<div class="zb-page" id="zbpage-analyzer">
+<style>
+/* ── Analyzer-scoped styles ── */
+.za-section{background:var(--surface2,#131c2b);border:1px solid var(--border);border-radius:6px;margin-bottom:16px;overflow:hidden;}
+.za-section-hdr{background:var(--surface3,#0e1520);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.za-section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);}
+.za-section-hint{font-size:10px;color:var(--text-dim2,#3a5070);}
+.za-textarea{display:block;width:100%;min-height:200px;background:var(--bg,#0b1018);border:none;color:#7dd3fc;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;padding:14px;resize:vertical;outline:none;tab-size:4;}
+.za-textarea::placeholder{color:var(--text-dim2,#3a5070);}
+.za-footer{background:var(--surface3,#0e1520);border-top:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* Summary chips */
+.za-summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.za-stat{background:var(--surface2,#131c2b);border:1px solid var(--border);border-radius:4px;padding:7px 14px;display:flex;flex-direction:column;align-items:center;min-width:72px;}
+.za-stat__val{font-size:22px;font-weight:700;line-height:1;font-family:'Syne',sans-serif;}
+.za-stat__lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-top:3px;}
+.za-stat--total .za-stat__val{color:var(--text-bright);}
+.za-stat--npiv  .za-stat__val{color:var(--accent3,#5ec4ff);}
+.za-stat--single.za-stat__val{color:var(--accent,#3a8ef5);}
+.za-stat--dual  .za-stat__val{color:var(--warn,#e8844b);}
+.za-stat--err   .za-stat__val{color:var(--danger,#e05252);}
+.za-stat--ok    .za-stat__val{color:var(--accent2,#36c27a);}
+
+/* Validation */
+.za-validation{background:var(--surface2,#131c2b);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:14px;}
+.za-validation--clean{border-color:#166534;}
+.za-validation__title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+.za-validation--clean .za-validation__title{color:var(--accent2,#36c27a);}
+.za-issue-list{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.za-issue{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:3px;font-size:11px;}
+.za-issue--error{background:rgba(224,82,82,.08);border-left:3px solid var(--danger,#e05252);}
+.za-issue--warning{background:rgba(234,179,8,.08);border-left:3px solid #eab308;}
+.za-issue__code{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--surface3,#0e1520);padding:1px 5px;border-radius:2px;color:#7dd3fc;white-space:nowrap;flex-shrink:0;}
+.za-issue__msg{color:var(--text);}
+
+/* Toolbar */
+.za-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.za-filter-group{display:flex;background:var(--surface2,#131c2b);border:1px solid var(--border);border-radius:3px;overflow:hidden;}
+.za-filter-btn{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:5px 13px;border:none;border-right:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .15s;}
+.za-filter-btn:last-child{border-right:none;}
+.za-filter-btn:hover{background:var(--surface3,#0e1520);color:var(--text);}
+.za-filter-btn.active{background:var(--accent,#3a8ef5);color:#fff;}
+.za-search{background:var(--surface2,#131c2b);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 11px;width:220px;outline:none;transition:border-color .15s;}
+.za-search:focus{border-color:var(--accent,#3a8ef5);}
+.za-search::placeholder{color:var(--text-dim);}
+.za-export-grp{display:flex;gap:5px;margin-left:auto;}
+
+/* Host blocks */
+.za-host{background:var(--surface2,#131c2b);border:1px solid var(--border);border-radius:6px;margin-bottom:12px;overflow:hidden;transition:border-color .18s;}
+.za-host:hover{border-color:var(--accent,#3a8ef5);}
+.za-host--npiv  {border-left:3px solid var(--accent3,#5ec4ff);}
+.za-host--single{border-left:3px solid var(--accent,#3a8ef5);}
+.za-host--dual  {border-left:3px solid var(--warn,#e8844b);}
+.za-host__hdr{background:var(--surface3,#0e1520);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.za-host__name{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text-bright);flex:1;}
+.za-host__meta{display:flex;gap:5px;flex-wrap:wrap;}
+.za-chip{font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:2px;background:var(--surface2,#131c2b);border:1px solid var(--border);color:var(--text-dim);}
+.za-chip--storage{color:#7dd3fc;}
+.za-chip--fabric{color:#eab308;}
+.za-pill{font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 9px;border-radius:20px;font-weight:600;}
+.za-pill--npiv  {background:rgba(94,196,255,.1);color:var(--accent3,#5ec4ff);border:1px solid rgba(94,196,255,.25);}
+.za-pill--single{background:rgba(58,142,245,.1);color:var(--accent,#3a8ef5);border:1px solid rgba(58,142,245,.25);}
+.za-pill--dual  {background:rgba(232,132,75,.1);color:var(--warn,#e8844b);border:1px solid rgba(232,132,75,.25);}
+
+/* NPIV matrix */
+.za-matrix-wrap{overflow-x:auto;padding:14px;}
+.za-matrix{border-collapse:collapse;width:100%;font-size:11px;}
+.za-matrix th{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--text-dim);padding:5px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.za-matrix th.za-th--label{min-width:180px;font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim2,#3a5070);}
+.za-matrix td{padding:4px 10px;border-bottom:1px solid var(--border,rgba(30,60,90,.4));font-family:'JetBrains Mono',monospace;font-size:11px;}
+.za-matrix tbody tr:hover td{background:var(--surface3,#0e1520);}
+.za-td--init{color:#7dd3fc;}
+.za-td--port{text-align:center;}
+.za-dot{font-size:14px;line-height:1;}
+.za-th--ah,.za-dot--ah{color:#7dd3fc;}
+.za-th--al,.za-dot--al{color:#93c5fd;}
+.za-th--bh,.za-dot--bh{color:#86efac;}
+.za-th--bl,.za-dot--bl{color:#bbf7d0;}
+.za-th--ah{background:rgba(29,111,168,.2);}
+.za-th--al{background:rgba(13,90,138,.2);}
+.za-th--bh{background:rgba(22,101,52,.2);}
+.za-th--bl{background:rgba(20,83,45,.2);}
+
+/* Zone grid for single/dual */
+.za-zone-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;padding:14px;}
+.za-zone-card{background:var(--surface3,#0e1520);border:1px solid var(--border);border-radius:3px;overflow:hidden;}
+.za-zone-card__hdr{background:var(--surface2,#131c2b);border-bottom:1px solid var(--border);padding:7px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.za-zone-card__name{font-size:10.5px;color:var(--text-bright);word-break:break-all;}
+.za-zone-card__body{padding:8px 10px;}
+.za-member{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:11px;}
+.za-member__icon{color:var(--text-dim2,#3a5070);font-size:9px;flex-shrink:0;}
+.za-member__alias{flex:1;font-family:'JetBrains Mono',monospace;}
+.za-member--host_initiator .za-member__alias{color:var(--warn,#e8844b);}
+.za-member--npiv_initiator .za-member__alias{color:var(--accent3,#5ec4ff);}
+.za-member--storage_port  .za-member__alias{color:var(--text-dim);}
+.za-member__role{font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:600;padding:1px 5px;border-radius:2px;}
+
+/* Host issue chips */
+.za-host-issues{width:100%;display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.za-issue-chip{display:flex;align-items:center;gap:5px;padding:3px 8px;border-radius:3px;font-size:10px;}
+.za-issue-chip--error  {background:rgba(224,82,82,.1);color:#fca5a5;}
+.za-issue-chip--warning{background:rgba(234,179,8,.1);color:#fde047;}
+
+.za-empty{text-align:center;padding:50px 20px;color:var(--text-dim);font-size:13px;letter-spacing:.5px;}
+</style>
+
+<!-- Input -->
+<div class="za-section">
+  <div class="za-section-hdr">
+    <span class="za-section-label">Zone Konfigürasyonu Girişi</span>
+    <span class="za-section-hint">Brocade FOS zone config yapıştırın · Ctrl+Enter ile parse edin</span>
+  </div>
+  <textarea id="za-input" class="za-textarea" spellcheck="false" autocomplete="off"
+    placeholder="Zone konfigürasyonunu buraya yapıştırın...
+
+zone:  HOSTNAME_NPIV_1_HW_005_PG4
+
+                HW_005_PG4_E0_H8_P1_184; HOSTNAME_NPIV_01
+
+zone:  HOSTNAME_NPIV_2_HW_005_PG4
+..."></textarea>
+  <div class="za-footer">
+    <button class="btn-action" id="za-btn-parse" onclick="zaHandleParse()">▶ Parse Et</button>
+    <button class="btn-outline" id="za-btn-sample" onclick="zaLoadSample()">⊕ Örnek Yükle</button>
+    <button class="btn-outline" id="za-btn-clear" onclick="zaHandleClear()">✕ Temizle</button>
+  </div>
+</div>
+
+<!-- Results -->
+<div id="za-results" style="display:none">
+  <div id="za-summary"></div>
+  <div id="za-validation"></div>
+  <div class="za-toolbar">
+    <div class="za-filter-group" id="za-filter-bar">
+      <button class="za-filter-btn active" data-zafilter="all">Tümü</button>
+      <button class="za-filter-btn" data-zafilter="npiv">NPIV</button>
+      <button class="za-filter-btn" data-zafilter="single">Single</button>
+      <button class="za-filter-btn" data-zafilter="dual">Dual</button>
+    </div>
+    <input id="za-search" class="za-search" type="text" placeholder="Host, storage, fabric ara..." autocomplete="off" oninput="zaHandleSearch(this.value)">
+    <div class="za-export-grp">
+      <button class="btn-outline" onclick="zaExport('fos')" title="FOS zonecreate/cfgadd komutları">⬇ FOS</button>
+      <button class="btn-outline" onclick="zaExport('csv')" title="CSV olarak dışa aktar">⬇ CSV</button>
+      <button class="btn-outline" onclick="zaExport('json')" title="JSON olarak dışa aktar">⬇ JSON</button>
+      <button class="btn-outline" onclick="zaCopyFos()" title="FOS komutlarını kopyala">⎘ Kopyala</button>
+    </div>
+  </div>
+  <div id="za-host-container"></div>
+</div>
+
+</div><!-- /zbpage-analyzer -->
+
+<script>
+/* ════════════════════════════════════════════════════
+   ZONE ANALYZER — inline script, portal-integrated
+   Validates: NPIV hosts must have exactly 8 zones.
+   No alicreate for non-new hosts.
+   ════════════════════════════════════════════════════ */
+(function() {
+
+const ZA = {
+  zones: [], hosts: {}, issues: [],
+  filter: 'all', search: ''
+};
+
+/* ── PARSER ── */
+function zaClassify(alias) {
+  if (/_(E[01])_(H|L)\d/i.test(alias)) return 'storage_port';
+  if (/_NPIV_\d+$/i.test(alias)) return 'npiv_initiator';
+  return 'host_initiator';
+}
+
+function zaPortRole(alias) {
+  const m = alias.match(/_(E[01])_(H|L)\d/i);
+  return m ? `${m[1].toUpperCase()}_${m[2].toUpperCase()}` : null;
+}
+
+function zaParseText(text) {
+  const zones = [];
+  const blocks = text.split(/(?=\bzone\s*:)/i).filter(b => b.trim());
+  for (const block of blocks) {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    const hm = lines[0].match(/^zone\s*:\s*(\S+)/i);
+    if (!hm) continue;
+    const name = hm[1].trim();
+    const members = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (lines[i].startsWith('--') || lines[i].startsWith('#')) continue;
+      lines[i].split(';').map(p => p.trim()).filter(Boolean).forEach(p => members.push(p));
+    }
+    if (!members.length) continue;
+    const parts = name.split('_');
+    const fabric = parts[parts.length - 1];
+    const storM = name.match(/_((?:HW|PURE|NETAPP|DELL|HITACHI)_\d+_\w+)$/i);
+    const storage = storM ? storM[1] : null;
+    let type = 'single';
+    if (/_NPIV_\d+_/.test(name)) type = 'npiv';
+    else if (/_0[12]_[A-Z]/i.test(name)) type = 'dual';
+    const npivIndex = (() => { const m = name.match(/_NPIV_(\d+)_/i); return m ? +m[1] : null; })();
+    zones.push({
+      name, fabric, storage, type, npivIndex,
+      members: members.map(a => ({ alias: a, role: zaClassify(a), portRole: zaPortRole(a) }))
+    });
+  }
+  return zones;
+}
+
+function zaGroupHosts(zones) {
+  const hosts = {};
+  for (const zone of zones) {
+    let key;
+    if (zone.type === 'npiv') { const m = zone.name.match(/^(.+?)_NPIV_\d+_/i); key = m ? m[1] : zone.name; }
+    else if (zone.type === 'dual') { const m = zone.name.match(/^(.+?)_0[12]_/i); key = m ? m[1] : zone.name; }
+    else { key = zone.storage ? zone.name.replace('_' + zone.storage, '') : zone.name; }
+    if (!hosts[key]) hosts[key] = { name: key, type: zone.type, fabric: zone.fabric, storage: zone.storage, zones: [], initiators: new Set(), storagePorts: new Set() };
+    hosts[key].zones.push(zone);
+    for (const m of zone.members) {
+      if (m.role !== 'storage_port') hosts[key].initiators.add(m.alias);
+      else hosts[key].storagePorts.add(m.alias);
+    }
+  }
+  for (const h of Object.values(hosts)) {
+    h.initiators = [...h.initiators];
+    h.storagePorts = [...h.storagePorts];
+    if (h.type === 'npiv') h.zones.sort((a, b) => (a.npivIndex || 0) - (b.npivIndex || 0));
+  }
+  return hosts;
+}
+
+function zaValidate(hosts) {
+  const issues = [];
+  for (const [name, host] of Object.entries(hosts)) {
+    if (host.type === 'npiv') {
+      if (host.zones.length !== 8) {
+        issues.push({ severity: 'error', host: name, code: 'NPIV_ZONE_COUNT',
+          message: `"${name}" NPIV host'u ${host.zones.length} zone içeriyor (beklenen: 8)` });
+      }
+      const idx = host.zones.map(z => z.npivIndex).filter(Boolean).sort((a,b)=>a-b);
+      for (let i = 0; i < idx.length; i++) {
+        if (idx[i] !== i + 1) {
+          issues.push({ severity: 'warning', host: name, code: 'NPIV_INDEX_GAP',
+            message: `"${name}" NPIV index boşluğu: beklenen ${i+1}, bulunan ${idx[i]}` });
+          break;
+        }
+      }
+    }
+    // alicreate check
+    for (const zone of host.zones) {
+      if (/alicreate/i.test(zone.name + zone.members.map(m=>m.alias).join(';'))) {
+        issues.push({ severity: 'error', host: name, code: 'UNEXPECTED_ALICREATE',
+          message: `Mevcut host "${name}" zone'unda alicreate bulundu — yeni host değilse olmamalı` });
+        break;
+      }
+    }
+  }
+  return issues;
+}
+
+/* ── RENDERER ── */
+function e(tag, cls, txt) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  if (txt !== undefined) el.textContent = txt;
+  return el;
+}
+
+function renderSummary(hosts, issues) {
+  const bar = e('div', 'za-summary');
+  const total = Object.keys(hosts).length;
+  const npiv = Object.values(hosts).filter(h => h.type==='npiv').length;
+  const single = Object.values(hosts).filter(h => h.type==='single').length;
+  const dual = Object.values(hosts).filter(h => h.type==='dual').length;
+  const errs = issues.filter(i => i.severity==='error').length;
+  [
+    [total, 'Toplam Host', 'total'],
+    [npiv, 'NPIV', 'npiv'],
+    [single, 'Single Init', 'single'],
+    [dual, 'Dual Init', 'dual'],
+    [errs, 'Hata', errs > 0 ? 'err' : 'ok']
+  ].forEach(([val, lbl, cls]) => {
+    const chip = e('div', `za-stat za-stat--${cls}`);
+    chip.appendChild(e('span', 'za-stat__val', String(val)));
+    chip.appendChild(e('span', 'za-stat__lbl', lbl));
+    bar.appendChild(chip);
+  });
+  return bar;
+}
+
+function renderValidation(issues) {
+  const panel = e('div', `za-validation${!issues.length ? ' za-validation--clean' : ''}`);
+  panel.appendChild(e('div', 'za-validation__title',
+    issues.length ? `${issues.length} Doğrulama Sorunu` : '✓ Sorun Bulunamadı'));
+  if (issues.length) {
+    const ul = e('ul', 'za-issue-list');
+    for (const iss of issues) {
+      const li = e('li', `za-issue za-issue--${iss.severity}`);
+      li.appendChild(e('code', 'za-issue__code', iss.code));
+      li.appendChild(e('span', 'za-issue__msg', iss.message));
+      ul.appendChild(li);
+    }
+    panel.appendChild(ul);
+  }
+  return panel;
+}
+
+const PORT_ROLE_CLS = { E0_H:'ah', E0_L:'al', E1_H:'bh', E1_L:'bl' };
+const PORT_LABELS = { E0_H:'Fab-A High', E0_L:'Fab-A Low', E1_H:'Fab-B High', E1_L:'Fab-B Low' };
+
+function renderNpivMatrix(host) {
+  const wrap = e('div', 'za-matrix-wrap');
+  const table = e('table', 'za-matrix');
+  const portOrder = ['E0_H', 'E0_L', 'E1_H', 'E1_L'];
+  const portMap = {};
+  for (const zone of host.zones)
+    for (const m of zone.members)
+      if (m.role === 'storage_port' && m.portRole) portMap[m.alias] = m.portRole;
+  const allPorts = Object.keys(portMap).sort((a, b) => {
+    const ra = portOrder.indexOf(portMap[a]), rb = portOrder.indexOf(portMap[b]);
+    return ra !== rb ? ra - rb : a.localeCompare(b);
+  });
+  const thead = document.createElement('thead');
+  const hrow = document.createElement('tr');
+  const thLbl = e('th', 'za-th--label', 'Zone / Initiator');
+  hrow.appendChild(thLbl);
+  for (const port of allPorts) {
+    const cls = PORT_ROLE_CLS[portMap[port]] || '';
+    const th = e('th', `za-th--${cls}`);
+    const parts = port.split('_'); th.textContent = parts.slice(-4).join('_'); th.title = port;
+    hrow.appendChild(th);
+  }
+  thead.appendChild(hrow); table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  for (const zone of host.zones) {
+    const tr = document.createElement('tr');
+    const initM = zone.members.find(m => m.role === 'npiv_initiator');
+    const tdInit = e('td', 'za-td--init', initM ? initM.alias : `Zone ${zone.npivIndex}`);
+    tdInit.title = zone.name; tr.appendChild(tdInit);
+    const zPorts = new Set(zone.members.filter(m => m.role==='storage_port').map(m => m.alias));
+    for (const port of allPorts) {
+      const td = e('td', 'za-td--port');
+      if (zPorts.has(port)) {
+        const dotCls = PORT_ROLE_CLS[portMap[port]] || '';
+        const dot = e('span', `za-dot za-dot--${dotCls}`, '●');
+        td.appendChild(dot);
+      }
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody); wrap.appendChild(table); return wrap;
+}
+
+function renderZoneCard(zone) {
+  const card = e('div', 'za-zone-card');
+  const hdr = e('div', 'za-zone-card__hdr');
+  hdr.appendChild(e('span', 'za-zone-card__name', zone.name));
+  card.appendChild(hdr);
+  const body = e('div', 'za-zone-card__body');
+  for (const m of zone.members) {
+    const row = e('div', `za-member za-member--${m.role}`);
+    row.appendChild(e('span', 'za-member__icon', m.role==='storage_port' ? '▪' : m.role==='npiv_initiator' ? '◈' : '◉'));
+    row.appendChild(e('span', 'za-member__alias', m.alias));
+    if (m.portRole) {
+      const cls = PORT_ROLE_CLS[m.portRole] || '';
+      row.appendChild(e('span', `za-member__role za-th--${cls}`, PORT_LABELS[m.portRole] || m.portRole));
+    }
+    body.appendChild(row);
+  }
+  card.appendChild(body); return card;
+}
+
+function renderHostBlock(hostName, host) {
+  const issues = ZA.issues.filter(i => i.host === hostName);
+  const block = e('div', `za-host za-host--${host.type}`);
+  const hdr = e('div', 'za-host__hdr');
+  const nameWrap = e('div', '');
+  nameWrap.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;';
+  nameWrap.appendChild(e('span', 'za-host__name', hostName));
+  const pill = e('span', `za-pill za-pill--${host.type}`,
+    host.type==='npiv' ? `NPIV · ${host.zones.length} zone` :
+    host.type==='dual' ? 'Dual Init' : 'Single Init');
+  nameWrap.appendChild(pill);
+  hdr.appendChild(nameWrap);
+  const meta = e('div', 'za-host__meta');
+  if (host.storage) meta.appendChild(e('span', 'za-chip za-chip--storage', host.storage));
+  if (host.fabric)  meta.appendChild(e('span', 'za-chip za-chip--fabric', host.fabric));
+  hdr.appendChild(meta);
+  if (issues.length) {
+    const issueBar = e('div', 'za-host-issues');
+    for (const iss of issues) {
+      const chip = e('div', `za-issue-chip za-issue-chip--${iss.severity}`);
+      chip.appendChild(e('span', '', iss.severity==='error' ? '✕' : '⚠'));
+      chip.appendChild(e('span', '', iss.message));
+      issueBar.appendChild(chip);
+    }
+    hdr.appendChild(issueBar);
+  }
+  block.appendChild(hdr);
+  if (host.type === 'npiv') {
+    block.appendChild(renderNpivMatrix(host));
+  } else {
+    const grid = e('div', 'za-zone-grid');
+    for (const zone of host.zones) grid.appendChild(renderZoneCard(zone));
+    block.appendChild(grid);
+  }
+  return block;
+}
+
+function zaRenderAll() {
+  const container = document.getElementById('za-host-container');
+  if (!container) return;
+  const term = ZA.search.toLowerCase();
+  const filtered = Object.fromEntries(
+    Object.entries(ZA.hosts).filter(([name, host]) =>
+      (ZA.filter==='all' || host.type===ZA.filter) &&
+      (!term || name.toLowerCase().includes(term) || (host.storage||'').toLowerCase().includes(term) || (host.fabric||'').toLowerCase().includes(term))
+    )
+  );
+  container.textContent = '';
+  const sumEl = document.getElementById('za-summary');
+  const valEl = document.getElementById('za-validation');
+  if (sumEl) { sumEl.textContent=''; sumEl.appendChild(renderSummary(ZA.hosts, ZA.issues)); }
+  if (valEl) { valEl.textContent=''; valEl.appendChild(renderValidation(ZA.issues)); }
+  if (!Object.keys(filtered).length) {
+    container.appendChild(e('div', 'za-empty', Object.keys(ZA.hosts).length ? 'Filtreye uyan host bulunamadı.' : 'Zone konfigürasyonunu yapıştırıp Parse Et butonuna tıklayın.'));
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  for (const [name, host] of Object.entries(filtered)) frag.appendChild(renderHostBlock(name, host));
+  container.appendChild(frag);
+}
+
+/* ── EXPORT ── */
+function zaDownload(content, filename, mime) {
+  const blob = new Blob([content], { type: mime || 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function zaExport(fmt) {
+  if (!Object.keys(ZA.hosts).length) { showToast('Önce zone config parse edin'); return; }
+  const ts = new Date().toISOString().slice(0,10);
+  if (fmt === 'fos') {
+    const lines = [`# Zone commands — ${ts}`, ''];
+    for (const [, host] of Object.entries(ZA.hosts)) {
+      lines.push(`# ${host.name} [${host.type.toUpperCase()}]`);
+      for (const zone of host.zones)
+        lines.push(`zonecreate "${zone.name}", "${zone.members.map(m=>m.alias).join('; ')}"`);
+      if (host.zones.length)
+        lines.push(`cfgadd "cfg_${host.fabric||'DEFAULT'}", "${host.zones.map(z=>z.name).join('; ')}"`);
+      lines.push('');
+    }
+    lines.push('cfgsave');
+    zaDownload(lines.join('\n'), `zones_fos_${ts}.txt`);
+  } else if (fmt === 'csv') {
+    const rows = [['Host','Type','ZoneName','ZoneIndex','MemberAlias','MemberRole','PortRole','Fabric','Storage']];
+    for (const [hn, host] of Object.entries(ZA.hosts))
+      for (const zone of host.zones)
+        for (const m of zone.members)
+          rows.push([hn, host.type, zone.name, zone.npivIndex||'', m.alias, m.role, m.portRole||'', host.fabric||'', host.storage||'']);
+    zaDownload(rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'), `zones_${ts}.csv`, 'text/csv');
+  } else if (fmt === 'json') {
+    zaDownload(JSON.stringify({ hosts: ZA.hosts, issues: ZA.issues, exportedAt: new Date().toISOString() }, null, 2), `zones_${ts}.json`, 'application/json');
+  }
+  showToast(`${fmt.toUpperCase()} olarak dışa aktarıldı`);
+}
+
+function zaCopyFos() {
+  if (!Object.keys(ZA.hosts).length) { showToast('Önce zone config parse edin'); return; }
+  const lines = [];
+  for (const [, host] of Object.entries(ZA.hosts)) {
+    for (const zone of host.zones)
+      lines.push(`zonecreate "${zone.name}", "${zone.members.map(m=>m.alias).join('; ')}"`);
+    if (host.zones.length)
+      lines.push(`cfgadd "cfg_${host.fabric||'DEFAULT'}", "${host.zones.map(z=>z.name).join('; ')}"`);
+  }
+  lines.push('cfgsave');
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(() => showToast('FOS komutları kopyalandı'))
+    .catch(() => showToast('Kopyalama başarısız'));
+}
+
+/* ── EVENT HANDLERS (exposed to window for onclick attrs) ── */
+window.zaHandleParse = function() {
+  const input = document.getElementById('za-input');
+  if (!input || !input.value.trim()) { showToast('Zone konfigürasyonunu yapıştırın'); return; }
+  try {
+    ZA.zones = zaParseText(input.value);
+    if (!ZA.zones.length) { showToast('Zone bulunamadı — formatı kontrol edin'); return; }
+    ZA.hosts = zaGroupHosts(ZA.zones);
+    ZA.issues = zaValidate(ZA.hosts);
+    const n = Object.keys(ZA.hosts).length;
+    const errs = ZA.issues.filter(i=>i.severity==='error').length;
+    showToast(`${ZA.zones.length} zone, ${n} host parse edildi.` + (errs ? ` ${errs} hata!` : ' ✓'));
+    document.getElementById('za-results').style.display = 'block';
+    zaRenderAll();
+  } catch(ex) {
+    console.error(ex);
+    showToast('Parse hatası: ' + ex.message);
+  }
+};
+
+window.zaHandleClear = function() {
+  const inp = document.getElementById('za-input');
+  if (inp) inp.value = '';
+  ZA.zones=[]; ZA.hosts={}; ZA.issues=[]; ZA.filter='all'; ZA.search='';
+  document.getElementById('za-results').style.display='none';
+  const s = document.getElementById('za-search'); if(s) s.value='';
+  document.querySelectorAll('.za-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.zafilter==='all'));
+};
+
+window.zaHandleSearch = function(val) {
+  ZA.search = val;
+  zaRenderAll();
+};
+
+window.zaExport = zaExport;
+window.zaCopyFos = zaCopyFos;
+
+window.zaLoadSample = function() {
+  const sample = `zone:  SDPRDDB01_NPIV_1_HW_005_PG4\n\n\t\t\t\tHW_005_PG4_E0_H8_P1_184; SDPRDDB01_NPIV_01\n\nzone:  SDPRDDB01_NPIV_2_HW_005_PG4\n\n\t\t\t\tHW_005_PG4_E0_H8_P1_184; SDPRDDB01_NPIV_02\n\nzone:  SDPRDDB01_NPIV_3_HW_005_PG4\n\n\t\t\t\tHW_005_PG4_E0_L8_P1_184; SDPRDDB01_NPIV_03\n\nzone:  SDPRDDB01_NPIV_4_HW_005_PG4\n\n\t\t\t\tHW_005_PG4_E0_L8_P1_184; SDPRDDB01_NPIV_04\n\nzone:  SDPRDDB01_NPIV_5_HW_005_PG4\n\n\t\t\t\tHW_005_PG4_E1_H5_P1_184; SDPRDDB01_NPIV_05\n\nzone:  SDPRDDB01_NPIV_6_HW_005_PG4\n\n\t\t\t\tHW_005_PG4_E1_H5_P1_184; SDPRDDB01_NPIV_06\n\nzone:  SDPRDDB01_NPIV_7_HW_005_PG4\n\n\t\t\t\tHW_005_PG4_E1_L5_P1_184; SDPRDDB01_NPIV_07\n\nzone:  SDPRDDB01_NPIV_8_HW_005_PG4\n\n\t\t\t\tHW_005_PG4_E1_L5_P1_184; SDPRDDB01_NPIV_08\n\nzone:  ALOPRDKFK10_HW_004_PG4\n\n\t\t\t\tALOPRDKFK10; HW_004_PG4_E0_H5_P1_206; HW_004_PG4_E0_L5_P1_196;\n\t\t\t\tHW_004_PG4_E1_H8_P1_206; HW_004_PG4_E1_L8_P1_196\n\nzone:  YNPRDCLN04_01_HW_007_PG4\n\n\t\t\t\tHW_007_PG4_E0_H8_P1_206; HW_007_PG4_E1_H5_P1_206;\n\t\t\t\tYNPRDCLN04_01\n\nzone:  YNPRDCLN04_02_HW_007_PG4\n\n\t\t\t\tHW_007_PG4_E0_L8_P1_196; HW_007_PG4_E1_L5_P1_196;\n\t\t\t\tYNPRDCLN04_02`;
+  const inp = document.getElementById('za-input');
+  if (inp) { inp.value = sample; showToast('Örnek veri yüklendi'); }
+};
+
+// Filter bar event delegation
+document.getElementById('za-filter-bar')?.addEventListener('click', e => {
+  const btn = e.target.closest('.za-filter-btn[data-zafilter]');
+  if (!btn) return;
+  ZA.filter = btn.dataset.zafilter;
+  document.querySelectorAll('.za-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.zafilter===ZA.filter));
+  zaRenderAll();
+});
+
+// Ctrl+Enter in textarea
+document.getElementById('za-input')?.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') window.zaHandleParse();
+});
+
+})();
+</script>
 
 <div class="dash-footer">
   <span>BROCADE ZONE BUILDER · NPIV & NORMAL</span>
