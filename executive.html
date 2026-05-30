@@ -5,10 +5,10 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Executive Summary · Storage Portal</title>
-<link rel="stylesheet" href="./storage-styles.css">
-<script src="./storage-utils.js"></script>
-<script src="./asset-inventory.js"></script>
-<script src="./nav.js"></script>
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/asset-inventory.js"></script>
+<script src="./assets/js/nav.js"></script>
 <style>
 body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.18) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
@@ -180,12 +180,12 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 </div>
 <script>
 const VENDORS = [
-  { id:'hw',   label:'Huawei OceanStor',  url:'./Hw/Dorado_Dashboard.csv',    col:'Kabinet', accent:'var(--accent)'  },
-  { id:'pmax', label:'Dell PowerMax',      url:'./Pmax/PmaxPoolDash.csv',       col:'Array ID',accent:'var(--accent2)' },
-  { id:'pure', label:'Pure FlashArray',    url:'./Pure/Pure_Dashboard.csv',     col:'Kabinet', accent:'var(--accent3)' },
-  { id:'fb',   label:'Pure FlashBlade',    url:'./Pure/FB_Dashboard.csv',       col:'Kabinet', accent:'var(--purple)'  },
-  { id:'na',   label:'NetApp ONTAP',       url:'./NetApp/NetApp_Dashboard.csv', col:'Kabinet', accent:'var(--accent2)' },
-  { id:'ecs',  label:'Dell ECS',           url:'./Ecs/ECS_Dashboard.csv',       col:'Node IP', accent:'var(--warn)'    },
+  { id:'hw',   label:'Huawei OceanStor',  url:'./data/Hw/Dorado_Dashboard.csv',    col:'Kabinet', accent:'var(--accent)'  },
+  { id:'pmax', label:'Dell PowerMax',      url:'./data/Pmax/PmaxPoolDash.csv',       col:'Array ID',accent:'var(--accent2)' },
+  { id:'pure', label:'Pure FlashArray',    url:'./data/Pure/Pure_Dashboard.csv',     col:'Kabinet', accent:'var(--accent3)' },
+  { id:'fb',   label:'Pure FlashBlade',    url:'./data/Pure/FB_Dashboard.csv',       col:'Kabinet', accent:'var(--purple)'  },
+  { id:'na',   label:'NetApp ONTAP',       url:'./data/NetApp/NetApp_Dashboard.csv', col:'Kabinet', accent:'var(--accent2)' },
+  { id:'ecs',  label:'Dell ECS',           url:'./data/Ecs/ECS_Dashboard.csv',       col:'Node IP', accent:'var(--warn)'    },
 ];
 
 const SKIP = r => {

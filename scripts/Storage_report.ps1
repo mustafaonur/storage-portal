@@ -265,7 +265,7 @@ if (-not ([System.Management.Automation.PSTypeName]'SSLBypass').Type) {
 [SSLBypass]::Enable()
 
 # Yollar
-$LocalBase  = 'C:\Scripts\Storage'
+$LocalBase  = Join-Path $ScriptRoot '..' 'data'
 $RemoteBase = '\\btprdsrc01\source_drive\genel\StorageScriptOutput'
 
 $LocalHw      = Join-Path $LocalBase 'Hw'

@@ -5,9 +5,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pure FlashArray Dashboard</title>
-<link rel="stylesheet" href="./storage-styles.css">
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
@@ -389,11 +389,11 @@ let cabinets  = [];
 let hosts     = [];
 let lunGroups = [];
 
-const CSV_DASHBOARD = './Pure/Pure_Dashboard.csv';
-const CSV_HOSTS     = './Pure/Pure_Host.csv';
-const CSV_LUNGROUPS = './Pure/Pure_Volume.csv';
-const CSV_CAPACITY  = './Pure/Pure_Capacity_Dashboard.csv';   // Data reduction per array
-const CSV_HOSTDET   = './Pure/Pure_Host_Details.csv';         // IQN/WWN detail per host
+const CSV_DASHBOARD = './data/Pure/Pure_Dashboard.csv';
+const CSV_HOSTS     = './data/Pure/Pure_Host.csv';
+const CSV_LUNGROUPS = './data/Pure/Pure_Volume.csv';
+const CSV_CAPACITY  = './data/Pure/Pure_Capacity_Dashboard.csv';   // Data reduction per array
+const CSV_HOSTDET   = './data/Pure/Pure_Host_Details.csv';         // IQN/WWN detail per host
 
 function updateClock() {
   document.getElementById('clock').textContent =
@@ -962,7 +962,7 @@ function clearHostFilters() {
 loadCSVs();
 
 /* Veri tazeliği rozeti */
-renderFreshnessBadge('data-fresh-badge', ['./Pure/Pure_Dashboard.csv', './Pure/Pure_Host.csv']);
+renderFreshnessBadge('data-fresh-badge', ['./data/Pure/Pure_Dashboard.csv', './data/Pure/Pure_Host.csv']);
 
 // Stale data check handled globally by storage-utils.js autoCheckFreshness()
 

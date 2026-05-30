@@ -364,7 +364,7 @@ function spCabinetFooter(opts) {
 
 /**
  * fetchMany(urlMap) → { key: rows[] }
- * urlMap = { dorado: './Hw/Dorado_Dashboard.csv', pmax: './Pmax/PmaxPoolDash.csv', ... }
+ * urlMap = { dorado: './data/Hw/Dorado_Dashboard.csv', pmax: './data/Pmax/PmaxPoolDash.csv', ... }
  * Tüm CSV'leri paralel indirir, parse eder, obje olarak döner.
  * Herhangi biri başarısız olursa key→[] döner (sessiz hata).
  */
@@ -386,7 +386,7 @@ const fetchOne = fetchCSVParsed;
 
 /**
  * fetchHistory(urlTemplate, days) → { date: rows[] }
- * urlTemplate: './Hw/_history/Dorado_Dashboard_{D}.csv'  ({D} = YYYY-MM-DD)
+ * urlTemplate: './data/Hw/_history/Dorado_Dashboard_{D}.csv'  ({D} = YYYY-MM-DD)
  * Son N günün history dosyalarını paralel arar, bulunanları döner.
  */
 async function fetchHistory(urlTemplate, days = 30, concurrency = 5) {
@@ -460,13 +460,13 @@ async function checkPortalFreshness(vendorUrls = []) {
 // Runs on every page. Each vendor page passes its own CSVs;
 // analytics/tool pages use the master vendor list as a proxy for overall data age.
 const _ALL_VENDOR_CSVS = [
-  './Hw/Dorado_Dashboard.csv',
-  './NetApp/NetApp_Dashboard.csv',
-  './Pure/Pure_Dashboard.csv',
-  './Pmax/PmaxPoolDash.csv',
-  './Ecs/ECS_Dashboard.csv',
-  './Hitachi/Hitachi_PROD.csv',
-  './San/SAN_Director_Dashboard.csv'
+  './data/Hw/Dorado_Dashboard.csv',
+  './data/NetApp/NetApp_Dashboard.csv',
+  './data/Pure/Pure_Dashboard.csv',
+  './data/Pmax/PmaxPoolDash.csv',
+  './data/Ecs/ECS_Dashboard.csv',
+  './data/Hitachi/Hitachi_PROD.csv',
+  './data/San/SAN_Director_Dashboard.csv'
 ];
 
 /**

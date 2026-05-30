@@ -5,9 +5,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pure FlashBlade Dashboard</title>
-<link rel="stylesheet" href="./storage-styles.css">
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <style>
 
   
@@ -345,13 +345,13 @@ let lunGroups = [];
 
 let fbReplData = [];
 
-const CSV_DASHBOARD = './Pure/FB_Dashboard.csv';
+const CSV_DASHBOARD = './data/Pure/FB_Dashboard.csv';
 
-const CSV_HOSTS     = './Pure/FB_Buckets.csv';
+const CSV_HOSTS     = './data/Pure/FB_Buckets.csv';
 
-const CSV_LUNGROUPS = './Pure/FB_FileSystems.csv';
+const CSV_LUNGROUPS = './data/Pure/FB_FileSystems.csv';
 
-const CSV_FB_REPL   = './Pure/FB_Replication.csv';
+const CSV_FB_REPL   = './data/Pure/FB_Replication.csv';
 
 function updateClock() {
 
@@ -577,7 +577,7 @@ let bucketHistory = {};
 
 let historyDateUsed = null;
 
-const FB_HIST_PATH = './Pure/_history/FB_Buckets_{D}.csv';
+const FB_HIST_PATH = './data/Pure/_history/FB_Buckets_{D}.csv';
 
 async function loadHistory() {
 

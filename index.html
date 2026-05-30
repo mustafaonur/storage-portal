@@ -5,10 +5,10 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enterprise Storage Portal</title>
-<link rel="stylesheet" href="./storage-styles.css">
-<script src="./storage-utils.js"></script>
-<script src="./asset-inventory.js"></script>
-<script src="./report-export.js"></script>
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/asset-inventory.js"></script>
+<script src="./assets/js/report-export.js"></script>
 <style>
   /* =========================================================
      DESIGN TOKENS  -  ortak tema (huawei.html ile uyumlu)
@@ -1539,7 +1539,7 @@ async function main() {
   ldStep('Huawei OceanStor verisi...', 10);
   // Huawei
   try {
-    const rows = parseCSV(await fetchCSVText('./Hw/Dorado_Dashboard.csv'));
+    const rows = parseCSV(await fetchCSVText('./data/Hw/Dorado_Dashboard.csv'));
     LOG.push(`[HW]   ${rows.length} satir | kolonlar: ${Object.keys(rows[0]||{}).join(', ')}`);
     processHuawei(rows);
   } catch (e) {
@@ -1549,7 +1549,7 @@ async function main() {
   ldStep('Dell PowerMax verisi...', 35);
   // PowerMax
   try {
-    const rows = parseCSV(await fetchCSVText('./Pmax/PmaxPoolDash.csv'));
+    const rows = parseCSV(await fetchCSVText('./data/Pmax/PmaxPoolDash.csv'));
     LOG.push(`[PMAX] ${rows.length} satir | kolonlar: ${Object.keys(rows[0]||{}).join(', ')}`);
     processPowerMax(rows);
   } catch (e) {
@@ -1559,7 +1559,7 @@ async function main() {
   ldStep('Pure FlashArray verisi...', 55);
   // Pure FlashArray
   try {
-    const rows = parseCSV(await fetchCSVText('./Pure/Pure_Dashboard.csv'));
+    const rows = parseCSV(await fetchCSVText('./data/Pure/Pure_Dashboard.csv'));
     LOG.push(`[PURE] ${rows.length} satir | kolonlar: ${Object.keys(rows[0]||{}).join(', ')}`);
     processPure(rows);
   } catch (e) {
@@ -1569,7 +1569,7 @@ async function main() {
   ldStep('Pure FlashBlade verisi...', 68);
   // Pure FlashBlade
   try {
-    const rows = parseCSV(await fetchCSVText('./Pure/FB_Dashboard.csv'));
+    const rows = parseCSV(await fetchCSVText('./data/Pure/FB_Dashboard.csv'));
     LOG.push(`[FB] ${rows.length} satir`);
     processPureFB(rows);
   } catch (e) {
@@ -1579,7 +1579,7 @@ async function main() {
   ldStep('NetApp ONTAP verisi...', 80);
   // NetApp
   try {
-    const rows = parseCSV(await fetchCSVText('./NetApp/NetApp_Dashboard.csv'));
+    const rows = parseCSV(await fetchCSVText('./data/NetApp/NetApp_Dashboard.csv'));
     LOG.push(`[NETAPP] ${rows.length} satir`);
     processNetApp(rows);
   } catch (e) {
@@ -1622,9 +1622,9 @@ async function loadLayerStats() {
 
   // SAN: Huawei + PowerMax + Pure FA host'lari
   const [hwHosts, pmaxHosts, pureHosts] = await Promise.all([
-    fetchCsv('./Hw/Dorado_Host.csv'),
-    fetchCsv('./Pmax/PmaxPoolHost.csv'),
-    fetchCsv('./Pure/Pure_Host.csv'),
+    fetchCsv('./data/Hw/Dorado_Host.csv'),
+    fetchCsv('./data/Pmax/PmaxPoolHost.csv'),
+    fetchCsv('./data/Pure/Pure_Host.csv'),
   ]);
   const pmaxUnique = new Set();
   pmaxHosts.forEach(r => { if (r['Host Name']) pmaxUnique.add(`${r['Array ID']}::${r['Host Name'].toLowerCase()}`); });
@@ -1637,7 +1637,7 @@ async function loadLayerStats() {
   document.getElementById('layer-san-bar').style.width = Math.min(sanTotal/10, 100) + '%';
 
   // NAS: NetApp volumes
-  const naVols = await fetchCsv('./NetApp/NetApp_Volume.csv');
+  const naVols = await fetchCsv('./data/NetApp/NetApp_Volume.csv');
   const naSize = naVols.reduce((s,r)=>s+toN(r['Size (TB)']), 0);
   const naSvms = new Set(naVols.map(r => r['SVM']).filter(s => s)).size;
 
@@ -1648,8 +1648,8 @@ async function loadLayerStats() {
 
   // S3: ECS buckets + Pure FB buckets
   const [ecsBuckets, fbBuckets] = await Promise.all([
-    fetchCsv('./Ecs/ECS_Buckets.csv'),
-    fetchCsv('./Pure/FB_Buckets.csv'),
+    fetchCsv('./data/Ecs/ECS_Buckets.csv'),
+    fetchCsv('./data/Pure/FB_Buckets.csv'),
   ]);
   const ecsSize = ecsBuckets.reduce((s,r)=>s+toN(r['Size (GiB)']), 0) / 1024;
   const fbSize  = fbBuckets.reduce((s,r)=>s+toN(r['Virtual (TB)']), 0);
@@ -1718,26 +1718,26 @@ async function loadChangeLog() {
   dateEl.textContent = `${yestStr} → ${todayStr}`;
 
   const pairs = [
-    { today: `./Hw/_history/Dorado_Dashboard_${todayStr}.csv`,
-      yest:  `./Hw/_history/Dorado_Dashboard_${yestStr}.csv`,
+    { today: `./data/Hw/_history/Dorado_Dashboard_${todayStr}.csv`,
+      yest:  `./data/Hw/_history/Dorado_Dashboard_${yestStr}.csv`,
       label: 'Huawei', key: 'Kabinet', valCol: 'Used (TB)' },
-    { today: `./Pmax/_history/PmaxPoolDash_${todayStr}.csv`,
-      yest:  `./Pmax/_history/PmaxPoolDash_${yestStr}.csv`,
+    { today: `./data/Pmax/_history/PmaxPoolDash_${todayStr}.csv`,
+      yest:  `./data/Pmax/_history/PmaxPoolDash_${yestStr}.csv`,
       label: 'PowerMax', key: 'Array ID', valCol: 'Used (TB)' },
-    { today: `./Hw/_history/Dorado_Host_${todayStr}.csv`,
-      yest:  `./Hw/_history/Dorado_Host_${yestStr}.csv`,
+    { today: `./data/Hw/_history/Dorado_Host_${todayStr}.csv`,
+      yest:  `./data/Hw/_history/Dorado_Host_${yestStr}.csv`,
       label: 'HW Host', key: 'Host Name', valCol: '' },
-    { today: `./Pmax/_history/PmaxPoolHost_${todayStr}.csv`,
-      yest:  `./Pmax/_history/PmaxPoolHost_${yestStr}.csv`,
+    { today: `./data/Pmax/_history/PmaxPoolHost_${todayStr}.csv`,
+      yest:  `./data/Pmax/_history/PmaxPoolHost_${yestStr}.csv`,
       label: 'PMAX Host', key: 'Host Name', valCol: '' },
-    { today: `./Pure/_history/FB_Buckets_${todayStr}.csv`,
-      yest:  `./Pure/_history/FB_Buckets_${yestStr}.csv`,
+    { today: `./data/Pure/_history/FB_Buckets_${todayStr}.csv`,
+      yest:  `./data/Pure/_history/FB_Buckets_${yestStr}.csv`,
       label: 'FB Bucket', key: 'Bucket', valCol: 'Virtual (TB)' },
-    { today: `./Ecs/_history/ECS_Buckets_${todayStr}.csv`,
-      yest:  `./Ecs/_history/ECS_Buckets_${yestStr}.csv`,
+    { today: `./data/Ecs/_history/ECS_Buckets_${todayStr}.csv`,
+      yest:  `./data/Ecs/_history/ECS_Buckets_${yestStr}.csv`,
       label: 'ECS Bucket', key: 'Bucket', valCol: 'Size (GiB)' },
-    { today: `./San/_history/SAN_Director_Dashboard_${todayStr}.csv`,
-      yest:  `./San/_history/SAN_Director_Dashboard_${yestStr}.csv`,
+    { today: `./data/San/_history/SAN_Director_Dashboard_${todayStr}.csv`,
+      yest:  `./data/San/_history/SAN_Director_Dashboard_${yestStr}.csv`,
       label: 'SAN', key: 'SwitchName', valCol: 'OnlinePorts' },
   ];
 
@@ -1919,10 +1919,10 @@ loadCabinetStatus();
 
 /* Veri tazeliği rozeti — tüm vendor dashboard'larının en eskisi */
 renderFreshnessBadge('data-fresh-badge', [
-  './Hw/Dorado_Dashboard.csv', './Pmax/PmaxPoolDash.csv',
-  './Pure/Pure_Dashboard.csv', './Pure/FB_Dashboard.csv',
-  './NetApp/NetApp_Dashboard.csv', './Ecs/ECS_Dashboard.csv',
-  './San/SAN_Director_Dashboard.csv'
+  './data/Hw/Dorado_Dashboard.csv', './data/Pmax/PmaxPoolDash.csv',
+  './data/Pure/Pure_Dashboard.csv', './data/Pure/FB_Dashboard.csv',
+  './data/NetApp/NetApp_Dashboard.csv', './data/Ecs/ECS_Dashboard.csv',
+  './data/San/SAN_Director_Dashboard.csv'
 ], true);  // en eski - genel sağlık göstergesi
 
 
@@ -1939,10 +1939,10 @@ async function loadRunway() {
   const WARN_DAYS = 60;
 
   const SOURCES = [
-    { vendor:'Huawei',   url:'./Hw/_history/Dorado_Dashboard_{D}.csv',   cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
-    { vendor:'PowerMax', url:'./Pmax/_history/PmaxPoolDash_{D}.csv',      cabCol:'Array ID', useCol:'Used (TB)', totCol:'Total (TB)' },
-    { vendor:'Pure FA',  url:'./Pure/_history/Pure_Dashboard_{D}.csv',    cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
-    { vendor:'NetApp',   url:'./NetApp/_history/NetApp_Dashboard_{D}.csv',cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
+    { vendor:'Huawei',   url:'./data/Hw/_history/Dorado_Dashboard_{D}.csv',   cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
+    { vendor:'PowerMax', url:'./data/Pmax/_history/PmaxPoolDash_{D}.csv',      cabCol:'Array ID', useCol:'Used (TB)', totCol:'Total (TB)' },
+    { vendor:'Pure FA',  url:'./data/Pure/_history/Pure_Dashboard_{D}.csv',    cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
+    { vendor:'NetApp',   url:'./data/NetApp/_history/NetApp_Dashboard_{D}.csv',cabCol:'Kabinet',  useCol:'Used (TB)', totCol:'Total (TB)' },
   ];
 
   const dates   = dateRangeBack(14, 'YYYY-MM-DD');
@@ -2196,7 +2196,7 @@ async function renderVelocitySparkline() {
   for (let i = 0; i < dates.length; i += 3) {  // sample every 3 days for speed
     const chunk = dates.slice(i, i + 3);
     await Promise.allSettled(chunk.map(async d => {
-      const url = `./Hw/_history/Dorado_Dashboard_${d}.csv`;
+      const url = `./data/Hw/_history/Dorado_Dashboard_${d}.csv`;
       const text = await fetchCSVText(url).catch(() => '');
       if (!text) return;
       const rows = parseCSV(text).filter(r => isDataRow ? isDataRow(r,'Kabinet') : r['Kabinet']);

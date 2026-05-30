@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<link rel="stylesheet" href="./storage-styles.css">
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Host WWN Finder · Storage Portal</title>
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
@@ -248,9 +248,9 @@
 </div>
 
 <script>
-const CSV_HUAWEI = './Hw/Dorado_Host.csv';
-const CSV_PMAX   = './Pmax/PmaxPoolHost.csv';
-const CSV_PURE   = './Pure/Pure_Host.csv';
+const CSV_HUAWEI = './data/Hw/Dorado_Host.csv';
+const CSV_PMAX   = './data/Pmax/PmaxPoolHost.csv';
+const CSV_PURE   = './data/Pure/Pure_Host.csv';
 
 let allRecords = [];  // her satir: {vendor, cabinet, host, os, wwnRaw, wwnClean}
 

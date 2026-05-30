@@ -5,9 +5,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NetApp ONTAP Dashboard</title>
-<link rel="stylesheet" href="./storage-styles.css">
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <link href="https://protect2.fireeye.com/v1/url?k=988847e2-fbdfd59c-988974f8-74fe486eb94f-43fd20c105957608&q=1&e=2cab7cbe-08cd-4570-85d3-2ca44ae232fa&u=https%3A%2F%2Furldefense.com%2Fv3%2F__https%3A%2F%2Ffonts.googleapis.com%2Fcss2%3Ffamily%3DJetBrains%2AMono%3Awght%40300%3B400%3B500%3B700%26family%3DSyne%3Awght%40400%3B600%3B700%3B800%26display%3Dswap__%3BKw%21%21LI3htEUvy8-3%21sKMU7uyQSSEQ6i8toZNa8SXomAW0tDfQ1MprkmqdWpO0GX3tevyEOp9hC025niwGhVPyqtbbQTGArLrLVtAQfZMVVdLQzn2shX4oMA%24" rel="stylesheet">
 <style>
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -468,10 +468,10 @@ let hosts     = [];
 let lunGroups = [];
 let aggregates = [];
 
-const CSV_DASHBOARD = './NetApp/NetApp_Dashboard.csv';
-const CSV_HOSTS     = './NetApp/NetApp_SVM.csv';
-const CSV_LUNGROUPS = './NetApp/NetApp_Volume.csv';
-const CSV_AGGS      = './NetApp/NetApp_Aggregate.csv';
+const CSV_DASHBOARD = './data/NetApp/NetApp_Dashboard.csv';
+const CSV_HOSTS     = './data/NetApp/NetApp_SVM.csv';
+const CSV_LUNGROUPS = './data/NetApp/NetApp_Volume.csv';
+const CSV_AGGS      = './data/NetApp/NetApp_Aggregate.csv';
 
 function updateClock() {
   document.getElementById('clock').textContent =
@@ -1138,7 +1138,7 @@ function clearHostFilters() {
 /* ═══════════════════════════════════════════════
    NETAPP SNAPSHOT POLICY
 ═══════════════════════════════════════════════ */
-const CSV_NA_SNAP = './NetApp/NetApp_SnapPolicy.csv';
+const CSV_NA_SNAP = './data/NetApp/NetApp_SnapPolicy.csv';
 let naSnapData = [];
 
 async function loadNaSnap() {
@@ -1227,7 +1227,7 @@ function renderNaSnap() {
 /* ═══════════════════════════════════════════════
    NETAPP METROCLUSTER
 ═══════════════════════════════════════════════ */
-const CSV_NA_MC = './NetApp/NetApp_MetroCluster.csv';
+const CSV_NA_MC = './data/NetApp/NetApp_MetroCluster.csv';
 let mcData    = [];
 let mcSubView = 'nodes';
 
@@ -1377,7 +1377,7 @@ function renderMc() {
 loadCSVs();
 
 if (typeof renderFreshnessBadge === 'function') {
-  renderFreshnessBadge('data-fresh-badge', ['./NetApp/NetApp_Dashboard.csv', './NetApp/NetApp_Volume.csv']);
+  renderFreshnessBadge('data-fresh-badge', ['./data/NetApp/NetApp_Dashboard.csv', './data/NetApp/NetApp_Volume.csv']);
 }
 
 // Stale data check handled globally by storage-utils.js autoCheckFreshness()

@@ -5,9 +5,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Huawei Storage Dashboard</title>
-<link rel="stylesheet" href="./storage-styles.css">
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
@@ -444,12 +444,12 @@ let snapshots  = [];
 let nasData    = [];
 let hmData     = [];
 
-const CSV_DASHBOARD = './Hw/Dorado_Dashboard.csv';
-const CSV_HOSTS     = './Hw/Dorado_Host.csv';
-const CSV_LUNGROUPS = './Hw/Dorado_Lun.csv';
-const CSV_SNAPSHOT  = './Hw/Dorado_Snapshot.csv';
-const CSV_NAS       = './Hw/Dorado_NAS.csv';
-const CSV_HYPERMETRO= './Hw/Dorado_HyperMetro.csv';
+const CSV_DASHBOARD = './data/Hw/Dorado_Dashboard.csv';
+const CSV_HOSTS     = './data/Hw/Dorado_Host.csv';
+const CSV_LUNGROUPS = './data/Hw/Dorado_Lun.csv';
+const CSV_SNAPSHOT  = './data/Hw/Dorado_Snapshot.csv';
+const CSV_NAS       = './data/Hw/Dorado_NAS.csv';
+const CSV_HYPERMETRO= './data/Hw/Dorado_HyperMetro.csv';
 
 function updateClock() {
   document.getElementById('clock').textContent =
@@ -1411,7 +1411,7 @@ document.getElementById('hostFilterChips')?.addEventListener('click', (e) => {
 loadCSVs();
 
 /* Veri tazeliği rozeti */
-renderFreshnessBadge('data-fresh-badge', ['./Hw/Dorado_Dashboard.csv', './Hw/Dorado_Host.csv']);
+renderFreshnessBadge('data-fresh-badge', ['./data/Hw/Dorado_Dashboard.csv', './data/Hw/Dorado_Host.csv']);
 
 // Stale data check handled globally by storage-utils.js autoCheckFreshness()
 

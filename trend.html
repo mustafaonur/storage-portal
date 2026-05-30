@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<link rel="stylesheet" href="./storage-styles.css">
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,17 +16,19 @@ body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospa
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.22) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
 
 .shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
 
-.brand{display:flex;align-items:center;gap:14px;}
+.brand{display:flex;align-items:center;gap:12px;}
 
-.brand-icon{width:42px;height:42px;border:2px solid var(--accent3);display:grid;place-items:center;}
+.brand-icon{width:40px;height:40px;border:2px solid var(--purple);display:grid;place-items:center;}
 
-.brand-icon svg{width:22px;height:22px;stroke:var(--accent3);fill:none;stroke-width:1.5;stroke-linecap:round;}
+.brand-icon svg{width:20px;height:20px;stroke:var(--purple);fill:none;stroke-width:1.5;stroke-linecap:round;}
 
-.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
+.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
 
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;}
+
+.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);}
 
 /* KONTROL BARI */
 
@@ -132,20 +134,19 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <div class="shell">
 <a href="./index.html" class="back-link">&larr; Portala Don</a>
 <header>
-<div class="brand">
-<div class="brand-icon">
-<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-</div>
-<div>
-<div class="brand-title">Trend Analizi</div>
-<div class="brand-sub">30 Günlük Kapasite & Host Değişim Takibi</div>
-</div>
-</div>
-<div style="text-align:right;font-size:11px;color:var(--text-dim);line-height:2">
-<div id="dateRange">—</div>
-<div id="dataInfo" style="font-size:10px">Yükleniyor...</div>
-<div id="gap-warn" style="display:none;font-size:10px;color:var(--warn);margin-top:4px;max-width:320px;line-height:1.5"></div>
-</div>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <div>
+      <div class="brand-title">Trend Analizi</div>
+      <div class="brand-sub">30 Günlük Kapasite & Host Değişim Takibi</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div><span style="color:var(--accent3)">●</span> ANALYTICS</div>
+    <div id="data-info" style="margin-top:4px"></div>
+  </div>
 </header>
 <!-- VENDOR -->
 <div class="ctrl-row">
@@ -211,8 +212,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <div style="font-size:10px;color:var(--text-dim);opacity:0.7;margin-top:12px;font-family:'JetBrains Mono',monospace;padding:5px 10px;border:1px solid var(--border)">Her tarama _history/ klasörüne snapshot ekler</div>
 </div>
 <div id="tooltip" style="position:fixed;display:none;background:var(--surface2);border:1px solid var(--border);color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 12px;pointer-events:none;z-index:999;white-space:nowrap;"></div>
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <script>
 
 /* ══════════════════════════════════════════════
@@ -227,7 +228,7 @@ const VCFG = {
 
     label:'Huawei', color:'#e8b84b', cls:'',
 
-    hist:'./Hw/_history/Dorado_Dashboard_{D}.csv',
+    hist:'./data/Hw/_history/Dorado_Dashboard_{D}.csv',
 
     cabCol:'Kabinet',
 
@@ -253,7 +254,7 @@ const VCFG = {
 
     label:'PowerMax', color:'#4b9fe8', cls:'a2',
 
-    hist:'./Pmax/_history/PmaxPoolDash_{D}.csv',
+    hist:'./data/Pmax/_history/PmaxPoolDash_{D}.csv',
 
     cabCol:'Array ID',
 
@@ -279,7 +280,7 @@ const VCFG = {
 
     label:'Pure FA', color:'#4be8a0', cls:'a3',
 
-    hist:'./Pure/_history/Pure_Dashboard_{D}.csv',
+    hist:'./data/Pure/_history/Pure_Dashboard_{D}.csv',
 
     cabCol:'Kabinet',
 
@@ -305,7 +306,7 @@ const VCFG = {
 
     label:'Pure FB', color:'#c084fc', cls:'ap',
 
-    hist:'./Pure/_history/FB_Dashboard_{D}.csv',
+    hist:'./data/Pure/_history/FB_Dashboard_{D}.csv',
 
     cabCol:'Kabinet',
 
@@ -329,7 +330,7 @@ const VCFG = {
 
     label:'NetApp', color:'#00b4d8', cls:'ac',
 
-    hist:'./NetApp/_history/NetApp_Dashboard_{D}.csv',
+    hist:'./data/NetApp/_history/NetApp_Dashboard_{D}.csv',
 
     cabCol:'Kabinet',
 
@@ -353,7 +354,7 @@ const VCFG = {
 
     label:'ECS', color:'#e8844b', cls:'aw',
 
-    hist:'./Ecs/_history/ECS_Dashboard_{D}.csv',
+    hist:'./data/Ecs/_history/ECS_Dashboard_{D}.csv',
 
     cabCol: null,
 
@@ -377,7 +378,7 @@ const VCFG = {
 
     label:'SAN', color:'#e84b4b', cls:'ar',
 
-    hist:'./San/_history/SAN_Director_Dashboard_{D}.csv',
+    hist:'./data/San/_history/SAN_Director_Dashboard_{D}.csv',
 
     cabCol:'SwitchName',
 
@@ -1253,8 +1254,6 @@ document.addEventListener('click', ev => {
 
 })();
 
-  StorageNav.init({ title: "Trend", section: "analytics" });
-
 /* ── HISTORY GAP DETECTOR ───────────────────────────────────────── */
 function detectGaps(dataPoints) {
   // dataPoints: [{date:'YYYY-MM-DD', rows:[]}, ...] sorted ascending
@@ -1390,6 +1389,8 @@ document.getElementById('budget-clear').addEventListener('click', () => {
 
 // Show budget bar when chart becomes visible
 const _origSelectMetric = typeof selectMetric !== 'undefined' ? selectMetric : null;
+
+StorageNav.init({ title: "Trend", section: "analytics" });
 
 </script>
 </body>

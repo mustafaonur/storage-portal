@@ -5,9 +5,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Impact Analysis · Storage Portal</title>
-<link rel="stylesheet" href="./storage-styles.css">
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
@@ -120,7 +120,7 @@ tr:hover td{background:rgba(192,132,252,.04);}
 <div class="toast sp-hidden" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--purple);color:var(--text-bright);padding:10px 20px;font-size:12px;z-index:99;transition:opacity .2s"></div>
 
 <script>
-const BASE = '.';
+const BASE = './data';
 const CSVS = {
   fabHosts:  `${BASE}/San/SAN_Fabric_Hosts.csv`,
   sanDash:   `${BASE}/San/SAN_Director_Dashboard.csv`,

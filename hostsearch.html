@@ -5,9 +5,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cross-Vendor Host Search · Storage Portal</title>
-<link rel="stylesheet" href="./storage-styles.css">
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <style>
 body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
@@ -114,18 +114,18 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 /* ══════════════════════════════════════════════════════════════
    CROSS-VENDOR HOST SEARCH
    Kaynaklar:
-     Huawei  → ./Hw/Dorado_Host.csv     cols: Kabinet, Host Name, OS, Map Durumu, Provisioned (TB), Host WWN
-     PowerMax→ ./Pmax/PmaxPoolHost.csv  cols: Array ID, Host Name, OS, Provisioned (TB), Host WWN, Masking View
-     Pure FA → ./Pure/Pure_Host.csv     cols: Kabinet, Host Name, OS, Host Group, Protocol, Provisioned (TB), Host WWN
-     SAN     → ./San/SAN_Fabric_Hosts.csv cols: Fabric, SwitchName, PortIndex, PortWWN, Alias, State, Speed
+     Huawei  → ./data/Hw/Dorado_Host.csv     cols: Kabinet, Host Name, OS, Map Durumu, Provisioned (TB), Host WWN
+     PowerMax→ ./data/Pmax/PmaxPoolHost.csv  cols: Array ID, Host Name, OS, Provisioned (TB), Host WWN, Masking View
+     Pure FA → ./data/Pure/Pure_Host.csv     cols: Kabinet, Host Name, OS, Host Group, Protocol, Provisioned (TB), Host WWN
+     SAN     → ./data/San/SAN_Fabric_Hosts.csv cols: Fabric, SwitchName, PortIndex, PortWWN, Alias, State, Speed
    Tümü: Lokasyon kolonu mevcut
 ══════════════════════════════════════════════════════════════ */
 
 const SOURCES = {
-  huawei: { url:'./Hw/Dorado_Host.csv',        label:'Huawei',   cls:'vb-huawei' },
-  pmax:   { url:'./Pmax/PmaxPoolHost.csv',      label:'PowerMax', cls:'vb-pmax'   },
-  pure:   { url:'./Pure/Pure_Host.csv',         label:'Pure FA',  cls:'vb-pure'   },
-  san:    { url:'./San/SAN_Fabric_Hosts.csv',   label:'SAN',      cls:'vb-san'    },
+  huawei: { url:'./data/Hw/Dorado_Host.csv',        label:'Huawei',   cls:'vb-huawei' },
+  pmax:   { url:'./data/Pmax/PmaxPoolHost.csv',      label:'PowerMax', cls:'vb-pmax'   },
+  pure:   { url:'./data/Pure/Pure_Host.csv',         label:'Pure FA',  cls:'vb-pure'   },
+  san:    { url:'./data/San/SAN_Fabric_Hosts.csv',   label:'SAN',      cls:'vb-san'    },
 };
 
 // Normalised record shape: { vendor, label, cls, hostName, os, kabinet, lokasyon, provTB, wwns, extra }

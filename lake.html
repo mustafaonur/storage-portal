@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<link rel="stylesheet" href="./storage-styles.css">
+<link rel="stylesheet" href="./assets/css/storage-styles.css">
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -366,8 +366,8 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 
 </div><!-- /shell -->
 
-<script src="./storage-utils.js"></script>
-<script src="./nav.js"></script>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 <script>
 'use strict';
 
@@ -396,37 +396,37 @@ function pctBadge(p) { return p >= 65 ? 'badge-crit' : p >= 50 ? 'badge-warn' : 
 const VENDORS = [
   {
     id:'huawei', label:'Huawei OceanStor/Dorado', color:'var(--lake-huawei)',
-    csv:'./Hw/Dorado_Dashboard.csv', group:'block',
+    csv:'./data/Hw/Dorado_Dashboard.csv', group:'block',
     cabCol:'Kabinet',
     waterGrad:['rgba(232,184,75,.85)', 'rgba(180,120,20,.6)', 'rgba(140,80,0,.4)'],
   },
   {
     id:'pmax', label:'Dell EMC PowerMax', color:'var(--lake-pmax)',
-    csv:'./Pmax/PmaxPoolDash.csv', group:'block',
+    csv:'./data/Pmax/PmaxPoolDash.csv', group:'block',
     cabCol:'Kabinet',
     waterGrad:['rgba(75,159,232,.85)', 'rgba(30,90,180,.6)', 'rgba(10,40,120,.4)'],
   },
   {
     id:'purefa', label:'Pure FlashArray', color:'var(--lake-purefa)',
-    csv:'./Pure/Pure_Dashboard.csv', group:'block',
+    csv:'./data/Pure/Pure_Dashboard.csv', group:'block',
     cabCol:'Kabinet',
     waterGrad:['rgba(75,232,160,.85)', 'rgba(20,160,90,.6)', 'rgba(5,80,40,.4)'],
   },
   {
     id:'purefb', label:'Pure FlashBlade', color:'var(--lake-purefb)',
-    csv:'./Pure/FB_Dashboard.csv', group:'nas',
+    csv:'./data/Pure/FB_Dashboard.csv', group:'nas',
     cabCol:'Kabinet',
     waterGrad:['rgba(168,240,75,.8)', 'rgba(100,190,30,.55)', 'rgba(40,110,10,.35)'],
   },
   {
     id:'netapp', label:'NetApp ONTAP', color:'var(--lake-netapp)',
-    csv:'./NetApp/NetApp_Dashboard.csv', group:'nas',
+    csv:'./data/NetApp/NetApp_Dashboard.csv', group:'nas',
     cabCol:'Kabinet',
     waterGrad:['rgba(192,132,252,.85)', 'rgba(130,60,200,.6)', 'rgba(80,20,150,.4)'],
   },
   {
     id:'ecs', label:'Dell ECS (Object)', color:'var(--lake-ecs)',
-    csv:'./Ecs/ECS_Dashboard.csv', group:'obj',
+    csv:'./data/Ecs/ECS_Dashboard.csv', group:'obj',
     cabCol:null, // ECS aggregated
     waterGrad:['rgba(240,75,159,.8)', 'rgba(180,20,100,.55)', 'rgba(120,5,60,.35)'],
     isECS: true,
