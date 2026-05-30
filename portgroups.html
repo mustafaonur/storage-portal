@@ -7,32 +7,19 @@
 <meta name="view-transition" content="same-origin">
 <title>Port Group Mapping · Storage Portal</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<script src="./assets/js/storage-utils.js"></script>
-<script src="./assets/js/nav.js"></script>
-<style>
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--border);}
-.brand-icon{width:42px;height:42px;border:2px solid var(--purple);display:grid;place-items:center;animation:pb 3s ease-in-out infinite;}
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
 @keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(192,132,252,.4);}50%{box-shadow:0 0 0 6px rgba(192,132,252,0);}}
-.brand-icon svg{width:22px;height:22px;stroke:var(--purple);fill:none;stroke-width:1.5;stroke-linecap:round;}
-.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
-
 .vendor-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);}
 .v-tab{background:transparent;border:none;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:10px 22px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
 .v-tab.active{color:var(--purple);border-bottom-color:var(--purple);}
 .v-tab:hover{color:var(--text);}
 .v-panel{display:none;}
 .v-panel.active{display:block;}
-
-.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
 .pg-search{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 12px;outline:none;}
 .pg-search:focus{border-color:var(--purple);}
 .filter-sel{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 12px;outline:none;}
 .filter-sel:focus{border-color:var(--purple);}
-
 .pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;}
 .pg-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);overflow:hidden;}
 .pg-card-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
@@ -44,9 +31,10 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 .port-row:last-child{border-bottom:none;}
 .port-wwn{font-family:monospace;color:var(--accent2);font-size:9px;flex:1;word-break:break-all;}
 .port-count{color:var(--text-dim);font-size:9px;white-space:nowrap;}
+  </style>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-</style>
 </head>
 <body>
 <div class="shell">

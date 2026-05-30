@@ -7,24 +7,10 @@
 <meta name="view-transition" content="same-origin">
 <title>Hitachi Storage Dashboard</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<script src="./assets/js/storage-utils.js"></script>
-<script src="./assets/js/nav.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:20px;}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.brand{display:flex;align-items:center;gap:12px;}
-.brand-icon{width:40px;height:40px;border:2px solid var(--hitachi);display:grid;place-items:center;}
-.brand-icon svg{width:20px;height:20px;stroke:var(--hitachi);fill:none;stroke-width:1.5;stroke-linecap:round;}
-.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;}
-.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);}
-
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
 .arch-note{font-size:10px;color:var(--text-dim);background:var(--grid);border:1px solid var(--border);border-left:3px solid var(--hitachi);padding:10px 14px;margin-bottom:18px;line-height:1.6;}
 .arch-note b{color:var(--text-bright);}
-
 .src-strip{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
 .src{flex:1;min-width:240px;background:var(--surface);border:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;}
 .src.prod{border-left:3px solid var(--accent3);}
@@ -34,8 +20,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .src-stat{font-size:10px;text-align:right;}
 .src-ok{color:var(--accent3);}
 .src-miss{color:var(--warn);}
-
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
 .stat{background:var(--surface);border:1px solid var(--border);padding:14px 16px;}
 .stat.tot{border-left:3px solid var(--hitachi);}
 .stat.used{border-left:3px solid var(--accent2);}
@@ -43,38 +27,23 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .stat.crit{border-left:3px solid var(--danger);}
 .stat-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
 .stat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text-bright);}
-.stat-sub{font-size:9px;color:var(--text-dim);margin-top:3px;}
-
 .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
 .toolbar select,.toolbar input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 11px;outline:none;}
 .toolbar select:focus,.toolbar input:focus{border-color:var(--hitachi);}
 .toolbar input{flex:1;min-width:200px;}
-.btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 14px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
-.btn:hover{border-color:var(--hitachi);color:var(--hitachi);}
-
-.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:18px;}
-.panel-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-bright);display:flex;justify-content:space-between;align-items:center;}
-.tbl-wrap{max-height:600px;overflow:auto;}
-table{width:100%;border-collapse:collapse;font-size:11px;}
-th{background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;cursor:pointer;user-select:none;}
-th:hover{color:var(--text-bright);}
-td{padding:9px 12px;border-bottom:1px solid rgba(30,45,68,.5);}
-tr:hover td{background:rgba(232,83,59,.04);}
 .cab-cell{color:var(--text-bright);font-weight:500;}
 .loc-badge{display:inline-block;font-size:8px;padding:1px 7px;border:1px solid;border-radius:8px;}
 .loc-prod{color:var(--accent3);border-color:rgba(75,232,160,.4);}
 .loc-dr{color:var(--accent2);border-color:rgba(75,159,232,.4);}
 .bar-wrap{position:relative;height:18px;background:var(--bg);border:1px solid var(--border);min-width:130px;}
-.bar-fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent3);opacity:.55;}
 .bar-fill.w{background:var(--warn);}
 .bar-fill.c{background:var(--danger);}
 .bar-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-bright);}
-
 .loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;}
-.spinner{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--hitachi);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:14px;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:12px;color:var(--text-dim);letter-spacing:1px;}
-</style>
+  </style>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
+
 </head>
 <body>
 <div class="shell">

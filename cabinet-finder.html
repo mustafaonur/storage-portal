@@ -2,65 +2,9 @@
 <html lang="tr">
 <head>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="view-transition" content="same-origin">
-<title>Cabinet Finder · Storage Portal</title>
-<style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; overflow-x:hidden; }
-  body::before {
-    content:''; position:fixed; inset:0;
-    background-image: linear-gradient(rgba(30,45,68,.3) 1px,transparent 1px), linear-gradient(90deg,rgba(30,45,68,.3) 1px,transparent 1px);
-    background-size:40px 40px; pointer-events:none; z-index:0;
-  }
-
-  /* SHELL */
-  .shell { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:24px; }
-/* HEADER */
-  header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); }
-  .brand { display:flex; align-items:center; gap:14px; }
-  .brand-icon { width:42px; height:42px; border:2px solid var(--accent); display:grid; place-items:center; animation:pulse-border 3s ease-in-out infinite; }
-  @keyframes pulse-border { 0%,100%{ box-shadow:0 0 0 0 rgba(232,184,75,.4); } 50%{ box-shadow:0 0 0 6px rgba(232,184,75,0); } }
-  .brand-icon svg { width:22px; height:22px; stroke:var(--accent); fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
-  .brand-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text-bright); letter-spacing:-.5px; }
-  .brand-sub { font-size:10px; color:var(--text-dim); letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
-  .header-meta { text-align:right; font-size:11px; color:var(--text-dim); line-height:1.8; }
-  .live-dot { display:inline-block; width:6px; height:6px; background:var(--accent3); border-radius:50%; margin-right:6px; animation:blink 2s ease-in-out infinite; vertical-align:middle; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-  /* STATUS BAR */
-  .status-bar {
-    display:flex; align-items:center; gap:14px;
-    padding:12px 18px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    margin-bottom:24px;
-    position:relative;
-    overflow:hidden;
-  }
-  .status-bar::before {
-    content:''; position:absolute; top:0; left:0;
-    width:3px; height:100%;
-    background:var(--accent2);
-    transition:background .2s;
-  }
-  .status-bar.ok::before    { background:var(--accent3); }
-  .status-bar.error::before { background:var(--danger); }
-  .status-dot {
-    width:8px; height:8px; border-radius:50%;
-    background:var(--text-dim); flex-shrink:0;
-    transition:background .3s, box-shadow .3s;
-  }
-  .status-dot.loading { background:var(--accent2); animation:pulse 1.2s ease infinite; box-shadow:0 0 8px var(--accent2); }
-  .status-dot.ok      { background:var(--accent3); box-shadow:0 0 8px var(--accent3); }
-  .status-dot.error   { background:var(--danger);  box-shadow:0 0 8px var(--danger); }
-  @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
-  .status-text { flex:1; font-size:11px; letter-spacing:1px; color:var(--text-dim); }
-  .status-text.ok    { color:var(--accent3); }
-  .status-text.error { color:var(--danger); }
-  .reload-btn {
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
+.reload-btn {
     background:transparent;
     border:1px solid var(--border);
     color:var(--text-dim);
@@ -72,17 +16,8 @@
     text-transform:uppercase;
     transition:all .2s;
   }
-  .reload-btn:hover { border-color:var(--accent2); color:var(--accent2); }
-
-  /* SEARCH */
-  .search-wrap { margin-bottom:20px; }
-  .search-label {
-    font-size:10px; letter-spacing:3px;
-    color:var(--text-dim); text-transform:uppercase;
-    display:block; margin-bottom:10px;
-  }
-  .search-row { position:relative; }
-  .search-input {
+.reload-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+.search-input {
     width:100%;
     background:var(--surface);
     border:1px solid var(--border);
@@ -94,25 +29,19 @@
     transition:all .25s;
     letter-spacing:.5px;
   }
-  .search-input::placeholder { color:var(--text-dim); }
-  .search-input:focus {
+.search-input::placeholder { color:var(--text-dim); }
+.search-input:focus {
     border-color:var(--accent2);
     box-shadow:0 0 0 3px rgba(75,159,232,.1);
   }
-  .search-input:disabled { opacity:.4; cursor:not-allowed; }
-  .search-icon {
-    position:absolute; right:16px; top:50%; transform:translateY(-50%);
-    color:var(--text-dim); font-size:16px; pointer-events:none;
-  }
-
-  /* STATS BAR */
-  .stats-bar {
+.search-input:disabled { opacity:.4; cursor:not-allowed; }
+.stats-bar {
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom:14px;
     font-size:10px; letter-spacing:2px;
     color:var(--text-dim); text-transform:uppercase;
   }
-  .count-badge {
+.count-badge {
     background:rgba(75,159,232,.12);
     border:1px solid rgba(75,159,232,.3);
     color:var(--accent2);
@@ -121,77 +50,25 @@
     font-family:'JetBrains Mono',monospace;
     letter-spacing:1px;
   }
-
-  /* TABLE */
-  .table-wrap {
-    background:var(--surface);
-    border:1px solid var(--border);
-    overflow:hidden;
-  }
-  table { width:100%; border-collapse:collapse; font-size:12px; }
-  thead th {
-    background:var(--surface2);
-    border-bottom:1px solid var(--border);
-    padding:12px 18px;
-    text-align:left;
-    font-size:10px;
-    letter-spacing:2px;
-    text-transform:uppercase;
-    color:var(--text-dim);
-    font-weight:500;
-  }
-  tbody tr {
-    border-bottom:1px solid rgba(30,45,68,.6);
-    transition:background .15s;
-  }
-  tbody tr:last-child { border-bottom:none; }
-  tbody tr:hover { background:var(--surface2); }
-  tbody td { padding:11px 18px; color:var(--text); }
-  tbody td:first-child { color:var(--text-bright); font-weight:500; }
-  tbody td:last-child  { color:var(--text-dim); font-size:11px; }
-
-  mark {
+tbody tr:last-child { border-bottom:none; }
+tbody td:first-child { color:var(--text-bright); font-weight:500; }
+tbody td:last-child  { color:var(--text-dim); font-size:11px; }
+mark {
     background:rgba(232,184,75,.25);
     color:var(--accent);
     padding:0 2px;
     border-radius:2px;
   }
+.center-state strong { color:var(--accent2); }
+.center-state .err   { color:var(--danger); }
+.center-state .hint  { font-size:10px; margin-top:8px; opacity:.6; letter-spacing:1px; text-transform:uppercase; }
+  </style>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="view-transition" content="same-origin">
+<title>Cabinet Finder · Storage Portal</title>
 
-  /* CENTER STATE (empty / error / loading) */
-  .center-state {
-    text-align:center;
-    padding:60px 20px;
-    color:var(--text-dim);
-  }
-  .center-state .icon {
-    font-size:32px;
-    margin-bottom:14px;
-    opacity:.6;
-  }
-  .center-state p {
-    font-size:12px;
-    line-height:2;
-    letter-spacing:.5px;
-  }
-  .center-state strong { color:var(--accent2); }
-  .center-state .err   { color:var(--danger); }
-  .center-state .hint  { font-size:10px; margin-top:8px; opacity:.6; letter-spacing:1px; text-transform:uppercase; }
-
-  /* FOOTER */
-  .dash-footer {
-    margin-top:40px;
-    padding-top:16px;
-    border-top:1px solid var(--border);
-    display:flex; justify-content:space-between;
-    font-size:10px; color:var(--text-dim);
-    letter-spacing:1px;
-  }
-
-  ::-webkit-scrollbar { width:6px; height:6px; }
-  ::-webkit-scrollbar-track { background:var(--bg); }
-  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-  ::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
-</style>
 </head>
 <body>
 

@@ -2,20 +2,10 @@
 <html lang="tr">
 <head>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="view-transition" content="same-origin">
-<title>Enterprise Storage Portal · SPA</title>
-<style>
-/* ══════════════════════════════════════════════════════════
-   DESIGN TOKENS
-══════════════════════════════════════════════════════════ */
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; }
-body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; display:flex; flex-direction:column; }
-
-/* ── TOPBAR ── */
 .topbar {
   height: var(--topbar-h);
   background: var(--surface);
@@ -40,53 +30,27 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   animation: pulse-border 3s ease-in-out infinite;
   flex-shrink: 0;
 }
-@keyframes pulse-border {
-  0%,100% { box-shadow:0 0 0 0 rgba(232,184,75,.4); }
-  50%      { box-shadow:0 0 0 5px rgba(232,184,75,0); }
-}
 .topbar-icon svg { width:18px; height:18px; stroke:var(--accent); fill:none; stroke-width:1.5; stroke-linecap:round; }
 .topbar-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-bright); letter-spacing:-.3px; }
 .topbar-sub   { font-size:9px; color:var(--text-dim); letter-spacing:2.5px; text-transform:uppercase; }
-
-/* breadcrumb */
 .topbar-sep { color:var(--border2); font-size:18px; margin:0 4px; }
 .topbar-crumb { font-size:11px; color:var(--text-dim); }
 .topbar-crumb span { color: var(--text-bright); font-weight:600; }
-
-/* right cluster */
 .topbar-right {
   margin-left: auto; display:flex; align-items:center; gap:12px;
   font-size:11px; color:var(--text-dim);
 }
-.live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent3); margin-right:5px; animation:blink 2s ease-in-out infinite; vertical-align:middle; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 #top-clock { color:var(--text); }
-
-/* sidebar toggle btn (mobile) */
 .sidebar-toggle {
   display:none; background:transparent; border:none; cursor:pointer;
   color:var(--text-dim); padding:4px; flex-shrink:0;
 }
 .sidebar-toggle svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
 .sidebar-toggle:hover { color:var(--accent2); }
-
-/* ── SHELL (sidebar + iframe area) ── */
-/* Override storage-styles.css .shell which sets max-width/margin/padding */
-.shell {
-  display: flex;
-  flex: 1;
-  min-height: 0;          /* critical: allows flex children to shrink */
-  overflow: hidden;
-  max-width: none;
-  margin: 0;
-  padding: 0;
-}
-
-/* ── SIDEBAR ── */
 .sidebar {
   width: var(--sidebar-w);
-  flex: 0 0 var(--sidebar-w); /* flex: 0 0 = fixed width, but allows height shrinking */
-  min-height: 0;              /* critical for overflow scroll in flex container */
+  flex: 0 0 var(--sidebar-w); 
+  min-height: 0;              
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
@@ -96,7 +60,6 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   transition: transform .25s ease;
   z-index: 90;
 }
-/* Mobile overlay */
 @media(max-width:768px) {
   .sidebar { position:fixed; top:var(--topbar-h); bottom:0; left:0; transform:translateX(-100%); }
   .sidebar.open { transform:translateX(0); box-shadow:8px 0 30px rgba(0,0,0,.6); }
@@ -104,7 +67,6 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   .sidebar-backdrop { display:none; position:fixed; inset:0; top:var(--topbar-h); background:var(--bg); z-index:89; }
   .sidebar-backdrop.show { display:block; }
 }
-
 .nav-section { padding:10px 0 4px; }
 .nav-section-label {
   font-size:8px; letter-spacing:2.5px; text-transform:uppercase;
@@ -132,26 +94,14 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 }
 .nav-badge.warn { background:rgba(232,132,75,.15); color:var(--warn); }
 .nav-badge.new  { background:rgba(75,232,160,.15); color:var(--accent3); }
-
-/* separator */
 .nav-sep { height:1px; background:var(--border); margin:6px 0; }
-
-/* scroll */
-::-webkit-scrollbar { width:4px; height:4px; }
-::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:var(--border); }
-::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
-
-/* ── CONTENT AREA ── */
 .content-area {
   flex: 1;
-  min-height: 0;              /* critical: allows proper height in flex */
+  min-height: 0;              
   position: relative;
   overflow: hidden;
   background: var(--bg);
 }
-
-/* Loading overlay for iframe transitions */
 .frame-loader {
   position:absolute; inset:0;
   background:var(--bg);
@@ -167,11 +117,8 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   border-radius:50%;
   animation:spin .8s linear infinite;
 }
-@keyframes spin { to{transform:rotate(360deg)} }
 .fl-label { font-size:11px; color:var(--text-dim); letter-spacing:2px; }
 .fl-page  { font-size:13px; color:var(--text-bright); font-weight:600; }
-
-/* The iframe */
 .spa-frame {
   position:absolute; inset:0;
   width:100%; height:100%;
@@ -182,27 +129,25 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   z-index:1;
 }
 .spa-frame.loading { opacity:0; }
-
-/* Home screen (shown when no page selected) */
 .home-screen {
   position:absolute; inset:0;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:10px; pointer-events:none;
-  z-index:5;                     /* above iframe (1), below loader (10) */
+  z-index:5;                     
 }
 .home-screen.hidden { display:none; }
-  .home-hero { text-align:center; margin-bottom:32px; }
-  .home-logo { margin-bottom:12px; }
-  .home-scan-status { font-size:10px; color:var(--text-dim); margin-top:8px; min-height:14px; }
-  kbd { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:1px 5px; font-size:10px; font-family:inherit; }
-  .home-tiles {
+.home-hero { text-align:center; margin-bottom:32px; }
+.home-logo { margin-bottom:12px; }
+.home-scan-status { font-size:10px; color:var(--text-dim); margin-top:8px; min-height:14px; }
+kbd { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:1px 5px; font-size:10px; font-family:inherit; }
+.home-tiles {
     display:grid;
     grid-template-columns:repeat(4, 1fr);
     gap:10px;
     max-width:540px;
     margin:0 auto;
   }
-  .home-tile {
+.home-tile {
     background:var(--surface);
     border:1px solid var(--border);
     padding:14px 10px;
@@ -216,15 +161,13 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
     letter-spacing:.5px;
     transition:border-color .15s, color .15s, background .15s;
   }
-  .home-tile:hover { border-color:var(--accent2); color:var(--text-bright); background:var(--surface2); }
-  .home-tile-icon  { font-size:20px; line-height:1; }
-  .home-tile-analytics { border-color:rgba(75,159,232,.2); }
-  .home-tile-analytics:hover { border-color:var(--accent2); }
+.home-tile:hover { border-color:var(--accent2); color:var(--text-bright); background:var(--surface2); }
+.home-tile-icon  { font-size:20px; line-height:1; }
+.home-tile-analytics { border-color:rgba(75,159,232,.2); }
+.home-tile-analytics:hover { border-color:var(--accent2); }
 .home-logo { font-size:48px; opacity:.2; }
 .home-txt  { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-bright); opacity:.15; }
 .home-sub  { font-size:11px; color:var(--text-dim); opacity:.4; letter-spacing:3px; }
-
-/* Search bar in topbar */
 .topbar-search {
   flex:1; max-width:300px;
   background:var(--surface2);
@@ -241,8 +184,6 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 }
 .topbar-search input::placeholder { color:var(--text-dim); }
 .topbar-search-icon { color:var(--text-dim); font-size:13px; flex-shrink:0; }
-
-/* Quick-launch overlay */
 .ql-overlay {
   display:none; position:fixed; inset:0; z-index:999;
   background:var(--bg);
@@ -274,14 +215,6 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
 .ql-item-desc { font-size:10px; color:var(--text-dim); margin-top:2px; }
 .ql-section-hdr { padding:6px 16px; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); background:var(--surface2); }
 .ql-empty { padding:30px 16px; text-align:center; color:var(--text-dim); font-size:11px; }
-
-/* Tab bar (recently opened) */
-.tab-bar {
-  display:none;               /* hidden by default; shown when tabs exist */
-  align-items:center; gap:0;
-  background:var(--surface2); border-bottom:1px solid var(--border);
-  overflow-x:auto; flex-shrink:0; height:var(--tabbar-h);
-}
 .tab-bar.visible { display:flex; }
 .tab-bar::-webkit-scrollbar { height:2px; }
 .tab-item {
@@ -301,7 +234,13 @@ body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',mon
   border-radius:2px; transition:background .1s, color .1s;
 }
 .tab-close:hover { background:var(--danger); color:#fff; }
-</style>
+  </style>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="view-transition" content="same-origin">
+<title>Enterprise Storage Portal · SPA</title>
+
 </head>
 <body>
 

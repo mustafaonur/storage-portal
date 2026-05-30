@@ -7,20 +7,10 @@
 <meta name="view-transition" content="same-origin">
 <title>Executive Summary · Storage Portal</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<script src="./assets/js/storage-utils.js"></script>
-<script src="./assets/js/asset-inventory.js"></script>
-<script src="./assets/js/nav.js"></script>
-<style>
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.18) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-.shell{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:28px 24px;}
-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid var(--border);}
-.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:3px;}
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
 .report-meta{text-align:right;font-size:10px;color:var(--text-dim);line-height:1.9;}
 .report-date{font-size:13px;color:var(--text-bright);font-weight:600;}
-
-/* Health Score */
 .health-hero{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;background:var(--surface);border:1px solid var(--border);padding:24px 28px;margin-bottom:24px;}
 .score-ring{position:relative;width:110px;height:110px;flex-shrink:0;}
 .score-ring svg{width:110px;height:110px;}
@@ -32,35 +22,24 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 .hd-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
 .hd-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
 .hd-sub{font-size:10px;color:var(--text-dim);margin-top:3px;}
-
-/* Section */
 .section{margin-bottom:24px;}
 .section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.section-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
-
-/* Vendor capacity grid */
 .vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
 .vendor-card{background:var(--surface);border:1px solid var(--border);padding:16px;}
 .vc-name{font-size:12px;font-weight:600;color:var(--text-bright);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
 .vc-bar-wrap{height:8px;background:var(--surface2);border:1px solid var(--border);margin:8px 0;}
 .vc-bar{height:100%;transition:width .6s;}
 .vc-stats{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);}
-
-/* Critical table */
 .crit-table{width:100%;border-collapse:collapse;font-size:11px;}
 .crit-table th{background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
 .crit-table td{padding:8px 12px;border-bottom:1px solid rgba(30,45,68,.5);}
 .crit-table tr:hover td{background:var(--surface2);}
-
-/* Contract */
 .contract-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
 .contract-item{background:var(--surface);border:1px solid var(--border);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
 .ci-info{flex:1;min-width:0;}
 .ci-name{font-size:11px;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ci-sub{font-size:9px;color:var(--text-dim);margin-top:2px;}
 .ci-days{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;text-align:right;flex-shrink:0;}
-
-/* Print */
 @media print {
   body{background:#fff;color:#111;}
   body::before{display:none;}
@@ -71,7 +50,11 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
   .hd-value{color:#111;}
   header{border-bottom:2px solid #333;}
 }
-</style>
+  </style>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/asset-inventory.js"></script>
+<script src="./assets/js/nav.js"></script>
+
 </head>
 <body>
 <div class="shell">

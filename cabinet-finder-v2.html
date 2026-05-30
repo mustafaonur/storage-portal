@@ -2,95 +2,31 @@
 <html lang="tr">
 <head>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="view-transition" content="same-origin"> <title>Cabinet Finder v2 · Storage Portal</title> <script src="./assets/js/storage-utils.js"></script>
-<script src="./assets/js/nav.js"></script>
-<style>  *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.22) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-
-.shell{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:24px;}
-/* HEADER */
-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);} .brand{display:flex;align-items:center;gap:14px;}
-.brand-icon{width:42px;height:42px;border:2px solid var(--accent);display:grid;place-items:center;animation:pb 3s ease-in-out infinite;} @keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(232,184,75,.4);}50%{box-shadow:0 0 0 6px rgba(232,184,75,0);}} .brand-icon svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
-.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
-.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);line-height:1.8;}
-.live-dot{display:inline-block;width:6px;height:6px;background:var(--accent3);border-radius:50%;margin-right:6px;animation:blink 2s infinite;vertical-align:middle;} @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* SEARCH */
-.search-wrap{display:flex;gap:10px;margin-bottom:20px;align-items:stretch;}
-.search-box{
-  flex:1;background:var(--surface);border:1px solid var(--border);
-  color:var(--text-bright);font-family:'JetBrains Mono',monospace;
-  font-size:16px;padding:14px 18px;outline:none;
-  transition:border-color .2s;letter-spacing:.5px; } .search-box:focus{border-color:var(--accent);}
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
+@keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(232,184,75,.4);}50%{box-shadow:0 0 0 6px rgba(232,184,75,0);}}
+.search-box:focus{border-color:var(--accent);}
 .search-box::placeholder{color:var(--text-dim);font-size:13px;}
-.clear-btn{
-  background:transparent;border:1px solid var(--border);color:var(--text-dim);
-  font-family:'JetBrains Mono',monospace;font-size:11px;padding:0 16px;
-  cursor:pointer;letter-spacing:1px;text-transform:uppercase;
-  transition:all .2s;white-space:nowrap; } .clear-btn:hover{border-color:var(--danger);color:var(--danger);}
-
-/* STATUS */
-.status-bar{
-  display:flex;align-items:center;gap:12px;
-  background:var(--surface);border:1px solid var(--border);
-  padding:10px 16px;margin-bottom:16px;font-size:11px;
-}
 .stat-pill{padding:3px 10px;border:1px solid var(--border);font-size:10px;letter-spacing:1px;}
 .stat-pill.san{color:var(--accent2);border-color:rgba(75,159,232,.4);}
 .stat-pill.nas{color:var(--accent3);border-color:rgba(75,232,160,.4);}
 .stat-pill.s3{color:var(--purple);border-color:rgba(192,132,252,.4);}
 #status-text{color:var(--text-dim);margin-left:auto;}
-
-/* TABS */
-.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:0;} .tab-btn{
-  background:transparent;border:none;border-bottom:2px solid transparent;
-  color:var(--text-dim);font-family:'JetBrains Mono',monospace;
-  font-size:12px;padding:12px 24px;cursor:pointer;
-  letter-spacing:1px;text-transform:uppercase;transition:all .2s;
-  display:flex;align-items:center;gap:8px;
-}
 .tab-btn.active.san{color:var(--accent2);border-bottom-color:var(--accent2);}
 .tab-btn.active.nas{color:var(--accent3);border-bottom-color:var(--accent3);}
 .tab-btn.active.s3 {color:var(--purple);border-bottom-color:var(--purple);}
-.tab-btn:hover{color:var(--text);}
 .tab-count{
   font-size:9px;padding:2px 7px;border:1px solid var(--border);
   color:var(--text-dim);background:var(--surface2);min-width:20px;text-align:center;
 }
 .tab-btn.active .tab-count{border-color:currentColor;color:currentColor;background:rgba(255,255,255,.05);}
-
-.tab-page{display:none;padding-top:16px;}
-.tab-page.active{display:block;}
-
-/* TABLE */
-table{width:100%;border-collapse:collapse;font-size:11px;}
 thead{position:sticky;top:0;z-index:2;}
-th{
-  background:var(--surface2);color:var(--text-dim);
-  font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
-  padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);
-  white-space:nowrap;cursor:pointer;user-select:none;
-}
-th:hover{color:var(--text);}
-td{padding:9px 12px;border-bottom:1px solid rgba(30,45,68,.5);vertical-align:middle;}
-tr:hover td{background:rgba(255,255,255,.02);}
 tr.highlight td{background:rgba(232,184,75,.06);}
 tr.highlight td:first-child{border-left:2px solid var(--accent);}
-
-/* MATCH HIGHLIGHT */
 .hl{background:rgba(232,184,75,.25);color:var(--accent);border-radius:2px;padding:0 2px;}
-
-/* SIZE BAR */
 .size-bar-wrap{display:flex;align-items:center;gap:8px;}
 .size-bar{height:4px;background:var(--grid);flex:1;max-width:80px;overflow:hidden;}
 .size-bar-fill{height:100%;transition:width .4s;}
-
-/* VENDOR BADGE */
 .v-badge{font-size:9px;padding:2px 6px;border:1px solid;letter-spacing:1px;white-space:nowrap;}
 .vb-hw   {color:var(--accent);   border-color:rgba(232,184,75,.4);}
 .vb-pmax {color:var(--accent2);  border-color:rgba(75,159,232,.4);}
@@ -98,22 +34,19 @@ tr.highlight td:first-child{border-left:2px solid var(--accent);}
 .vb-fb   {color:var(--purple);   border-color:rgba(192,132,252,.4);}
 .vb-netapp{color:#00b4d8;        border-color:rgba(0,180,216,.4);}
 .vb-ecs  {color:var(--warn);     border-color:rgba(232,132,75,.4);}
-
-/* EMPTY / LOADING */
-.center-state{text-align:center;padding:60px 20px;color:var(--text-dim);} .center-state .icon{font-size:36px;margin-bottom:12px;}
-.center-state p{font-size:12px;line-height:1.8;}
-
-/* SUMMARY ROW */
 .summary-bar{
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);
   font-size:11px;color:var(--text-dim);
 }
 .summary-bar strong{color:var(--text-bright);}
+  </style>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="view-transition" content="same-origin"> <title>Cabinet Finder v2 · Storage Portal</title> <script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 
-.dash-footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);letter-spacing:1px;}
-::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
-</style>
 </head>
 <body>
 <div class="shell">

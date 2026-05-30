@@ -7,85 +7,37 @@
 <meta name="view-transition" content="same-origin">
 <title>ECS Dashboard · Storage Portal</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<script src="./assets/js/storage-utils.js"></script>
-<script src="./assets/js/nav.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.22) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-
-.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
-/* HEADER */
-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);}
-.brand{display:flex;align-items:center;gap:14px;}
-.brand-icon{width:42px;height:42px;border:2px solid var(--accent2);display:grid;place-items:center;animation:pb 3s ease-in-out infinite;}
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
 @keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(75,159,232,.4);}50%{box-shadow:0 0 0 6px rgba(75,159,232,0);}}
-.brand-icon svg{width:22px;height:22px;stroke:var(--accent2);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
-.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
-.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);line-height:1.8;}
-.live-dot{display:inline-block;width:6px;height:6px;background:var(--accent3);border-radius:50%;margin-right:6px;animation:blink 2s infinite;vertical-align:middle;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* KPI BAR */
 .kpi-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px;}
-.kpi{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--border);padding:12px 14px;}
 .kpi.k-blue  {border-left-color:var(--accent2);}
 .kpi.k-gold  {border-left-color:var(--accent);}
 .kpi.k-green {border-left-color:var(--accent3);}
 .kpi.k-red   {border-left-color:var(--danger);}
 .kpi.k-purple{border-left-color:var(--purple);}
 .kpi.k-warn  {border-left-color:var(--warn);}
-.kpi-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
 .kpi-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
-.kpi-sub{font-size:10px;color:var(--text-dim);margin-top:3px;}
-
-/* CAPACITY BAR */
 .cap-bar-wrap{background:var(--surface);border:1px solid var(--border);padding:16px;margin-bottom:20px;}
 .cap-title{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;}
 .cap-bar{height:12px;background:var(--grid);overflow:hidden;display:flex;}
 .cap-seg{height:100%;transition:width .6s ease;}
 .cap-leg{display:flex;gap:20px;margin-top:8px;font-size:10px;color:var(--text-dim);}
 .cap-dot{display:inline-block;width:8px;height:8px;margin-right:5px;vertical-align:middle;}
-
-/* TAB */
-.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:0;}
-.tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:12px 20px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
-.tab-btn.active{color:var(--accent2);border-bottom-color:var(--accent2);}
-.tab-page{display:none;padding-top:18px;}
-.tab-page.active{display:block;}
-
-/* TABLE */
-table{width:100%;border-collapse:collapse;font-size:11px;}
-th{background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;}
-th:hover{color:var(--accent2);}
-td{padding:8px 10px;border-bottom:1px solid rgba(30,45,68,.5);vertical-align:middle;}
-tr:hover td{background:rgba(75,159,232,.04);}
-
-/* DELTA BADGE */
 .delta-up{color:var(--danger);font-size:10px;}
 .delta-down{color:var(--accent3);font-size:10px;}
 .delta-flat{color:var(--text-dim);font-size:10px;}
-
-/* STATUS */
 .status-ok{color:var(--accent3);}
 .status-warn{color:var(--warn);}
 .status-fail{color:var(--danger);}
-
-/* SEARCH/FILTER */
 .bar{display:flex;gap:10px;margin-bottom:12px;align-items:center;}
-.search-box{background:var(--grid);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 12px;outline:none;flex:1;max-width:300px;}
 .search-box:focus{border-color:var(--accent2);}
 .filter-sel{background:var(--grid);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 10px;outline:none;}
 .filter-sel:focus{border-color:var(--accent2);}
-
-/* REPLICATION */
 .rep-panel{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);padding:14px 16px;margin-bottom:14px;display:flex;gap:24px;align-items:center;}
 .rep-item{font-size:11px;}
 .rep-key{color:var(--text-dim);font-size:10px;margin-bottom:3px;letter-spacing:1px;}
 .rep-val{color:var(--text-bright);font-size:14px;font-weight:600;}
-
-/* CONNECTIVITY */
 .conn-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .conn-card{background:var(--surface);border:1px solid var(--border);padding:14px;}
 .conn-title{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;}
@@ -93,21 +45,15 @@ tr:hover td{background:rgba(75,159,232,.04);}
 .conn-row:last-child{border-bottom:none;}
 .conn-ip{color:var(--text-dim);font-size:10px;font-family:monospace;}
 .conn-port{color:var(--text-dim);font-size:10px;}
-
-/* BALANCE DONUT rows */
 .bal-row{display:flex;align-items:center;gap:14px;padding:8px 0;}
 .bal-label{color:var(--text-dim);font-size:11px;width:80px;}
 .bal-track{flex:1;height:8px;background:var(--grid);overflow:hidden;}
 .bal-fill{height:100%;}
 .bal-pct{font-size:11px;font-weight:600;min-width:48px;text-align:right;}
+  </style>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
 
-/* CENTER STATE */
-.center-state{text-align:center;padding:60px 20px;color:var(--text-dim);}
-.center-state .icon{font-size:32px;margin-bottom:12px;}
-
-.dash-footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);letter-spacing:1px;}
-::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
-</style>
 </head>
 <body>
 <div class="shell">

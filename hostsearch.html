@@ -7,38 +7,23 @@
 <meta name="view-transition" content="same-origin">
 <title>Cross-Vendor Host Search · Storage Portal</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<script src="./assets/js/storage-utils.js"></script>
-<script src="./assets/js/nav.js"></script>
-<style>
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:24px;}
-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--border);}
-.brand{display:flex;align-items:center;gap:14px;}
-.brand-icon{width:42px;height:42px;border:2px solid var(--accent2);display:grid;place-items:center;animation:pb 3s ease-in-out infinite;}
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
 @keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(75,159,232,.4);}50%{box-shadow:0 0 0 6px rgba(75,159,232,0);}}
-.brand-icon svg{width:22px;height:22px;stroke:var(--accent2);fill:none;stroke-width:1.5;stroke-linecap:round;}
-.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
-
 .search-hero{margin-bottom:24px;}
-.search-wrap{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);}
 .search-main{flex:1;background:var(--surface);border:none;border-right:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:11px 16px;outline:none;transition:border-color .2s;}
 .search-main:focus{border-color:var(--accent2);}
 .search-main::placeholder{color:var(--text-dim);font-size:12px;}
 .search-btn{background:var(--accent2);color:var(--bg);border:none;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:11px 20px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:opacity .15s;white-space:nowrap;}
 .search-btn:hover{opacity:.85;}
 .search-hint{font-size:10px;color:var(--text-dim);line-height:1.8;margin-top:8px;}
-
 .vendor-toggles{display:flex;gap:0;flex-wrap:wrap;margin-bottom:18px;border:1px solid var(--border);background:var(--surface);}
 .v-toggle{background:transparent;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:7px 16px;cursor:pointer;transition:all .15s;letter-spacing:1px;text-transform:uppercase;}
 .v-toggle:last-child{border-right:none;}
 .v-toggle.on{color:var(--accent2);background:rgba(75,159,232,.08);}
 .v-toggle:hover{color:var(--text-bright);}
-
 .results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
 .results-count{font-size:11px;color:var(--text-dim);}
-
 .host-card{background:var(--surface);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;}
 .host-card-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
 .host-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);}
@@ -63,7 +48,10 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 .loading-bar.active{display:block;}
 .loading-bar::after{content:'';position:absolute;left:-50%;width:50%;height:100%;background:var(--accent2);animation:load 1.2s ease-in-out infinite;}
 @keyframes load{0%{left:-50%;}100%{left:100%;}}
-</style>
+  </style>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
+
 </head>
 <body>
 <div class="shell">

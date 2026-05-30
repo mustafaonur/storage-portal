@@ -2,41 +2,9 @@
 <html lang="tr">
 <head>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="view-transition" content="same-origin">
-<title>Storage Lake · Enterprise Storage Portal</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{
-  background:var(--bg); color:var(--text);
-  font-family:'JetBrains Mono', monospace;
-  min-height:100vh; overflow-x:hidden;
-}
-body::before{
-  content:''; position:fixed; inset:0;
-  background-image:
-    linear-gradient(rgba(30,45,68,.25) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30,45,68,.25) 1px, transparent 1px);
-  background-size:40px 40px;
-  pointer-events:none; z-index:0;
-}
-.shell{position:relative;z-index:1;max-width:1700px;margin:0 auto;padding:20px 24px;}
-
-/* ── HEADER ── */
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);}
-.brand{display:flex;align-items:center;gap:14px;}
-.brand-icon{width:44px;height:44px;border:2px solid var(--accent2);display:grid;place-items:center;animation:wave-pulse 4s ease-in-out infinite;}
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
 @keyframes wave-pulse{0%,100%{box-shadow:0 0 0 0 rgba(75,159,232,.5)}50%{box-shadow:0 0 0 8px rgba(75,159,232,0)}}
-.brand-icon svg{width:22px;height:22px;stroke:var(--accent2);fill:none;stroke-width:1.5;stroke-linecap:round;}
-.brand-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);letter-spacing:-.5px;}
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
-.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);line-height:1.9;}
-.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent3);margin-right:6px;animation:blink 2s ease-in-out infinite;vertical-align:middle;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-
-/* ── SUMMARY BAR ── */
 .summary-bar{
   display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;
   margin-bottom:28px;
@@ -54,23 +22,18 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .sum-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--text-bright);}
 .sum-unit{font-size:14px;color:var(--text-dim);margin-left:3px;}
 .sum-sub{font-size:10px;color:var(--text-dim);margin-top:4px;}
-
-/* ── LAKE GRID ── */
 .lake-section-title{
   font-size:10px;letter-spacing:3px;text-transform:uppercase;
   color:var(--text-dim);margin-bottom:16px;
   display:flex;align-items:center;gap:10px;
 }
 .lake-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
-
 .lake-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
   gap:20px;
   margin-bottom:32px;
 }
-
-/* ── LAKE CARD ── */
 .lake-card{
   background:var(--surface);
   border:1px solid var(--border);
@@ -82,8 +45,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 }
 .lake-card:hover{border-color:var(--accent2);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.4);}
 .lake-card.active{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(75,159,232,.35);}
-
-/* Card header */
 .lc-head{
   padding:14px 16px 10px;
   display:flex;align-items:center;justify-content:space-between;
@@ -95,35 +56,24 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   font-size:9px;padding:3px 8px;letter-spacing:1px;
   border:1px solid; font-weight:600;
 }
-.badge-ok{color:var(--accent3);border-color:var(--accent3);background:rgba(75,232,160,.07);}
-.badge-warn{color:var(--warn);border-color:var(--warn);background:rgba(232,132,75,.07);}
 .badge-crit{color:var(--danger);border-color:var(--danger);background:rgba(232,75,75,.07);}
-
-/* Lake container */
 .lc-lake{
   position:relative; height:190px;
   overflow:hidden; background:var(--surface2);
 }
-
-/* Ground / sky gradient */
 .lc-lake-sky{
   position:absolute; top:0; left:0; right:0;
   height:100%; pointer-events:none;
   background:linear-gradient(to bottom, #060a10 0%, #0a1020 60%, #0d1830 100%);
 }
-
-/* The water body - grows from bottom */
 .lc-water{
   position:absolute; bottom:0; left:0; right:0;
   transition:height 1.4s cubic-bezier(.25,.46,.45,.94);
   overflow:hidden;
 }
-/* Water gradient */
 .lc-water-body{
   position:absolute; inset:0;
 }
-
-/* Animated waves on top of water */
 .lc-wave-wrap{
   position:absolute; top:-28px; left:-10%; width:120%; height:40px;
   overflow:visible; pointer-events:none;
@@ -139,8 +89,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   opacity:.4; top:6px;
 }
 @keyframes waveMove{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-
-/* Depth scale on left */
 .lc-scale{
   position:absolute; left:0; top:0; bottom:0; width:36px;
   display:flex; flex-direction:column; justify-content:space-between;
@@ -150,8 +98,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   font-size:8px; color:rgba(200,216,240,.35);
   padding-left:6px; letter-spacing:.5px;
 }
-
-/* Percentage label in water */
 .lc-pct-label{
   position:absolute; left:36px; right:0;
   top:50%; transform:translateY(-50%);
@@ -165,8 +111,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 }
 .lc-pct-sym{font-size:18px; opacity:.7; margin-left:2px;}
 .lc-pct-sub{font-size:10px; opacity:.6; letter-spacing:2px; margin-top:4px;}
-
-/* Reflection ripple effect in water */
 .lc-reflection{
   position:absolute; bottom:10px; left:0; right:0;
   height:20px; pointer-events:none; z-index:4; overflow:hidden;
@@ -178,8 +122,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .lc-reflection-line:nth-child(2){animation-delay:.6s; margin:4px 40px; opacity:.7;}
 .lc-reflection-line:nth-child(3){animation-delay:1.2s; margin:4px 60px; opacity:.4;}
 @keyframes ripple{0%,100%{transform:scaleX(1);opacity:.3}50%{transform:scaleX(.8);opacity:.6}}
-
-/* Bubbles */
 .lc-bubbles{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;}
 .bubble{
   position:absolute; border-radius:50%;
@@ -188,8 +130,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   animation:bubbleRise linear infinite;
 }
 @keyframes bubbleRise{0%{transform:translateY(0) translateX(0);opacity:.6}100%{transform:translateY(-200px) translateX(var(--dx));opacity:0}}
-
-/* Card footer stats */
 .lc-foot{
   padding:12px 16px;
   display:grid; grid-template-columns:1fr 1fr 1fr;
@@ -198,8 +138,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .lc-stat{text-align:center;}
 .lc-stat-lbl{font-size:8px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;}
 .lc-stat-val{font-size:13px;font-weight:600;color:var(--text-bright);margin-top:2px;}
-
-/* ── DETAIL PANEL ── */
 .detail-panel{
   display:none; background:var(--surface); border:1px solid var(--border);
   border-left:3px solid var(--accent2); margin-bottom:28px; overflow:hidden;
@@ -216,8 +154,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .dp-close{background:transparent;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:0 6px;line-height:1;}
 .dp-close:hover{color:var(--text-bright);}
 .dp-body{padding:20px;overflow-x:auto;}
-
-/* Detail table */
 .dp-table{width:100%;border-collapse:collapse;font-size:11px;}
 .dp-table th{
   padding:8px 12px; text-align:left;
@@ -231,8 +167,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .dp-bar-cell{width:160px;}
 .dp-bar-wrap{height:6px;background:var(--border);overflow:hidden;}
 .dp-bar-fill{height:100%;transition:width .8s ease;}
-
-/* Forecast badge */
 .forecast-badge{
   display:inline-block; font-size:9px;
   padding:2px 8px; letter-spacing:1px;
@@ -241,8 +175,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .fc-safe{color:var(--accent3);border-color:rgba(75,232,160,.3);}
 .fc-warn{color:var(--warn);border-color:rgba(232,132,75,.3);}
 .fc-crit{color:var(--danger);border-color:rgba(232,75,75,.3);}
-
-/* ── LOADING / ERROR ── */
 .overlay{
   position:fixed;inset:0;z-index:100;
   background:var(--bg);
@@ -257,16 +189,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   border-radius:50%;
   animation:spin .8s linear infinite;
 }
-@keyframes spin{to{transform:rotate(360deg)}}
 .ov-text{font-size:12px;color:var(--text-dim);letter-spacing:2px;}
-
-/* scroll */
-::-webkit-scrollbar{width:5px;height:5px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--border);}
-::-webkit-scrollbar-thumb:hover{background:var(--accent2);}
-
-/* responsive */
 @media(max-width:900px){
   .summary-bar{grid-template-columns:1fr 1fr;}
   .lake-grid{grid-template-columns:1fr 1fr;}
@@ -275,7 +198,13 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   .summary-bar{grid-template-columns:1fr;}
   .lake-grid{grid-template-columns:1fr;}
 }
-</style>
+  </style>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="view-transition" content="same-origin">
+<title>Storage Lake · Enterprise Storage Portal</title>
+
 </head>
 <body>
 

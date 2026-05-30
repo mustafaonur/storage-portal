@@ -7,340 +7,123 @@
 <meta name="view-transition" content="same-origin">
 <title>Enterprise Storage Portal</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<script src="./assets/js/storage-utils.js"></script>
-<script src="./assets/js/asset-inventory.js"></script>
-<script src="./assets/js/report-export.js"></script>
-<script src="./assets/js/micro-interactions.js" defer></script>
-<style>
-  /* =========================================================
-     DESIGN TOKENS  -  ortak tema (huawei.html ile uyumlu)
-     ========================================================= */
-    * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    background:var(--bg);
-    color:var(--text);
-    font-family:'JetBrains Mono', monospace;
-    min-height:100vh;
-    overflow-x:hidden;
-  }
-  body::before {
-    content:'';
-    position:fixed; inset:0;
-    background-image:
-      linear-gradient(rgba(30,45,68,.3) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(30,45,68,.3) 1px, transparent 1px);
-    background-size:40px 40px;
-    pointer-events:none;
-    z-index:0;
-  }
-
-  /* =========================================================
-     SHELL & HEADER
-     ========================================================= */
-  .shell { position:relative; z-index:1; max-width:1600px; margin:0 auto; padding:24px; }
-
-  header {
-    display:flex; align-items:flex-end; justify-content:space-between;
-    margin-bottom:32px; padding-bottom:20px;
-    border-bottom:1px solid var(--border);
-  }
-  .brand { display:flex; align-items:center; gap:14px; }
-  .brand-icon {
-    width:42px; height:42px;
-    border:2px solid var(--accent);
-    display:grid; place-items:center;
-    animation:pulse-border 3s ease-in-out infinite;
-  }
-  @keyframes pulse-border {
-    0%,100% { box-shadow:0 0 0 0 rgba(232,184,75,.4); }
-    50%     { box-shadow:0 0 0 6px rgba(232,184,75,0); }
-  }
-  .brand-icon svg {
-    width:22px; height:22px;
-    stroke:var(--accent); fill:none;
-    stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round;
-  }
-  .brand-title {
-    font-family:'Syne', sans-serif;
-    font-size:22px; font-weight:800;
-    color:var(--text-bright);
-    letter-spacing:-.5px;
-  }
-  .brand-sub {
-    font-size:10px; color:var(--text-dim);
-    letter-spacing:3px; text-transform:uppercase;
-    margin-top:2px;
-  }
-  .header-meta {
-    text-align:right; font-size:11px;
-    color:var(--text-dim); line-height:1.8;
-  }
-  .live-dot {
-    display:inline-block; width:6px; height:6px;
-    background:var(--accent3); border-radius:50%;
-    margin-right:6px;
-    animation:blink 2s ease-in-out infinite;
-    vertical-align:middle;
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-  /* =========================================================
-     SUMMARY CARDS
-     ========================================================= */
-  .summary-grid {
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
-    gap:16px;
-    margin-bottom:28px;
-  }
-  .stat-card {
-    background:var(--surface);
-    border:1px solid var(--border);
-    padding:20px;
-    position:relative;
-    overflow:hidden;
-    transition:border-color .2s, transform .2s;
-  }
-  .stat-card::before {
-    content:'';
-    position:absolute; top:0; left:0;
-    width:3px; height:100%;
-  }
-  .stat-card.gold::before  { background:var(--accent); }
-  .stat-card.blue::before  { background:var(--accent2); }
-  .stat-card.green::before { background:var(--accent3); }
-  .stat-card.red::before   { background:var(--danger); }
-
-  /* Layer Grid (SAN/NAS/S3) */
-  .layer-grid {
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
+.layer-grid {
     display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;
     margin-bottom:32px;
   }
-  .layer-card {
+.layer-card {
     background:var(--surface); border:1px solid var(--border);
     padding:18px 22px; position:relative; overflow:hidden;
     text-decoration:none; color:inherit; transition:all .2s;
     display:block;
   }
-  .layer-card::before {
+.layer-card::before {
     content:''; position:absolute; top:0; left:0; height:100%; width:3px;
   }
-  .layer-san::before { background:var(--accent2); }
-  .layer-nas::before { background:var(--accent3); }
-  .layer-s3::before  { background:var(--purple); }
-  .layer-card:hover {
+.layer-san::before { background:var(--accent2); }
+.layer-nas::before { background:var(--accent3); }
+.layer-s3::before  { background:var(--purple); }
+.layer-card:hover {
     border-color:var(--accent); transform:translateY(-2px);
     box-shadow:0 4px 18px rgba(232,184,75,.12);
   }
-  .layer-hdr {
+.layer-hdr {
     display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
   }
-  .layer-tag {
+.layer-tag {
     font-size:10px; letter-spacing:2px; text-transform:uppercase;
     color:var(--text-dim); font-weight:500;
   }
-  .layer-arrow {
+.layer-arrow {
     color:var(--text-dim); transition:color .2s;
   }
-  .layer-card:hover .layer-arrow { color:var(--accent); }
-  .layer-value {
-    font-family:'Syne',sans-serif; font-size:30px; font-weight:800;
-    color:var(--text-bright); line-height:1.1; margin-bottom:4px;
-  }
-  .layer-sub {
+.layer-card:hover .layer-arrow { color:var(--accent); }
+.layer-sub {
     font-size:10px; color:var(--text-dim); margin-bottom:12px;
     letter-spacing:.5px;
   }
-  .layer-bar {
+.layer-bar {
     height:3px; background:var(--grid); overflow:hidden; margin-bottom:8px;
   }
-  .layer-bar-fill {
-    height:100%; width:0%; transition:width .8s ease;
-  }
-  .layer-foot {
+.layer-foot {
     font-size:10px; color:var(--text-dim); line-height:1.6;
   }
-  .layer-foot strong { color:var(--text); font-weight:500; }
-  .stat-card:hover {
-    border-color:var(--accent);
-    transform:translateY(-2px);
-  }
-  .stat-label {
-    font-size:10px;
-    letter-spacing:2px; text-transform:uppercase;
-    color:var(--text-dim);
-    margin-bottom:8px;
-    display:flex; align-items:center; gap:6px;
-  }
-  .stat-value {
-    font-family:'Syne', sans-serif;
-    font-size:28px; font-weight:700;
-    color:var(--text-bright);
-    line-height:1;
-  }
-  .stat-unit {
-    font-family:'JetBrains Mono', monospace;
-    font-size:12px; color:var(--text-dim);
-    margin-left:4px;
-  }
-  .stat-sub {
-    font-size:11px; color:var(--text-dim);
-    margin-top:6px;
-  }
-
-  /* =========================================================
-     SECTION TITLE
-     ========================================================= */
-  .section-title {
-    font-family:'Syne', sans-serif;
-    font-size:14px; font-weight:700;
-    color:var(--accent);
-    letter-spacing:2px; text-transform:uppercase;
-    margin-bottom:16px; margin-top:32px;
-    padding-bottom:8px;
-    border-bottom:1px solid var(--border);
-  }
-
-  /* =========================================================
-     APP CARDS GRID
-     ========================================================= */
-  .apps-grid {
+.layer-foot strong { color:var(--text); font-weight:500; }
+.apps-grid {
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
     gap:16px;
   }
-  .app-card {
-    background:var(--surface);
-    border:1px solid var(--border);
-    position:relative;
-    overflow:hidden;
-    transition:border-color .25s, box-shadow .25s;
-    animation:fadeInUp .4s ease both;
-    text-decoration:none;
-    color:inherit;
-    display:flex; flex-direction:column;
-  }
-  @keyframes fadeInUp {
-    from { opacity:0; transform:translateY(16px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-  .app-card::before {
-    content:'';
-    position:absolute; top:0; left:0;
-    width:3px; height:100%;
-    background:var(--accent2);
-  }
-  .app-card.type-pmax::before   { background:var(--accent2); }
-  .app-card.type-huawei::before  { background:var(--accent3); }
-  .app-card.type-san::before     { background:var(--accent); }
-  .app-card.type-pure::before    { background:#f67c00; }
-  .app-card.type-netapp::before  { background:#00b4d8; }
-  .app-card.type-hitachi::before { background:#cc2936; }
-  .app-card.type-ecs::before     { background:#6e44b2; }
-  .app-card.type-report::before  { background:var(--accent2); }
-  .app-card.type-app::before     { background:var(--accent2); }
-  .app-card.type-zone::before    { background:#e8844b; }
-  .app-card.type-mgmt::before    { background:#c084fc; }
-  .app-card:hover:not(.app-disabled) {
+.app-card.type-pmax::before   { background:var(--accent2); }
+.app-card.type-huawei::before  { background:var(--accent3); }
+.app-card.type-san::before     { background:var(--accent); }
+.app-card.type-pure::before    { background:#f67c00; }
+.app-card.type-netapp::before  { background:#00b4d8; }
+.app-card.type-hitachi::before { background:#cc2936; }
+.app-card.type-ecs::before     { background:#6e44b2; }
+.app-card.type-report::before  { background:var(--accent2); }
+.app-card.type-app::before     { background:var(--accent2); }
+.app-card.type-zone::before    { background:#e8844b; }
+.app-card.type-mgmt::before    { background:#c084fc; }
+.app-card:hover:not(.app-disabled) {
     border-color:rgba(75,159,232,.5);
     box-shadow:0 0 30px rgba(75,159,232,.07);
   }
-  .app-card.app-disabled {
+.app-card.app-disabled {
     opacity:.5; cursor:default; pointer-events:none;
   }
-  .app-card-header {
+.app-card-header {
     display:flex; justify-content:space-between; align-items:flex-start;
     padding:16px 18px 12px;
     border-bottom:1px solid var(--border);
     background:var(--surface2);
   }
-  .app-card-name {
+.app-card-name {
     font-family:'Syne', sans-serif;
     font-size:16px; font-weight:700;
     color:var(--text-bright);
   }
-  .app-card-sub {
+.app-card-sub {
     font-size:11px; color:var(--text-dim);
     margin-top:3px;
   }
-  .status-badge {
-    font-size:10px; padding:3px 8px;
-    border-radius:2px; letter-spacing:1px;
-    text-transform:uppercase; font-weight:500;
-    flex-shrink:0;
-  }
-  .badge-ok   { background:rgba(75,232,160,.15); color:var(--accent3); border:1px solid rgba(75,232,160,.3); }
-  .badge-soon { background:rgba(232,184,75,.12); color:var(--accent);  border:1px solid rgba(232,184,75,.3); }
-  .app-card-body { padding:16px 18px; flex:1; min-height:130px; }
-  .app-card-desc {
+.app-card-body { padding:16px 18px; flex:1; min-height:130px; }
+.app-card-desc {
     font-size:12px; color:var(--text);
     line-height:1.8; margin-bottom:14px;
   }
-  .feature-list { display:flex; flex-wrap:wrap; gap:6px; }
-  .feature-tag {
+.feature-list { display:flex; flex-wrap:wrap; gap:6px; }
+.feature-tag {
     background:var(--grid);
     border:1px solid var(--border);
     padding:3px 9px;
     font-size:10px; color:var(--text-dim);
     text-transform:uppercase; letter-spacing:1px;
   }
-  .app-card-footer {
+.app-card-footer {
     display:flex; justify-content:space-between; align-items:center;
     padding:10px 18px;
     border-top:1px solid var(--border);
     background:var(--surface2);
     font-size:11px; margin-top:auto;
   }
-  .footer-label {
+.footer-label {
     color:var(--text-dim);
     letter-spacing:1px; font-size:10px;
     text-transform:uppercase;
   }
-  .footer-open       { color:var(--accent); }
-  .footer-open.dim   { color:var(--text-dim); }
-
-  /* =========================================================
-     SPINNER (inline)
-     ========================================================= */
-  .spin-inline {
-    display:inline-flex; align-items:center; gap:6px;
-    font-size:9px; color:var(--accent2);
-    letter-spacing:1px;
-  }
-  .spin-inline::before {
-    content:'';
-    display:inline-block;
-    width:8px; height:8px;
-    border:1.5px solid var(--border);
-    border-top-color:var(--accent2);
-    border-radius:50%;
-    animation:spin .7s linear infinite;
-  }
-  @keyframes spin { to { transform:rotate(360deg); } }
-
-  /* =========================================================
-     FOOTER
-     ========================================================= */
-  .dash-footer {
-    margin-top:40px; padding-top:16px;
-    border-top:1px solid var(--border);
-    display:flex; justify-content:space-between;
-    font-size:10px; color:var(--text-dim);
-    letter-spacing:1px;
-  }
-
-  /* =========================================================
-     DEBUG
-     ========================================================= */
-  #dbg-btn {
+.footer-open.dim   { color:var(--text-dim); }
+#dbg-btn {
     margin-top:16px;
     font-size:10px; color:var(--text-dim);
     cursor:pointer; letter-spacing:1px;
     text-transform:uppercase;
     display:inline-block;
   }
-  #dbg-btn:hover { color:var(--accent2); }
-  #dbg-out {
+#dbg-btn:hover { color:var(--accent2); }
+#dbg-out {
     display:none;
     margin-top:8px; padding:14px;
     background:var(--surface);
@@ -349,36 +132,28 @@
     line-height:1.9; white-space:pre-wrap;
     max-height:360px; overflow-y:auto;
   }
-  #dbg-out.show { display:block; }
-
-  ::-webkit-scrollbar { width:6px; height:6px; }
-  ::-webkit-scrollbar-track { background:var(--bg); }
-  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-  ::-webkit-scrollbar-thumb:hover { background:var(--accent2); }
-
-  /* ── LOADING OVERLAY ── */
-  #app-loading {
+#dbg-out.show { display:block; }
+#app-loading {
     position:fixed; inset:0; z-index:9999;
     background:var(--bg);
     display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:20px;
     transition:opacity .4s;
   }
-  #app-loading.hidden { opacity:0; pointer-events:none; }
-  #app-loading .ld-logo {
+#app-loading.hidden { opacity:0; pointer-events:none; }
+#app-loading .ld-logo {
     font-family:'Syne',sans-serif; font-size:32px; font-weight:800;
     color:var(--text-bright); letter-spacing:-1px;
   }
-  #app-loading .ld-sub {
+#app-loading .ld-sub {
     font-size:10px; color:var(--text-dim); letter-spacing:4px; text-transform:uppercase;
   }
-  #app-loading .ld-spinner {
+#app-loading .ld-spinner {
     width:80px; height:80px;
     position:relative;
     display:flex; align-items:center; justify-content:center;
   }
-  /* Storage rack - outer frame — uses CSS vars so theme-aware */
-  .ld-spinner::before {
+.ld-spinner::before {
     content:'';
     position:absolute;
     width:64px; height:64px;
@@ -389,8 +164,7 @@
       inset 0 2px 0 var(--border),
       inset 0 -2px 0 var(--border);
   }
-  /* Storage disks container */
-  .ld-spinner .disk {
+.ld-spinner .disk {
     position:absolute;
     width:48px;
     display:flex;
@@ -398,8 +172,7 @@
     gap:3px;
     z-index:2;
   }
-  /* Individual disk slots — accent2 based, visible on both themes */
-  .ld-spinner .disk-slot {
+.ld-spinner .disk-slot {
     height:4px;
     background:linear-gradient(90deg,
       transparent 0%,
@@ -410,13 +183,12 @@
     border-radius:1px;
     animation:disk-pulse 2s ease-in-out infinite;
   }
-  .ld-spinner .disk-slot:nth-child(1) { animation-delay:0s; }
-  .ld-spinner .disk-slot:nth-child(2) { animation-delay:0.15s; }
-  .ld-spinner .disk-slot:nth-child(3) { animation-delay:0.3s; }
-  .ld-spinner .disk-slot:nth-child(4) { animation-delay:0.45s; }
-  .ld-spinner .disk-slot:nth-child(5) { animation-delay:0.6s; }
-  /* Status indicator */
-  .ld-spinner::after {
+.ld-spinner .disk-slot:nth-child(1) { animation-delay:0s; }
+.ld-spinner .disk-slot:nth-child(2) { animation-delay:0.15s; }
+.ld-spinner .disk-slot:nth-child(3) { animation-delay:0.3s; }
+.ld-spinner .disk-slot:nth-child(4) { animation-delay:0.45s; }
+.ld-spinner .disk-slot:nth-child(5) { animation-delay:0.6s; }
+.ld-spinner::after {
     content:'';
     position:absolute;
     top:6px; right:6px;
@@ -427,26 +199,31 @@
     animation:status-blink 1.5s ease-in-out infinite;
     z-index:3;
   }
-  @keyframes disk-pulse {
+@keyframes disk-pulse {
     0%, 100% { opacity:0.25; transform:scaleX(0.95); }
     50%       { opacity:0.9;  transform:scaleX(1); }
   }
-  @keyframes status-blink {
+@keyframes status-blink {
     0%, 100% { opacity:1; }
     50%       { opacity:0.3; }
   }
-  #app-loading .ld-msg {
+#app-loading .ld-msg {
     font-size:11px; color:var(--text-dim); letter-spacing:2px;
     animation:blink 1.5s ease-in-out infinite;
   }
-  #app-loading .ld-bar-wrap {
+#app-loading .ld-bar-wrap {
     width:260px; height:3px; background:var(--border); overflow:hidden;
   }
-  #app-loading .ld-bar {
+#app-loading .ld-bar {
     height:100%; width:0%; background:var(--accent2);
     transition:width .3s ease; border-radius:2px;
   }
-</style>
+  </style>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/asset-inventory.js"></script>
+<script src="./assets/js/report-export.js"></script>
+<script src="./assets/js/micro-interactions.js" defer></script>
+
 </head>
 <body>
 <div id="app-loading">

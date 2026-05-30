@@ -7,48 +7,25 @@
 <meta name="view-transition" content="same-origin">
 <title>Capacity Planner · Storage Portal</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
-<script src="./assets/js/storage-utils.js"></script>
-<script src="./assets/js/nav.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,45,68,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,68,.2) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-.shell{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:20px;}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.brand{display:flex;align-items:center;gap:12px;}
-.brand-icon{width:40px;height:40px;border:2px solid var(--accent2);display:grid;place-items:center;}
-.brand-icon svg{width:20px;height:20px;stroke:var(--accent2);fill:none;stroke-width:1.5;stroke-linecap:round;}
-.brand-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
-.brand-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;}
-.hdr-right{text-align:right;font-size:11px;color:var(--text-dim);}
-
+<link rel="stylesheet" href="./assets/css/components.css">
+  <style>
 .note{font-size:10px;color:var(--text-dim);background:var(--grid);border:1px solid var(--border);border-left:3px solid var(--warn);padding:10px 14px;margin-bottom:18px;line-height:1.6;}
 .note b{color:var(--text-bright);}
-
 .layout{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start;}
-.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:16px;}
-.panel-hdr{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-bright);}
-.panel-body{padding:16px;}
-
 .lbl{display:block;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;}
 .inp,.sel{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;padding:9px 11px;outline:none;box-sizing:border-box;margin-bottom:14px;}
 .inp:focus,.sel:focus{border-color:var(--accent2);}
 .scenario-box{background:var(--grid);border:1px solid var(--border);padding:14px;margin-bottom:14px;}
 .scenario-box .sb-ttl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;}
 .row2{display:grid;grid-template-columns:1fr 80px;gap:8px;align-items:end;}
-.btn{width:100%;background:transparent;border:1px solid var(--accent2);color:var(--accent2);font-family:'JetBrains Mono',monospace;font-size:11px;padding:11px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:all .15s;}
-.btn:hover{background:var(--accent2);color:var(--bg);}
 .btn.sec{border-color:var(--border);color:var(--text-dim);margin-top:8px;}
 .btn.sec:hover{background:var(--surface2);color:var(--text);}
-
 .preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
 .preset{font-size:9px;padding:5px 9px;background:var(--bg);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all .12s;letter-spacing:.5px;}
 .preset:hover{border-color:var(--accent);color:var(--accent);}
-
 .result-hero{background:linear-gradient(135deg,rgba(75,159,232,.10),rgba(75,159,232,.02));border:1px solid var(--accent2);border-left:3px solid var(--accent2);padding:18px 20px;margin-bottom:16px;}
 .result-hero h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text-bright);}
 .result-hero .rh-sub{font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.5;}
-
 .proj-table{width:100%;border-collapse:collapse;font-size:11px;}
 .proj-table th{background:var(--surface2);color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;}
 .proj-table td{padding:10px 12px;border-bottom:1px solid rgba(30,45,68,.5);}
@@ -56,7 +33,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .cab-cell{color:var(--text-bright);font-weight:500;}
 .ven-cell{font-size:9px;color:var(--text-dim);}
 .bar-wrap{position:relative;height:18px;background:var(--bg);border:1px solid var(--border);min-width:120px;}
-.bar-fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent3);opacity:.6;}
 .bar-fill.warn{background:var(--warn);}
 .bar-fill.crit{background:var(--danger);}
 .bar-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-bright);}
@@ -64,13 +40,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .eta-warn{color:var(--warn);font-weight:600;}
 .eta-ok{color:var(--accent3);}
 .eta-safe{color:var(--text-dim);}
-.tbl-wrap{max-height:560px;overflow:auto;border:1px solid var(--border);}
-
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:420px;text-align:center;color:var(--text-dim);padding:40px;}
 .empty svg{width:46px;height:46px;stroke:var(--text-dim);fill:none;stroke-width:1.3;opacity:.5;margin-bottom:16px;}
 .empty .e-ttl{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text-bright);}
 .empty .e-msg{font-size:12px;margin-top:6px;max-width:400px;line-height:1.6;}
-
 .loadbar{height:3px;background:var(--surface2);overflow:hidden;margin-bottom:14px;display:none;}
 .loadbar.show{display:block;}
 .loadbar i{display:block;height:100%;background:var(--accent2);width:0;transition:width .2s;}
@@ -82,7 +54,10 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .sum-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;}
 .sum-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text-bright);}
 .sum-sub{font-size:9px;color:var(--text-dim);margin-top:3px;}
-</style>
+  </style>
+<script src="./assets/js/storage-utils.js"></script>
+<script src="./assets/js/nav.js"></script>
+
 </head>
 <body>
 <div class="shell">
