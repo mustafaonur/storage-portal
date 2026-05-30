@@ -132,7 +132,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
 </head>
 <body>
 <div class="shell">
-<a href="./index.html" class="back-link">&larr; Portala Don</a>
 <header>
   <div class="brand">
     <div class="brand-icon">
@@ -1390,8 +1389,10 @@ document.getElementById('budget-clear').addEventListener('click', () => {
 // Show budget bar when chart becomes visible
 const _origSelectMetric = typeof selectMetric !== 'undefined' ? selectMetric : null;
 
-StorageNav.init({ title: "Trend", section: "analytics" });
+</script>
 
+<script>
+try { StorageNav.init({ title: "Trend", section: "analytics" }); } catch(e) { console.warn("Nav init error:", e); }
 </script>
 </body>
 </html>

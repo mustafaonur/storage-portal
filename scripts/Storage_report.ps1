@@ -266,7 +266,7 @@ if (-not ([System.Management.Automation.PSTypeName]'SSLBypass').Type) {
 
 # Yollar
 $LocalBase  = Join-Path $ScriptRoot '..' 'data'
-$RemoteBase = '\\btprdsrc01\source_drive\genel\StorageScriptOutput'
+$RemoteBase = '\\uniprddb02\share'
 
 $LocalHw      = Join-Path $LocalBase 'Hw'
 $LocalPmax    = Join-Path $LocalBase 'Pmax'

@@ -261,7 +261,10 @@ document.querySelector('.vendor-tabs').addEventListener('click', e => {
 });
 
 loadAll();
-StorageNav.init({ title: 'Port Groups', section: 'tools' });
+</script>
+
+<script>
+try { StorageNav.init({ title: "Port Groups", section: "tools" }); } catch(e) { console.warn("Nav init error:", e); }
 </script>
 </body>
 </html>

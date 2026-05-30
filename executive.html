@@ -360,14 +360,16 @@ async function main() {
 }
 
 main();
-StorageNav.init({ title: 'Executive Summary', section: 'tools' });
-
 /* ════════════ EVENT DELEGATION — executive.html ════════════ */
 (function wireEvents() {
   const btn = document.getElementById('btn-print');
   if (btn) btn.addEventListener('click', () => window.print());
 })();
 
+</script>
+
+<script>
+try { StorageNav.init({ title: "Executive", section: "tools" }); } catch(e) { console.warn("Nav init error:", e); }
 </script>
 </body>
 </html>

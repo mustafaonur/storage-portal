@@ -319,7 +319,10 @@ document.querySelector('.vendor-toggles').addEventListener('click', e => {
 // Load on start
 loadAll().then(() => { toast(`${RECORDS.length} kayıt yüklendi`); });
 
-StorageNav.init({ title: 'Host Search', section: 'tools' });
+</script>
+
+<script>
+try { StorageNav.init({ title: "Host Search", section: "tools" }); } catch(e) { console.warn("Nav init error:", e); }
 </script>
 </body>
 </html>
