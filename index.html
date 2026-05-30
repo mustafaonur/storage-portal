@@ -490,7 +490,7 @@
         <button id="btn-export-report" style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent3);background:transparent;border:1px solid rgba(75,232,160,.35);padding:3px 8px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:border-color .2s" title="Güncel durumu HTML rapor olarak indir">⬇ RAPOR</button>
       </div>
       <div id="clock">--:--:--</div>
-      <div id="last-scan-status" style="font-size:10px;color:var(--text-dim);min-height:14px;cursor:pointer" title="Tarama detaylarını göster" onclick="openLastRunModal()">—</div>
+      <div id="last-scan-status" style="font-size:10px;color:var(--text-dim);min-height:14px;cursor:pointer" title="Tarama detaylarını göster" role="button" tabindex="0">—</div>
       <div id="hdr-stat" style="color:var(--text);">-</div>
       <div id="data-fresh-badge" data-fresh-badge style="margin-top:2px"></div>
     </div>
@@ -517,7 +517,7 @@
       <div class="stat-sub" id="v-cap-sub">- TB | Used: - TB | Free: - TB</div>
     </div>
 
-    <div class="stat-card red" onclick="openAlarmModal()" style="cursor:pointer" title="Tıkla — alarm detayı">
+    <div class="stat-card red" id="alarm-stat-card" style="cursor:pointer" title="Tıkla — alarm detayı" role="button" tabindex="0">
       <div class="stat-label">Alarm Durumu <span class="spin-inline" id="sp-alarm">LOADING</span></div>
       <div class="stat-value" id="v-alarms">-</div>
       <div class="stat-sub" id="v-alarm-sub">Kritik (%65+) | Uyarı (%50+)</div>
@@ -603,8 +603,8 @@
           <span id="gkd-title" style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Garanti Durumu</span>
           <!-- Circle indicators -->
           <div style="display:flex;gap:6px">
-            <span id="gkd-dot-warranty" onclick="switchGkdTab('warranty')" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent2);border:2px solid var(--accent2);cursor:pointer;opacity:1;transition:opacity .2s"></span>
-            <span id="gkd-dot-cabinet" onclick="switchGkdTab('cabinet')" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:transparent;border:2px solid var(--border);cursor:pointer;opacity:.5;transition:opacity .2s"></span>
+            <span id="gkd-dot-warranty" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent2);border:2px solid var(--accent2);cursor:pointer;opacity:1;transition:opacity .2s" role="button" tabindex="0" title="Garanti Durumu"></span>
+            <span id="gkd-dot-cabinet" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:transparent;border:2px solid var(--border);cursor:pointer;opacity:.5;transition:opacity .2s" role="button" tabindex="0" title="Kabinet Durumu"></span>
           </div>
         </div>
         <a id="gkd-link" href="./management.html" style="font-size:9px;color:var(--accent2);text-decoration:none">Kontrat Takip →</a>
@@ -1215,15 +1215,15 @@
 
   </div>
 
-  <div id="dbg-btn" onclick="document.getElementById('dbg-out').classList.toggle('show')">&#9654; Debug</div>
+  <div id="dbg-btn" role="button" tabindex="0">&#9654; Debug</div>
   <div id="dbg-out"></div>
 
   <!-- ALARM MODAL -->
-  <div id="alarm-modal" style="display:none;position:fixed;inset:0;background:rgba(8,12,20,.9);z-index:1000;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAlarmModal()">
+  <div id="alarm-modal" style="display:none;position:fixed;inset:0;background:rgba(8,12,20,.9);z-index:1000;align-items:center;justify-content:center;" id="alarm-modal-backdrop">
     <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);width:90%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;">
       <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">&#9888; Kapasite Alarm Listesi</div>
-        <button onclick="closeAlarmModal()" style="background:transparent;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:0 6px">&times;</button>
+        <button id="alarm-modal-close" style="background:transparent;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:0 6px">&times;</button>
       </div>
       <div style="padding:18px;overflow-y:auto;flex:1;" id="alarm-list-body"></div>
     </div>
@@ -1241,7 +1241,7 @@
   <div style="background:var(--surface);border:1px solid var(--border);max-width:640px;width:90%;max-height:80vh;overflow-y:auto">
     <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Son Tarama Detayı</div>
-      <button onclick="closeLastRunModal()" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px">✕</button>
+      <button id="last-run-modal-close" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px">✕</button>
     </div>
     <div id="last-run-modal-body" style="padding:18px"></div>
   </div>
@@ -2203,6 +2203,49 @@ async function renderVelocitySparkline() {
 }
 
 renderVelocitySparkline();
+
+/* ════════════════════════════════════════════════════════════
+   EVENT DELEGATION — replaces all inline onclick= handlers
+════════════════════════════════════════════════════════════ */
+(function wireEvents() {
+  const scanStatus = document.getElementById('last-scan-status');
+  if (scanStatus) {
+    scanStatus.addEventListener('click', openLastRunModal);
+    scanStatus.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLastRunModal(); } });
+  }
+
+  const alarmCard = document.getElementById('alarm-stat-card');
+  if (alarmCard) {
+    alarmCard.addEventListener('click', openAlarmModal);
+    alarmCard.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAlarmModal(); } });
+  }
+
+  const dotWarranty = document.getElementById('gkd-dot-warranty');
+  const dotCabinet  = document.getElementById('gkd-dot-cabinet');
+  if (dotWarranty) {
+    dotWarranty.addEventListener('click', () => switchGkdTab('warranty'));
+    dotWarranty.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchGkdTab('warranty'); } });
+  }
+  if (dotCabinet) {
+    dotCabinet.addEventListener('click', () => switchGkdTab('cabinet'));
+    dotCabinet.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchGkdTab('cabinet'); } });
+  }
+
+  const dbgBtn = document.getElementById('dbg-btn');
+  if (dbgBtn) {
+    dbgBtn.addEventListener('click', () => document.getElementById('dbg-out').classList.toggle('show'));
+    dbgBtn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('dbg-out').classList.toggle('show'); } });
+  }
+
+  const alarmBackdrop = document.getElementById('alarm-modal-backdrop');
+  const alarmClose    = document.getElementById('alarm-modal-close');
+  if (alarmBackdrop) alarmBackdrop.addEventListener('click', e => { if (e.target === alarmBackdrop) closeAlarmModal(); });
+  if (alarmClose)    alarmClose.addEventListener('click', closeAlarmModal);
+
+  const lastRunClose = document.getElementById('last-run-modal-close');
+  if (lastRunClose) lastRunClose.addEventListener('click', closeLastRunModal);
+})();
+
 </script>
 </body>
 </html>

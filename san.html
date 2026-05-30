@@ -495,11 +495,11 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
 
   <!-- TABS -->
   <div class="tab-bar">
-    <button class="tab-btn active" data-tab="overview" onclick="setTab('overview', event)">Director'lar</button>
-    <button class="tab-btn" data-tab="ports" onclick="setTab('ports', event)">Port Analizi</button>
-    <button class="tab-btn" data-tab="charts" onclick="setTab('charts', event)">Grafikler</button>
-    <button class="tab-btn" data-tab="zoneaudit" onclick="setTab('zoneaudit', event)">Zone Audit</button>
-    <button class="tab-btn" data-tab="compliance" onclick="setTab('compliance', event)">Uyumluluk</button>
+    <button class="tab-btn active" data-tab="overview">Director'lar</button>
+    <button class="tab-btn" data-tab="ports">Port Analizi</button>
+    <button class="tab-btn" data-tab="charts">Grafikler</button>
+    <button class="tab-btn" data-tab="zoneaudit">Zone Audit</button>
+    <button class="tab-btn" data-tab="compliance">Uyumluluk</button>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -520,23 +520,23 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div class="active-filter-chips" id="activeFilterChips" class="sp-hidden"></div>
     
     <div class="filter-bar">
-      <input class="filter-input" id="portSearch" placeholder="Switch / alias / WWN ara..." oninput="renderPortTable()">
-      <select class="filter-select" id="filterDir" onchange="renderPortTable()">
+      <input class="filter-input" id="portSearch" placeholder="Switch / alias / WWN ara...">
+      <select class="filter-select" id="filterDir">
         <option value="">Tum Director'lar</option>
       </select>
-      <select class="filter-select" id="filterSpeed" onchange="renderPortTable()">
+      <select class="filter-select" id="filterSpeed">
         <option value="">Tum Hizlar</option>
         <option>8G</option><option>16G</option><option>32G</option><option>64G</option>
       </select>
-      <select class="filter-select" id="filterState" onchange="renderPortTable()">
+      <select class="filter-select" id="filterState">
         <option value="">Tum Durumlar</option>
         <option>Online</option><option>No_Light</option><option>No_Module</option>
       </select>
-      <select class="filter-select" id="filterRole" onchange="renderPortTable()">
+      <select class="filter-select" id="filterRole">
         <option value="">Tum Roller</option>
         <option>Host</option><option>Storage</option><option>ISL</option><option>Free</option>
       </select>
-      <select class="filter-select" id="filterError" onchange="renderPortTable()">
+      <select class="filter-select" id="filterError">
         <option value="">Hata Durumu</option>
         <option value="errors">Sadece hatali portlar</option>
       </select>
@@ -580,16 +580,16 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap">
       <div class="search-box">
         <span class="search-icon">⌕</span>
-        <input type="text" placeholder="WWN, alias, zone, switch ara..." id="za-search" oninput="__db_renderZoneAudit()"
+        <input type="text" placeholder="WWN, alias, zone, switch ara..." id="za-search"
           style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 36px 8px 12px;outline:none;width:100%">
       </div>
-      <select id="za-type" onchange="renderZoneAudit()"
+      <select id="za-type"
         style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none">
         <option value="">Tüm Sorunlar</option>
         <option value="Orphan HBA">Orphan HBA</option>
         <option value="Ghost Zone Uyesi">Ghost Zone Üyesi</option>
       </select>
-      <select id="za-fab" onchange="renderZoneAudit()"
+      <select id="za-fab"
         style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none">
         <option value="">Tüm Fabric</option>
         <option value="A">Fabric A</option>
@@ -838,7 +838,7 @@ function renderActiveFilterChips(opts) {
   chipBox.style.display = 'flex';
   chipBox.innerHTML = chips.map(c =>
     `<span class="filter-chip">${c.key === 'label' ? `<strong>${c.val}</strong>` : `${c.key}: <strong>${c.val}</strong>`}</span>`
-  ).join('') + `<button class="filter-chip-clear" onclick="clearFilters()">Temizle</button>`;
+  ).join('') + `<button class="filter-chip-clear" id="chip-clear-btn">Temizle</button>`;
 }
 
 function clearFilters() {
@@ -979,7 +979,7 @@ function renderKPIs() {
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis.map((k, i) =>
-    `<div class="kpi ${k.cls} kpi-clickable" onclick="kpiClick(${i})">
+    `<div class="kpi ${k.cls} kpi-clickable" data-kpi-idx="${i}">
        <div class="kpi-label">${k.lbl}</div>
        <div class="kpi-value">${k.val.toLocaleString('tr-TR')}</div>
        <div class="kpi-sub">${k.sub}</div>
@@ -1080,7 +1080,7 @@ function renderAlarms() {
   
   pills.innerHTML = items.map((i, idx) => {
     const color = i.severity === 'danger' ? 'var(--danger)' : 'var(--warn)';
-    const clickable = i.filter ? `class="alarm-pill alarm-pill-clickable" onclick="alarmClick(${idx})"` : `class="alarm-pill"`;
+    const clickable = i.filter ? `class="alarm-pill alarm-pill-clickable" data-alarm-idx="${idx}"` : `class="alarm-pill"`;
     const tip = i.tooltip ? ` title="${i.tooltip.replace(/"/g,'&quot;')}"` : '';
     return `<span ${clickable} style="color:${color}"${tip}>${i.msg}</span>`;
   }).join('');
@@ -1192,20 +1192,20 @@ function buildDirectorCard(d) {
   // Alerts
   const alerts = [];
   if (d.s8 > 0) {
-    alerts.push(`<span class="alert-tag danger alert-tag-clickable" onclick="event.stopPropagation();applyPortFilter({label:'8G - ${d.name}', switch:'${d.name}', speed:'8G', state:'Online'})">${d.s8} adet 8G</span>`);
+    alerts.push(`<span class="alert-tag danger alert-tag-clickable" data-port-filter='{"label":"8G - ${d.name}","switch":"${d.name}","speed":"8G","state":"Online"}'>${d.s8} adet 8G</span>`);
   }
   if (d.errPorts > 0) {
-    alerts.push(`<span class="alert-tag danger alert-tag-clickable" onclick="event.stopPropagation();applyPortFilter({label:'Hata - ${d.name}', switch:'${d.name}', error:'errors'})">${d.errPorts} hata</span>`);
+    alerts.push(`<span class="alert-tag danger alert-tag-clickable" data-port-filter='{"label":"Hata - ${d.name}","switch":"${d.name}","error":"errors"}'>${d.errPorts} hata</span>`);
   }
   // 16G host portu sayisi
   const sw16Host = ports.filter(p => p.switch === d.name && p.speed === '16G' && p.role === 'Host' && p.state === 'Online').length;
   if (sw16Host > 0) {
-    alerts.push(`<span class="alert-tag warn alert-tag-clickable" onclick="event.stopPropagation();applyPortFilter({label:'16G Host - ${d.name}', switch:'${d.name}', speed:'16G', role:'Host', state:'Online'})">${sw16Host} adet 16G host</span>`);
+    alerts.push(`<span class="alert-tag warn alert-tag-clickable" data-port-filter='{"label":"16G Host - ${d.name}","switch":"${d.name}","speed":"16G","role":"Host","state":"Online"}'>${sw16Host} adet 16G host</span>`);
   }
   if (d.s8 > 0 || d.s16 > 0) {
     const hasModern = d.s32 > 0 || d.s64 > 0;
     if (hasModern) {
-      alerts.push(`<span class="alert-tag warn alert-tag-clickable" onclick="event.stopPropagation();applyPortFilter({label:'Karisik Hiz - ${d.name}', switch:'${d.name}', state:'Online'})">karisik hiz</span>`);
+      alerts.push(`<span class="alert-tag warn alert-tag-clickable" data-port-filter='{"label":"Karisik Hiz - ${d.name}","switch":"${d.name}","state":"Online"}'>karisik hiz</span>`);
     }
   }
 
@@ -1809,6 +1809,87 @@ function runCompliance() {
 }
 
 loadZoneRules();
+
+
+/* ════════════════════════════════════════════════════════════
+   EVENT DELEGATION — replaces all inline onclick/onchange/oninput handlers
+════════════════════════════════════════════════════════════ */
+(function wireEvents() {
+
+  // Tab buttons — delegate from .tab-bar
+  const tabBar = document.querySelector('.tab-bar');
+  if (tabBar) {
+    tabBar.addEventListener('click', e => {
+      const btn = e.target.closest('.tab-btn[data-tab]');
+      if (btn) setTab(btn.dataset.tab, e);
+    });
+  }
+
+  // Port filter inputs
+  const portSearch  = document.getElementById('portSearch');
+  const filterDir   = document.getElementById('filterDir');
+  const filterSpeed = document.getElementById('filterSpeed');
+  const filterState = document.getElementById('filterState');
+  const filterRole  = document.getElementById('filterRole');
+  const filterError = document.getElementById('filterError');
+
+  const dbRender = typeof debounce === 'function' ? debounce(renderPortTable, 180) : renderPortTable;
+  if (portSearch)  portSearch.addEventListener('input',  dbRender);
+  if (filterDir)   filterDir.addEventListener('change',  renderPortTable);
+  if (filterSpeed) filterSpeed.addEventListener('change', renderPortTable);
+  if (filterState) filterState.addEventListener('change', renderPortTable);
+  if (filterRole)  filterRole.addEventListener('change',  renderPortTable);
+  if (filterError) filterError.addEventListener('change', renderPortTable);
+
+  // Zone audit filters
+  const zaSearch = document.getElementById('za-search');
+  const zaType   = document.getElementById('za-type');
+  const zaFab    = document.getElementById('za-fab');
+  const dbZa = typeof debounce === 'function' ? debounce(renderZoneAudit, 180) : renderZoneAudit;
+  if (zaSearch) zaSearch.addEventListener('input',  dbZa);
+  if (zaType)   zaType.addEventListener('change',   renderZoneAudit);
+  if (zaFab)    zaFab.addEventListener('change',    renderZoneAudit);
+
+  // Chip clear button (dynamically re-rendered — delegate from container)
+  const chipContainer = document.getElementById('activeFilterChips');
+  if (chipContainer) {
+    chipContainer.addEventListener('click', e => {
+      if (e.target.closest('#chip-clear-btn')) clearFilters();
+    });
+  }
+
+  // KPI cards — data-kpi-idx
+  const kpiRow = document.getElementById('kpiRow');
+  if (kpiRow) {
+    kpiRow.addEventListener('click', e => {
+      const card = e.target.closest('[data-kpi-idx]');
+      if (card) kpiClick(parseInt(card.dataset.kpiIdx, 10));
+    });
+  }
+
+  // Alarm pills — data-alarm-idx
+  const alarmPills = document.getElementById('alarmPills');
+  if (alarmPills) {
+    alarmPills.addEventListener('click', e => {
+      const pill = e.target.closest('[data-alarm-idx]');
+      if (pill) alarmClick(parseInt(pill.dataset.alarmIdx, 10));
+    });
+  }
+
+  // Alert tags on director cards — data-port-filter (JSON)
+  const dirGrid = document.getElementById('dirGrid') || document.body;
+  dirGrid.addEventListener('click', e => {
+    const tag = e.target.closest('[data-port-filter]');
+    if (!tag) return;
+    e.stopPropagation();
+    try {
+      applyPortFilter(JSON.parse(tag.dataset.portFilter));
+    } catch (err) {
+      console.warn('[san] Failed to parse port filter:', err);
+    }
+  });
+
+})();
 
 </script>
 </body>
