@@ -1658,9 +1658,11 @@ td, th, .sp-num, .footer-open,
 .app-card.revealed   { animation: card-construct  .58s cubic-bezier(.4,0,.2,1) both; }
 .layer-card.revealed { animation: layer-construct .52s cubic-bezier(.4,0,.2,1) both; }
 
-/* ── 17. BADGE BREATHE ── */
-.badge-ok { position: relative; overflow: visible; }
-.badge-ok::after {
+/* ── 17. BADGE BREATHE — scoped to app-card / stat-card only ── */
+.app-card .badge-ok,
+.stat-card .badge-ok { position: relative; overflow: visible; }
+.app-card .badge-ok::after,
+.stat-card .badge-ok::after {
   content: ''; position: absolute; inset: -2px;
   border: 1px solid rgba(75,232,160,.55); border-radius: inherit;
   animation: badge-ring 3.5s ease-in-out infinite; pointer-events: none;
@@ -1672,7 +1674,6 @@ td, th, .sp-num, .footer-open,
 
 /* ── 18. STAT VALUE ── */
 .stat-value {
-  display: inline-block;
   transition: transform .22s ease, color .15s;
   transform-origin: left center;
 }
