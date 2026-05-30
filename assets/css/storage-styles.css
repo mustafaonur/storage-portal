@@ -1443,30 +1443,73 @@ header {
 
 
 
+
 /* ═══════════════════════════════════════════════════════════════
-   MICRO-INTERACTIONS v3  —  physical, handcrafted, domain-specific
+   MICRO-INTERACTIONS v4  —  full premium suite
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Section zones: visible ambient light, not wallpaper ── */
+/* ── 1. TABULAR FIGURES — columns always align ── */
+.stat-value, .layer-value, .layer-ring-pct,
+td, th, .sp-num, .footer-open,
+.stat-unit, code, pre { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* ── 2. TIGHTER TRACKING — large numbers feel weighted ── */
+.stat-value  { letter-spacing: -0.03em; }
+.layer-value { letter-spacing: -0.02em; }
+
+/* ── 3. PREFERS-REDUCED-MOTION — enterprise accessibility ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:        .01ms !important;
+    animation-iteration-count: 1     !important;
+    transition-duration:       .01ms !important;
+  }
+}
+
+/* ── 4. VIEW TRANSITIONS ── */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: .22s ease both vt-out; }
+::view-transition-new(root) { animation: .22s ease both vt-in;  }
+@keyframes vt-out { to   { opacity: 0; transform: scale(.985) translateY(4px); } }
+@keyframes vt-in  { from { opacity: 0; transform: scale(.985) translateY(4px); } }
+
+/* ── 5. RING GAUGE ── */
+.layer-ring-wrap {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+}
+.layer-ring { flex-shrink: 0; overflow: visible; }
+.layer-ring-bg {
+  fill: none; stroke: var(--border2, var(--border)); stroke-width: 3;
+}
+.layer-ring-fill {
+  fill: none; stroke-width: 3; stroke-linecap: round;
+  stroke-dasharray: 113.097; stroke-dashoffset: 113.097;
+  transform: rotate(-90deg); transform-origin: 22px 22px;
+  transition: stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1);
+}
+.layer-ring-pct  { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; color: var(--text-bright); line-height: 1; }
+.layer-ring-unit { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 3px; }
+
+/* ── 6. SECTION ZONES: dual-radial ambient light ── */
 .section-zone { position: relative; padding: 2px 0 16px; }
 
 .zone-analytics::before {
   content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;
   background:
-    radial-gradient(ellipse 72% 320px at -4% 50%, rgba(75,159,232,.11) 0%, transparent 100%),
-    radial-gradient(ellipse 30% 120px at 98% 20%, rgba(75,159,232,.05) 0%, transparent 100%);
+    radial-gradient(ellipse 72% 320px at -4% 50%,  rgba(75,159,232,.11) 0%, transparent 100%),
+    radial-gradient(ellipse 30% 120px at 98% 20%,  rgba(75,159,232,.05) 0%, transparent 100%);
 }
 .zone-storage::before {
   content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;
   background:
     radial-gradient(ellipse 80% 340px at 106% 55%, rgba(75,232,160,.09) 0%, transparent 100%),
-    radial-gradient(ellipse 25% 100px at 0% 80%, rgba(75,232,160,.04) 0%, transparent 100%);
+    radial-gradient(ellipse 25% 100px at 0%   80%, rgba(75,232,160,.04) 0%, transparent 100%);
 }
 .zone-utilities::before {
   content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;
   background:
-    radial-gradient(ellipse 65% 260px at 50% -8%, rgba(232,184,75,.08) 0%, transparent 100%),
-    radial-gradient(ellipse 20% 80px at 85% 95%, rgba(232,184,75,.04) 0%, transparent 100%);
+    radial-gradient(ellipse 65% 260px at 50% -8%,  rgba(232,184,75,.08) 0%, transparent 100%),
+    radial-gradient(ellipse 20%  80px at 85% 95%,  rgba(232,184,75,.04) 0%, transparent 100%);
 }
 .zone-ops::before {
   content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;
@@ -1475,120 +1518,162 @@ header {
 }
 .section-zone > * { position: relative; z-index: 1; }
 
-/* ── Section title: gradient rule draws in on scroll ── */
-.section-title {
-  border-bottom: none !important;
-  padding-bottom: 9px;
-}
+/* ── 7. SECTION TITLE: gradient rule draws in on scroll ── */
+.section-title { border-bottom: none !important; padding-bottom: 9px; }
 .section-title::after {
-  content: '';
-  display: block;
-  height: 1px;
-  width: 0%;
-  margin-top: 8px;
-  background: linear-gradient(90deg,
-    var(--accent) 0%,
-    rgba(232,184,75,.4) 35%,
-    transparent 68%);
+  content: ''; display: block; height: 1px; width: 0%; margin-top: 8px;
+  background: linear-gradient(90deg, var(--accent) 0%, rgba(232,184,75,.4) 35%, transparent 68%);
   transition: width .8s cubic-bezier(.4,0,.2,1);
 }
 .section-title.title-visible::after { width: 100%; }
+.section-title { transition: letter-spacing .3s ease, opacity .2s ease; }
+.section-title.scrambling { opacity: 0.72; letter-spacing: 3.5px; }
 
-/* ── App card: 3D tilt context + cursor spotlight ── */
+/* ── 8. APP CARD: 3D tilt context + cursor spotlight ── */
 .app-card {
   --mx: 50%; --my: 50%;
-  background-image:
-    linear-gradient(145deg, rgba(255,255,255,.022) 0%, transparent 55%) !important;
+  background-image: linear-gradient(145deg, rgba(255,255,255,.022) 0%, transparent 55%) !important;
   transform-style: preserve-3d;
   will-change: transform;
   transition: border-color .25s, box-shadow .25s !important;
   isolation: isolate;
 }
-/* Cursor spotlight overlay — driven by --mx/--my from JS */
 .app-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at var(--mx) var(--my),
-    rgba(255,255,255,.06) 0%,
-    rgba(75,159,232,.05) 28%,
-    transparent 62%
-  );
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .3s ease;
-  z-index: 0;
-  border-radius: inherit;
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--mx) var(--my),
+    rgba(255,255,255,.06) 0%, rgba(75,159,232,.05) 28%, transparent 62%);
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s ease; z-index: 0;
 }
 .app-card:hover:not(.app-disabled)::after { opacity: 1; }
-
-/* Accent bar grows on hover */
-.app-card::before { transition: width .2s ease !important; }
+.app-card::before  { transition: width .2s ease !important; }
 .app-card:hover:not(.app-disabled)::before { width: 4px !important; }
-
-/* Arrow spring */
 .app-card .footer-open {
   display: inline-block;
   transition: transform .24s cubic-bezier(.34,1.56,.64,1), color .15s;
 }
 .app-card:hover:not(.app-disabled) .footer-open { transform: translateX(6px); }
+.app-card:hover:not(.app-disabled) .app-card-name { color: var(--text-bright); transition: color .15s; }
 
-/* Name sharpens */
-.app-card:hover:not(.app-disabled) .app-card-name {
-  color: var(--text-bright); transition: color .15s;
+/* ── 9. KEYBOARD SHORTCUT BADGE ── */
+.card-shortcut {
+  position: absolute; bottom: 10px; right: 14px;
+  font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-dim); border: 1px solid var(--border);
+  padding: 2px 7px; opacity: 0; pointer-events: none; z-index: 5;
+  transition: opacity .18s ease;
+  font-family: 'JetBrains Mono', monospace;
+}
+.app-card:hover .card-shortcut { opacity: 0.9; }
+
+/* ── 10. G-MODE INDICATOR (keyboard nav) ── */
+#g-mode-hud {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2); border: 1px solid var(--accent);
+  padding: 8px 20px; font-size: 11px; letter-spacing: 2px; color: var(--accent);
+  text-transform: uppercase; pointer-events: none; z-index: 9990;
+  opacity: 0; transition: opacity .15s ease;
+  font-family: 'JetBrains Mono', monospace;
+}
+#g-mode-hud.active { opacity: 1; }
+
+/* ── 11. CONTEXT MENU ── */
+.ctx-menu {
+  position: fixed; z-index: 9999;
+  background: var(--surface2); border: 1px solid var(--border2, var(--border));
+  min-width: 188px; padding: 4px 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.3);
+  animation: ctx-in .12s ease both;
+}
+@keyframes ctx-in {
+  from { opacity: 0; transform: scale(.96) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);    }
+}
+.ctx-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; font-size: 12px; color: var(--text); cursor: pointer;
+  transition: background .1s, color .1s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.ctx-item:hover { background: var(--surface3, var(--border)); color: var(--text-bright); }
+.ctx-icon { font-size: 13px; opacity: .55; width: 16px; text-align: center; flex-shrink: 0; }
+.ctx-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.ctx-kbd {
+  margin-left: auto; font-size: 9px; color: var(--text-dim);
+  border: 1px solid var(--border); padding: 1px 5px; flex-shrink: 0;
 }
 
-/* ── Layer cards ── */
+/* ── 12. STALENESS: vendor data grey-out ── */
+.data-stale {
+  filter: saturate(0.42) brightness(0.87);
+  transition: filter 1.4s ease;
+}
+.data-stale:hover { filter: saturate(0.65) brightness(0.94); }
+
+/* ── 13. SCAN BEAM ── */
+.scan-beam {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--accent2) 15%, rgba(75,159,232,.9) 50%,
+    var(--accent2) 85%, transparent 100%);
+  pointer-events: none; z-index: 9998; opacity: 0;
+  box-shadow: 0 0 12px rgba(75,159,232,.6), 0 0 4px rgba(75,159,232,.9);
+}
+@keyframes scan-sweep {
+  0%   { transform: translateY(0);     opacity: 0;   }
+  4%   { opacity: 0.85; }
+  96%  { opacity: 0.85; }
+  100% { transform: translateY(100vh); opacity: 0;   }
+}
+.scan-beam.active { animation: scan-sweep 5.5s linear infinite; }
+
+/* ── 14. ERROR STATES ── */
+.stat-card.stat-error::before { background: var(--danger) !important; }
+.stat-card.stat-error .stat-value { color: var(--danger); font-size: 16px; letter-spacing: 0; }
+.app-card.card-error { border-color: rgba(232,75,75,.3) !important; }
+.app-card.card-error::before { background: var(--danger) !important; }
+
+/* ── 15. LAYER CARD REFINEMENTS ── */
 .layer-bar-fill {
   transition: width 1s cubic-bezier(.4,0,.2,1), filter .2s ease !important;
 }
 .layer-card:hover .layer-bar-fill { filter: brightness(1.45) saturate(1.3); }
+.layer-card:hover .layer-ring-fill { filter: brightness(1.35) saturate(1.2); }
 
-/* ── Stat card: value pops on hover ── */
-.stat-value {
-  display: inline-block;
-  transition: transform .22s ease, color .15s;
-  transform-origin: left center;
-}
-.stat-card:hover .stat-value { transform: scale(1.04); color: var(--text-bright); }
-
-/* ── ONLINE badge: breathing ring ── */
-.badge-ok { position: relative; overflow: visible; }
-.badge-ok::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border: 1px solid rgba(75,232,160,.55);
-  border-radius: inherit;
-  animation: badge-ring 3.5s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes badge-ring {
-  0%, 100% { opacity: 0;    transform: scale(1);    }
-  45%, 55% {  opacity: 0.9; transform: scale(1.07); }
-}
-
-/* ── Card reveal: construction (blur+overshoot), not just fade ── */
+/* ── 16. CARD CONSTRUCTION REVEAL ── */
 @keyframes card-construct {
   0%   { opacity: 0; transform: translateY(22px) scale(0.96); filter: blur(4px); }
   52%  { opacity: 1; filter: blur(0); }
   76%  { transform: translateY(-3px) scale(1.006); }
-  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
-.app-card.reveal-pending { opacity: 0; }
-.app-card.revealed { animation: card-construct .58s cubic-bezier(.4,0,.2,1) both; }
-
-/* ── Layer card reveal ── */
 @keyframes layer-construct {
   0%   { opacity: 0; transform: translateX(-14px) scale(0.97); }
   65%  { opacity: 1; }
   82%  { transform: translateX(2px) scale(1.003); }
   100% { opacity: 1; transform: translateX(0) scale(1); }
 }
+.app-card.reveal-pending   { opacity: 0; }
 .layer-card.reveal-pending { opacity: 0; }
+.app-card.revealed   { animation: card-construct  .58s cubic-bezier(.4,0,.2,1) both; }
 .layer-card.revealed { animation: layer-construct .52s cubic-bezier(.4,0,.2,1) both; }
 
-/* ── Scramble: section title while resolving ── */
-.section-title.scrambling { opacity: 0.7; letter-spacing: 3.5px; }
-.section-title { transition: letter-spacing .3s ease, opacity .2s ease; }
+/* ── 17. BADGE BREATHE ── */
+.badge-ok { position: relative; overflow: visible; }
+.badge-ok::after {
+  content: ''; position: absolute; inset: -2px;
+  border: 1px solid rgba(75,232,160,.55); border-radius: inherit;
+  animation: badge-ring 3.5s ease-in-out infinite; pointer-events: none;
+}
+@keyframes badge-ring {
+  0%, 100% { opacity: 0; transform: scale(1);    }
+  45%, 55% { opacity: .9; transform: scale(1.07); }
+}
+
+/* ── 18. STAT VALUE ── */
+.stat-value {
+  display: inline-block;
+  transition: transform .22s ease, color .15s;
+  transform-origin: left center;
+}
+.stat-card:hover .stat-value { transform: scale(1.04); color: var(--text-bright); }

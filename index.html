@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="view-transition" content="same-origin">
 <title>Enterprise Storage Portal</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
 <script src="./assets/js/storage-utils.js"></script>
@@ -545,7 +546,16 @@
       </div>
       <div class="layer-value" id="layer-san-val">—</div>
       <div class="layer-sub" id="layer-san-sub">Huawei + PowerMax + Pure FA</div>
-      <div class="layer-bar"><div class="layer-bar-fill" style="background:var(--accent2)" id="layer-san-bar"></div></div>
+      <div class="layer-ring-wrap">
+        <svg class="layer-ring" viewBox="0 0 44 44" width="44" height="44" aria-hidden="true">
+          <circle class="layer-ring-bg" cx="22" cy="22" r="18"/>
+          <circle class="layer-ring-fill" id="layer-san-ring" style="stroke:var(--accent2)"/>
+        </svg>
+        <div>
+          <div class="layer-ring-pct" id="layer-san-pct">—</div>
+          <div class="layer-ring-unit">SAN USED</div>
+        </div>
+      </div>
       <div class="layer-foot" id="layer-san-foot">Yükleniyor...</div>
     </a>
 
@@ -556,7 +566,16 @@
       </div>
       <div class="layer-value" id="layer-nas-val">—</div>
       <div class="layer-sub" id="layer-nas-sub">Huawei + NetApp</div>
-      <div class="layer-bar"><div class="layer-bar-fill" style="background:var(--accent3)" id="layer-nas-bar"></div></div>
+      <div class="layer-ring-wrap">
+        <svg class="layer-ring" viewBox="0 0 44 44" width="44" height="44" aria-hidden="true">
+          <circle class="layer-ring-bg" cx="22" cy="22" r="18"/>
+          <circle class="layer-ring-fill" id="layer-nas-ring" style="stroke:var(--accent3)"/>
+        </svg>
+        <div>
+          <div class="layer-ring-pct" id="layer-nas-pct">—</div>
+          <div class="layer-ring-unit">NAS USED</div>
+        </div>
+      </div>
       <div class="layer-foot" id="layer-nas-foot">Yükleniyor...</div>
     </a>
 
@@ -567,7 +586,16 @@
       </div>
       <div class="layer-value" id="layer-s3-val">—</div>
       <div class="layer-sub" id="layer-s3-sub">ECS + Pure FB</div>
-      <div class="layer-bar"><div class="layer-bar-fill" style="background:var(--purple)" id="layer-s3-bar"></div></div>
+      <div class="layer-ring-wrap">
+        <svg class="layer-ring" viewBox="0 0 44 44" width="44" height="44" aria-hidden="true">
+          <circle class="layer-ring-bg" cx="22" cy="22" r="18"/>
+          <circle class="layer-ring-fill" id="layer-s3-ring" style="stroke:var(--purple)"/>
+        </svg>
+        <div>
+          <div class="layer-ring-pct" id="layer-s3-pct">—</div>
+          <div class="layer-ring-unit">S3 USED</div>
+        </div>
+      </div>
       <div class="layer-foot" id="layer-s3-foot">Yükleniyor...</div>
     </a>
   </div>
@@ -1641,7 +1669,17 @@ async function loadLayerStats() {
   document.getElementById('layer-san-val').textContent = sanTotal.toLocaleString('tr-TR');
   document.getElementById('layer-san-sub').innerHTML = `<strong>HW:</strong> ${hwHosts.length} &nbsp;<strong>PMAX:</strong> ${pmaxUnique.size} &nbsp;<strong>Pure FA:</strong> ${pureHosts.length}`;
   document.getElementById('layer-san-foot').innerHTML = `Toplam <strong>${sanTotal} host</strong> · Provisioned <strong>${sanProvTB.toFixed(1)} TB</strong>`;
-  document.getElementById('layer-san-bar').style.width = Math.min(sanTotal/10, 100) + '%';
+  // Ring: real SAN utilization from STAT
+  (function() {
+    const CIRC = 113.097;
+    const sanCap  = STAT.hwCap  + STAT.pmCap  + STAT.puCap;
+    const sanUsed = STAT.hwUsed + STAT.pmUsed + STAT.puUsed;
+    const sanPct  = sanCap > 0 ? Math.min(sanUsed / sanCap * 100, 100) : 0;
+    const ring = document.getElementById('layer-san-ring');
+    const pctEl = document.getElementById('layer-san-pct');
+    if (ring)  ring.style.strokeDashoffset = String(CIRC * (1 - sanPct / 100));
+    if (pctEl) pctEl.textContent = sanPct.toFixed(0) + '%';
+  })();
 
   // NAS: NetApp volumes
   const naVols = await fetchCsv('./data/NetApp/NetApp_Volume.csv');
@@ -1651,7 +1689,14 @@ async function loadLayerStats() {
   document.getElementById('layer-nas-val').textContent = naVols.length.toLocaleString('tr-TR');
   document.getElementById('layer-nas-sub').innerHTML = `<strong>NetApp Volumes</strong>`;
   document.getElementById('layer-nas-foot').innerHTML = `<strong>${naVols.length}</strong> volume · <strong>${naSvms}</strong> SVM · <strong>${naSize.toFixed(1)} TB</strong>`;
-  document.getElementById('layer-nas-bar').style.width = Math.min(naVols.length/2, 100) + '%';
+  (function() {
+    const CIRC = 113.097;
+    const naPct = STAT.naCap > 0 ? Math.min(STAT.naUsed / STAT.naCap * 100, 100) : 0;
+    const ring  = document.getElementById('layer-nas-ring');
+    const pctEl = document.getElementById('layer-nas-pct');
+    if (ring)  ring.style.strokeDashoffset = String(CIRC * (1 - naPct / 100));
+    if (pctEl) pctEl.textContent = naPct.toFixed(0) + '%';
+  })();
 
   // S3: ECS buckets + Pure FB buckets
   const [ecsBuckets, fbBuckets] = await Promise.all([
@@ -1665,7 +1710,14 @@ async function loadLayerStats() {
   document.getElementById('layer-s3-val').textContent = s3Total.toLocaleString('tr-TR');
   document.getElementById('layer-s3-sub').innerHTML = `<strong>ECS:</strong> ${ecsBuckets.length} bucket · <strong>FB:</strong> ${fbBuckets.length} bucket`;
   document.getElementById('layer-s3-foot').innerHTML = `Toplam <strong>${s3Total} bucket</strong> · ECS <strong>${ecsSize.toFixed(1)} TiB</strong> · FB <strong>${fbSize.toFixed(1)} TB</strong>`;
-  document.getElementById('layer-s3-bar').style.width = Math.min(s3Total/3, 100) + '%';
+  (function() {
+    const CIRC = 113.097;
+    const fbPct = STAT.fbCap > 0 ? Math.min(STAT.fbUsed / STAT.fbCap * 100, 100) : 0;
+    const ring  = document.getElementById('layer-s3-ring');
+    const pctEl = document.getElementById('layer-s3-pct');
+    if (ring)  ring.style.strokeDashoffset = String(CIRC * (1 - fbPct / 100));
+    if (pctEl) pctEl.textContent = fbPct.toFixed(0) + '%';
+  })();
 }
 
 function openAlarmModal() {

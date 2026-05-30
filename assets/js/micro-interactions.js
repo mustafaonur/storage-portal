@@ -1,146 +1,129 @@
 /**
- * micro-interactions.js  v3
+ * micro-interactions.js  v4
+ * Physical, handcrafted, domain-specific premium interactions.
  *
- * Physical, handcrafted interactions:
- *   1. 3D card tilt + cursor spotlight (rAF lerp — feels weighted)
- *   2. Text scramble on section titles (domain-appropriate terminal feel)
- *   3. Card construction reveal (blur + overshoot, not just fade)
- *   4. Layer card slide-in from left
- *   5. Stat count-up with mechanical final-digit snap
- *   6. Layer bar fills on viewport entry
- *   7. Section title draw-in line
+ * Systems:
+ *   1.  3D card tilt + cursor spotlight (rAF lerp)
+ *   2.  Text scramble on section titles
+ *   3.  Card construction reveal (blur + overshoot)
+ *   4.  Stat count-up with mechanical snap
+ *   5.  Layer ring / bar fills on viewport entry
+ *   6.  G+key keyboard navigation (Gmail-style)
+ *   7.  Right-click context menu on cards
+ *   8.  Ambient idle scan beam
+ *   9.  Data staleness desaturation
  */
 (function MicroInteractions() {
   'use strict';
 
-  /* ── utilities ── */
+  /* ── utilities ─────────────────────────────────────────────── */
   function lerp(a, b, t) { return a + (b - a) * t; }
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 
-  /* ─────────────────────────────────────────────────────────────
-     1. 3D TILT + CURSOR SPOTLIGHT
-     Each card tilts ±7° toward the cursor via perspective transform.
-     A radial spotlight (CSS var --mx/--my) follows the cursor inside
-     the card — makes it feel like you're examining it with a torch.
-     Uses rAF lerp so motion has inertia, not snap.
-  ───────────────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════
+     1. 3D CARD TILT + CURSOR SPOTLIGHT
+  ═══════════════════════════════════════════════════════════ */
   function initCardTilt() {
-    var TILT_MAX = 7;
-    var LERP_POS = 0.10;   // position tracking speed
-    var LERP_OUT = 0.08;   // return-to-rest speed (slightly slower = spring feel)
+    var TILT   = 7;
+    var T_IN   = 0.10;
+    var T_OUT  = 0.08;
 
     document.querySelectorAll('.app-card:not(.app-disabled)').forEach(function (card) {
       var cur = { rx: 0, ry: 0, mx: 50, my: 50 };
       var tgt = { rx: 0, ry: 0, mx: 50, my: 50 };
-      var rafId = null;
+      var raf = null;
       var inside = false;
 
       function tick() {
-        var sp = inside ? LERP_POS : LERP_OUT;
+        var sp = inside ? T_IN : T_OUT;
         cur.rx = lerp(cur.rx, tgt.rx, sp);
         cur.ry = lerp(cur.ry, tgt.ry, sp);
         cur.mx = lerp(cur.mx, tgt.mx, sp);
         cur.my = lerp(cur.my, tgt.my, sp);
 
-        var dist = Math.abs(cur.rx - tgt.rx) + Math.abs(cur.ry - tgt.ry);
-
         card.style.transform =
-          'perspective(720px) rotateX(' + cur.rx.toFixed(3) + 'deg)' +
-          ' rotateY(' + cur.ry.toFixed(3) + 'deg)' +
-          ' translateZ(4px)';
+          'perspective(720px) rotateX(' + cur.rx.toFixed(2) + 'deg)' +
+          ' rotateY(' + cur.ry.toFixed(2) + 'deg) translateZ(4px)';
         card.style.setProperty('--mx', cur.mx.toFixed(1) + '%');
         card.style.setProperty('--my', cur.my.toFixed(1) + '%');
 
-        if (dist > 0.04 || inside) {
-          rafId = requestAnimationFrame(tick);
-        } else {
+        var d = Math.abs(cur.rx - tgt.rx) + Math.abs(cur.ry - tgt.ry);
+        if (d > 0.04 || inside) { raf = requestAnimationFrame(tick); }
+        else {
           card.style.transform = '';
           card.style.setProperty('--mx', '50%');
           card.style.setProperty('--my', '50%');
-          rafId = null;
+          raf = null;
         }
       }
 
       card.addEventListener('mousemove', function (e) {
         var r = card.getBoundingClientRect();
-        var x = clamp((e.clientX - r.left) / r.width,  0, 1);
+        var x = clamp((e.clientX - r.left) / r.width, 0, 1);
         var y = clamp((e.clientY - r.top)  / r.height, 0, 1);
-        tgt.ry =  (x - 0.5) * TILT_MAX * 2;
-        tgt.rx = -(y - 0.5) * TILT_MAX * 2;
-        tgt.mx = x * 100;
-        tgt.my = y * 100;
-        if (!rafId) rafId = requestAnimationFrame(tick);
+        tgt.ry =  (x - 0.5) * TILT * 2;
+        tgt.rx = -(y - 0.5) * TILT * 2;
+        tgt.mx = x * 100; tgt.my = y * 100;
+        if (!raf) raf = requestAnimationFrame(tick);
       });
-
       card.addEventListener('mouseenter', function () { inside = true; });
-
       card.addEventListener('mouseleave', function () {
         inside = false;
         tgt.rx = 0; tgt.ry = 0; tgt.mx = 50; tgt.my = 50;
-        if (!rafId) rafId = requestAnimationFrame(tick);
+        if (!raf) raf = requestAnimationFrame(tick);
       });
     });
   }
 
-  /* ─────────────────────────────────────────────────────────────
-     2. TEXT SCRAMBLE — section titles resolve from random chars
-     Fires once on first viewport entry. Charset uses uppercase +
-     digits + symbols that feel like terminal/instrument readout.
-     Each character resolves left-to-right as frames progress.
-  ───────────────────────────────────────────────────────────── */
-  var CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789▓▒░█▌▐';
+  /* ═══════════════════════════════════════════════════════════
+     2. TEXT SCRAMBLE — section titles
+  ═══════════════════════════════════════════════════════════ */
+  var CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789▓▒░█▌▐';
 
   function scramble(el) {
-    var original = el.dataset.originalText || el.textContent.trim();
-    el.dataset.originalText = original;
+    var orig = el.dataset.origText || el.textContent.trim();
+    el.dataset.origText = orig;
     el.classList.add('scrambling');
-
-    var totalFrames = 18;
-    var frame       = 0;
-    var interval    = setInterval(function () {
-      var progress = frame / totalFrames;
-      var resolved = Math.floor(progress * original.length);
-
-      el.textContent = original.split('').map(function (ch, i) {
+    var frames = 18, frame = 0;
+    var iv = setInterval(function () {
+      var progress = frame / frames;
+      var resolved = Math.floor(progress * orig.length);
+      el.textContent = orig.split('').map(function (ch, i) {
         if (ch === ' ') return ' ';
         if (i < resolved) return ch;
-        return CHARS[Math.floor(Math.random() * CHARS.length)];
+        return CHARSET[Math.floor(Math.random() * CHARSET.length)];
       }).join('');
-
       frame++;
-      if (frame > totalFrames) {
-        clearInterval(interval);
-        el.textContent = original;
+      if (frame > frames) {
+        clearInterval(iv);
+        el.textContent = orig;
         el.classList.remove('scrambling');
-        el.classList.add('title-visible'); // trigger the gradient rule draw-in
+        el.classList.add('title-visible');
       }
-    }, 42); // ~24fps scramble feels mechanical, not laggy
+    }, 42);
   }
 
   function initScramble() {
     var obs = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        scramble(entry.target);
-        obs.unobserve(entry.target);
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        scramble(e.target);
+        obs.unobserve(e.target);
       });
     }, { threshold: 0.8 });
-
-    document.querySelectorAll('.section-title').forEach(function (el) {
-      obs.observe(el);
-    });
+    document.querySelectorAll('.section-title').forEach(function (el) { obs.observe(el); });
   }
 
-  /* ─────────────────────────────────────────────────────────────
-     3 & 4. CARD CONSTRUCTION REVEAL (staggered, IntersectionObserver)
-     App cards: blur + scale + translateY + overshoot (card-construct)
-     Layer cards: slide from left (layer-construct)
-  ───────────────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════
+     3. CARD CONSTRUCTION REVEAL
+  ═══════════════════════════════════════════════════════════ */
   function initReveal() {
     var appObs = new IntersectionObserver(function (entries) {
-      var visible = entries.filter(function (e) { return e.isIntersecting; });
-      visible.forEach(function (entry, i) {
-        var el = entry.target;
+      entries.filter(function (e) { return e.isIntersecting; }).forEach(function (e, i) {
+        var el = e.target;
         setTimeout(function () {
           el.classList.remove('reveal-pending');
           el.classList.add('revealed');
@@ -149,15 +132,14 @@
       });
     }, { rootMargin: '0px 0px -40px 0px', threshold: 0.05 });
 
-    var layerObs = new IntersectionObserver(function (entries) {
-      var visible = entries.filter(function (e) { return e.isIntersecting; });
-      visible.forEach(function (entry, i) {
-        var el = entry.target;
+    var layObs = new IntersectionObserver(function (entries) {
+      entries.filter(function (e) { return e.isIntersecting; }).forEach(function (e, i) {
+        var el = e.target;
         setTimeout(function () {
           el.classList.remove('reveal-pending');
           el.classList.add('revealed');
         }, i * 80);
-        layerObs.unobserve(el);
+        layObs.unobserve(el);
       });
     }, { threshold: 0.15 });
 
@@ -166,56 +148,41 @@
       c.classList.add('reveal-pending');
       appObs.observe(c);
     });
-
     document.querySelectorAll('.layer-card').forEach(function (c) {
       c.classList.add('reveal-pending');
-      layerObs.observe(c);
+      layObs.observe(c);
     });
   }
 
-  /* ─────────────────────────────────────────────────────────────
-     5. STAT COUNT-UP — cubic ease-out with mechanical snap
-     The last ~8% of the animation "snaps" to final value: the number
-     briefly pauses at (target - 1) then jumps to target — like an
-     odometer clunking into place rather than gliding.
-  ───────────────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════
+     4. STAT COUNT-UP — mechanical snap at 90%
+  ═══════════════════════════════════════════════════════════ */
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
-  function countUp(el, target, duration) {
-    var isFloat  = (target % 1 !== 0);
-    var decimals = isFloat ? 2 : 0;
-    var snapAt   = 0.90; // point at which we do the mechanical "almost there" pause
-    var snapped  = false;
-    var start    = performance.now();
+  function countUp(el, target, dur) {
+    dur = dur || 1300;
+    var isFloat = target % 1 !== 0;
+    var dec     = isFloat ? 2 : 0;
+    var snapped = false;
+    var t0      = performance.now();
 
     function frame(now) {
-      var elapsed  = now - start;
-      var progress = Math.min(elapsed / duration, 1);
+      var progress = Math.min((now - t0) / dur, 1);
       var eased    = easeOutCubic(progress);
-      var current  = eased * target;
 
-      // Mechanical snap: hold at (target - step) for one frame before final value
-      if (progress >= snapAt && !snapped && progress < 0.98) {
+      if (progress >= 0.90 && !snapped) {
         snapped = true;
         var step = isFloat ? 0.01 : 1;
-        var penultimate = Math.max(0, target - step);
-        el.textContent = penultimate.toLocaleString('tr-TR', {
-          minimumFractionDigits: decimals, maximumFractionDigits: decimals
-        });
+        var pen  = Math.max(0, target - step);
+        el.textContent = pen.toLocaleString('tr-TR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
         setTimeout(function () {
-          el.textContent = target.toLocaleString('tr-TR', {
-            minimumFractionDigits: decimals, maximumFractionDigits: decimals
-          });
+          el.textContent = target.toLocaleString('tr-TR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
         }, 80);
         return;
       }
-
       if (!snapped) {
-        el.textContent = current.toLocaleString('tr-TR', {
-          minimumFractionDigits: decimals, maximumFractionDigits: decimals
-        });
+        el.textContent = (eased * target).toLocaleString('tr-TR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
       }
-
       if (progress < 1) requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
@@ -228,35 +195,49 @@
       var n = parseFloat(el.textContent.replace(/\./g, '').replace(',', '.'));
       if (isNaN(n) || n <= 0) return;
       el.textContent = '0';
-      countUp(el, n, 1300);
+      countUp(el, n, 1200);
     });
     var pb = document.getElementById('v-pb');
     if (pb) {
       var n = parseFloat(pb.textContent.replace(',', '.'));
-      if (!isNaN(n) && n > 0) {
-        pb.textContent = '0,00';
-        countUp(pb, n, 1600);
-      }
+      if (!isNaN(n) && n > 0) { pb.textContent = '0,00'; countUp(pb, n, 1550); }
     }
   };
 
-  /* ─────────────────────────────────────────────────────────────
-     6. LAYER BAR FILL on scroll entry
-  ───────────────────────────────────────────────────────────── */
-  function initBarFills() {
+  /* ═══════════════════════════════════════════════════════════
+     5. RING / BAR FILL on viewport entry
+     Rings: stroke-dashoffset stored as data-ring-target
+     Bars:  style.width stored as data-bar-target
+  ═══════════════════════════════════════════════════════════ */
+  function initFills() {
+    var CIRC = 113.097;
     var obs = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.querySelectorAll('.layer-bar-fill').forEach(function (fill) {
-          var tgt = fill.dataset.barTarget || '0%';
-          fill.style.width = '0%';
-          setTimeout(function () { fill.style.width = tgt; }, 200);
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        // rings
+        e.target.querySelectorAll('.layer-ring-fill').forEach(function (ring) {
+          var t = ring.dataset.ringTarget;
+          if (t === undefined) return;
+          ring.style.strokeDashoffset = String(CIRC);
+          setTimeout(function () { ring.style.strokeDashoffset = t; }, 180);
         });
-        obs.unobserve(entry.target);
+        // bars (fallback for pages not using rings)
+        e.target.querySelectorAll('.layer-bar-fill').forEach(function (fill) {
+          var t = fill.dataset.barTarget || '0%';
+          fill.style.width = '0%';
+          setTimeout(function () { fill.style.width = t; }, 180);
+        });
+        obs.unobserve(e.target);
       });
-    }, { threshold: 0.4 });
+    }, { threshold: 0.35 });
 
     document.querySelectorAll('.layer-card').forEach(function (card) {
+      // cache ring targets
+      card.querySelectorAll('.layer-ring-fill').forEach(function (ring) {
+        ring.dataset.ringTarget = ring.style.strokeDashoffset || String(CIRC);
+        ring.style.strokeDashoffset = String(CIRC);
+      });
+      // cache bar targets
       card.querySelectorAll('.layer-bar-fill').forEach(function (fill) {
         fill.dataset.barTarget = fill.style.width || '0%';
         fill.style.width = '0%';
@@ -265,35 +246,271 @@
     });
   }
 
-  /* ─────────────────────────────────────────────────────────────
-     7. LAYER CARD: highlight value on hover
-  ───────────────────────────────────────────────────────────── */
-  function initLayerHover() {
-    document.querySelectorAll('.layer-card').forEach(function (card) {
-      var val = card.querySelector('.layer-value');
-      if (!val) return;
-      card.addEventListener('mouseenter', function () {
-        val.style.transition = 'color .15s ease';
-        val.style.color = 'var(--text-bright)';
-      });
-      card.addEventListener('mouseleave', function () {
-        val.style.color = '';
-      });
+  /* ═══════════════════════════════════════════════════════════
+     6. G+KEY KEYBOARD NAVIGATION  (Gmail-style)
+     Press G, then a letter within 1.5s to navigate.
+     Shows a HUD indicator while waiting.
+  ═══════════════════════════════════════════════════════════ */
+  var SHORTCUTS = {
+    'h': './huawei.html',
+    'p': './pmax.html',
+    's': './san.html',
+    'f': './pure-fa.html',
+    'b': './pure-fb.html',
+    'n': './netapp.html',
+    'e': './ecs.html',
+    'i': './hitachi.html',
+    't': './trend.html',
+    'a': './anomaly.html',
+    'c': './capacity-planner.html',
+    'l': './lake.html',
+    'z': './zone-builder.html',
+    'm': './management.html',
+    'x': './executive.html'
+  };
+
+  function initKeyboardNav() {
+    // Add shortcut badges to cards
+    var badgeMap = {
+      'huawei.html':           'G H',
+      'pmax.html':             'G P',
+      'san.html':              'G S',
+      'pure-fa.html':          'G F',
+      'pure-fb.html':          'G B',
+      'netapp.html':           'G N',
+      'ecs.html':              'G E',
+      'hitachi.html':          'G I',
+      'trend.html':            'G T',
+      'anomaly.html':          'G A',
+      'capacity-planner.html': 'G C',
+      'lake.html':             'G L',
+      'zone-builder.html':     'G Z',
+      'management.html':       'G M',
+      'executive.html':        'G X'
+    };
+
+    document.querySelectorAll('.app-card[href]').forEach(function (card) {
+      var href = card.getAttribute('href') || '';
+      var base = href.replace('./', '').split('/').pop();
+      if (badgeMap[base]) {
+        var badge = document.createElement('div');
+        badge.className = 'card-shortcut';
+        badge.textContent = badgeMap[base];
+        card.appendChild(badge);
+      }
+    });
+
+    // HUD element
+    var hud = document.createElement('div');
+    hud.id = 'g-mode-hud';
+    hud.textContent = 'G — waiting for key…';
+    document.body.appendChild(hud);
+
+    var gMode = false;
+    var gTimer = null;
+
+    function exitGMode() {
+      gMode = false;
+      hud.classList.remove('active');
+      clearTimeout(gTimer);
+    }
+
+    document.addEventListener('keydown', function (e) {
+      // Don't fire when typing in inputs
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+
+      if (!gMode && e.key === 'g') {
+        e.preventDefault();
+        gMode = true;
+        hud.classList.add('active');
+        gTimer = setTimeout(exitGMode, 1500);
+        return;
+      }
+
+      if (gMode) {
+        e.preventDefault();
+        var dest = SHORTCUTS[e.key.toLowerCase()];
+        exitGMode();
+        if (dest) window.location.href = dest;
+      }
     });
   }
 
-  /* ─────────────────────────────────────────────────────────────
-     BOOT — delayed until loading overlay has cleared
-  ───────────────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════
+     7. RIGHT-CLICK CONTEXT MENU
+  ═══════════════════════════════════════════════════════════ */
+  function initContextMenu() {
+    var menu = document.createElement('div');
+    menu.className = 'ctx-menu';
+    menu.style.display = 'none';
+    document.body.appendChild(menu);
+
+    var activeCard = null;
+
+    function show(x, y, card) {
+      activeCard = card;
+      var href = card.getAttribute('href') || '#';
+      var name = (card.querySelector('.app-card-name') || {}).textContent || '';
+
+      menu.innerHTML = [
+        '<div class="ctx-item" data-action="open">',
+        '  <span class="ctx-icon">↗</span> Open',
+        '  <span class="ctx-kbd">Enter</span>',
+        '</div>',
+        '<div class="ctx-item" data-action="tab">',
+        '  <span class="ctx-icon">⊞</span> Open in new tab',
+        '  <span class="ctx-kbd">⌘↗</span>',
+        '</div>',
+        '<div class="ctx-divider"></div>',
+        '<div class="ctx-item" data-action="copy">',
+        '  <span class="ctx-icon">⎘</span> Copy link',
+        '</div>',
+        '<div class="ctx-item" data-action="csv">',
+        '  <span class="ctx-icon">⇩</span> View CSV source',
+        '</div>'
+      ].join('');
+
+      // Position: keep within viewport
+      menu.style.display = 'block';
+      var mw = menu.offsetWidth, mh = menu.offsetHeight;
+      var vw = window.innerWidth, vh = window.innerHeight;
+      menu.style.left = (x + mw > vw ? vw - mw - 8 : x) + 'px';
+      menu.style.top  = (y + mh > vh ? vh - mh - 8 : y) + 'px';
+    }
+
+    function hide() {
+      menu.style.display = 'none';
+      activeCard = null;
+    }
+
+    document.addEventListener('contextmenu', function (e) {
+      var card = e.target.closest('.app-card:not(.app-disabled)');
+      if (!card || !card.getAttribute('href') || card.getAttribute('href') === '#') return;
+      e.preventDefault();
+      show(e.clientX, e.clientY, card);
+    });
+
+    menu.addEventListener('click', function (e) {
+      var item = e.target.closest('.ctx-item');
+      if (!item || !activeCard) return;
+      var action = item.dataset.action;
+      var href = activeCard.getAttribute('href') || '#';
+      var abs = new URL(href, window.location.href).href;
+
+      if (action === 'open')  { hide(); window.location.href = href; }
+      if (action === 'tab')   { hide(); window.open(href, '_blank'); }
+      if (action === 'copy')  {
+        navigator.clipboard && navigator.clipboard.writeText(abs);
+        item.querySelector('.ctx-icon').textContent = '✓';
+        setTimeout(hide, 700);
+      }
+      if (action === 'csv') {
+        hide();
+        // Best-effort: open the vendor's primary dashboard CSV
+        var csvMap = {
+          'huawei.html':           './data/Hw/Dorado_Dashboard.csv',
+          'pmax.html':             './data/Pmax/PmaxPoolDash.csv',
+          'pure-fa.html':          './data/Pure/Pure_Dashboard.csv',
+          'pure-fb.html':          './data/Pure/FB_Dashboard.csv',
+          'netapp.html':           './data/NetApp/NetApp_Dashboard.csv',
+          'ecs.html':              './data/Ecs/ECS_Dashboard.csv',
+          'san.html':              './data/San/SAN_Director_Dashboard.csv',
+          'hitachi.html':          './data/Hitachi/Hitachi_PROD.csv'
+        };
+        var base = href.replace('./', '');
+        var csv  = csvMap[base];
+        if (csv) window.open(csv, '_blank');
+      }
+    });
+
+    document.addEventListener('click',   function (e) { if (!menu.contains(e.target)) hide(); });
+    document.addEventListener('keydown',  function (e) { if (e.key === 'Escape') hide(); });
+    document.addEventListener('scroll',   hide, { passive: true });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     8. AMBIENT IDLE SCAN BEAM
+     Appears after 15s of inactivity. Any interaction hides it.
+  ═══════════════════════════════════════════════════════════ */
+  function initScanBeam() {
+    var beam = document.createElement('div');
+    beam.className = 'scan-beam';
+    document.body.appendChild(beam);
+
+    var timer = null;
+
+    function goActive()  { beam.classList.add('active'); }
+    function goIdle()    {
+      beam.classList.remove('active');
+      clearTimeout(timer);
+      timer = setTimeout(goActive, 15000);
+    }
+
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function (ev) {
+      document.addEventListener(ev, goIdle, { passive: true });
+    });
+    goIdle(); // arm immediately
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     9. DATA STALENESS DESATURATION
+     Checks data-stale-vendor attributes on cards and compares
+     to the last-modified header of the corresponding CSV.
+     Falls back gracefully when files aren't accessible.
+  ═══════════════════════════════════════════════════════════ */
+  function initStaleness() {
+    var STALE_MS = 28 * 60 * 60 * 1000; // 28 hours
+    var VENDOR_CSV = {
+      'type-huawei':  './data/Hw/Dorado_Dashboard.csv',
+      'type-pmax':    './data/Pmax/PmaxPoolDash.csv',
+      'type-pure':    './data/Pure/Pure_Dashboard.csv',
+      'type-netapp':  './data/NetApp/NetApp_Dashboard.csv',
+      'type-ecs':     './data/Ecs/ECS_Dashboard.csv',
+      'type-san':     './data/San/SAN_Director_Dashboard.csv',
+      'type-hitachi': './data/Hitachi/Hitachi_PROD.csv'
+    };
+
+    Object.keys(VENDOR_CSV).forEach(function (cls) {
+      var url = VENDOR_CSV[cls];
+      fetch(url, { method: 'HEAD', cache: 'no-store' })
+        .then(function (r) {
+          var lastMod = r.headers.get('last-modified');
+          if (!lastMod) return;
+          var age = Date.now() - new Date(lastMod).getTime();
+          if (age > STALE_MS) {
+            document.querySelectorAll('.app-card.' + cls).forEach(function (card) {
+              card.classList.add('data-stale');
+              // Add a small staleness marker to footer
+              var footer = card.querySelector('.footer-label');
+              if (footer && !footer.querySelector('.stale-mark')) {
+                var mark = document.createElement('span');
+                mark.className = 'stale-mark';
+                mark.style.cssText = 'color:var(--warn);margin-left:6px;font-size:9px';
+                mark.title = 'Data older than 28h';
+                mark.textContent = '⚠ stale';
+                footer.appendChild(mark);
+              }
+            });
+          }
+        })
+        .catch(function () { /* file server may not support HEAD — silent */ });
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     BOOT
+  ═══════════════════════════════════════════════════════════ */
   function boot() {
     initScramble();
-    initLayerHover();
+    initKeyboardNav();
+    initContextMenu();
+    initScanBeam();
+    initStaleness();
 
-    // Physical interactions and reveals start after loading clears
     setTimeout(function () {
       initCardTilt();
       initReveal();
-      initBarFills();
+      initFills();
     }, 700);
   }
 
