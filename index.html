@@ -1289,9 +1289,10 @@ const STAT = {
   hwCabs: 0, hwHosts: 0, hwCap: 0, hwUsed: 0, hwFree: 0, hwAlarms: 0, hwWarn: 0,
   pmCabs: 0, pmHosts: 0, pmCap: 0, pmUsed: 0, pmFree: 0, pmAlarms: 0, pmWarn: 0,
   puCabs: 0, puHosts: 0, puCap: 0, puUsed: 0, puFree: 0, puAlarms: 0, puWarn: 0,
+  fbCabs: 0,             fbCap: 0, fbUsed: 0, fbFree: 0, fbAlarms: 0, fbWarn: 0,
   alarmList: [],
   bySite: {},
-  naCabs:0, naCap:0, naUsed:0, naFree:0, naAlarms:0, naWarn:0,   // { 'Istanbul': {cap,used,free,cabs,hosts}, ... }
+  naCabs:0, naCap:0, naUsed:0, naFree:0, naAlarms:0, naWarn:0,
 };
 const LOG = [];
 
@@ -1394,6 +1395,32 @@ function processPure(rows) {
   });
   LOG.push(`[PURE]   ${STAT.puCabs} kabinet · ${STAT.puCap.toFixed(2)} TB · ${STAT.puHosts} host · ${STAT.puAlarms} alarm · ${STAT.puWarn} uyari`);
 }
+/* ──────────────────────────────────────────────────────────────
+   PROCESS — Pure FlashBlade (NAS / Object)
+   Same schema as Pure FA dashboard CSV.
+   ────────────────────────────────────────────────────────────── */
+function processPureFB(rows) {
+  rows.filter(r => isDataRow(r, 'Kabinet')).forEach(r => {
+    const totalRaw = r['Total (TB)'] || '';
+    if (totalRaw.toUpperCase() === 'HATA') return;
+    STAT.fbCabs++;
+    const t = toN(r['Total (TB)']);
+    const u = toN(r['Used (TB)']);
+    const f = toN(r['Free (TB)']);
+    const p = toN(r['Doluluk (%)']);
+    STAT.fbCap  += t;
+    STAT.fbUsed += u;
+    STAT.fbFree += f;
+    if (p >= 80) {
+      STAT.fbAlarms++;
+      STAT.alarmList.push({ vendor:'Pure FB', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'critical' });
+    } else if (p >= 70) {
+      STAT.fbWarn++;
+      STAT.alarmList.push({ vendor:'Pure FB', kabinet:r['Kabinet'], pct:p, total:t, free:f, level:'warning' });
+    }
+  });
+  LOG.push(`[PURE FB] ${STAT.fbCabs} kabinet · ${STAT.fbCap.toFixed(2)} TB · ${STAT.fbAlarms} alarm · ${STAT.fbWarn} uyari`);
+}
 
 /* ──────────────────────────────────────────────────────────────
    PROCESS — NetApp (Aggregate health into alarmList)
@@ -1428,12 +1455,12 @@ function processNetApp(rows) {
    ────────────────────────────────────────────────────────────── */
 function render() {
   const totHosts = STAT.hwHosts + STAT.pmHosts + STAT.puHosts;
-  const totCabs  = STAT.hwCabs  + STAT.pmCabs  + STAT.puCabs  + STAT.naCabs;
-  const totCap   = STAT.hwCap   + STAT.pmCap   + STAT.puCap   + STAT.naCap;
-  const totUsed  = STAT.hwUsed  + STAT.pmUsed  + STAT.puUsed  + STAT.naUsed;
-  const totFree  = STAT.hwFree  + STAT.pmFree  + STAT.puFree  + STAT.naFree;
-  const totAlm   = STAT.hwAlarms + STAT.pmAlarms + STAT.puAlarms + STAT.naAlarms;
-  const totWarn  = STAT.hwWarn   + STAT.pmWarn   + STAT.puWarn + STAT.naWarn;
+  const totCabs  = STAT.hwCabs  + STAT.pmCabs  + STAT.puCabs  + STAT.fbCabs  + STAT.naCabs;
+  const totCap   = STAT.hwCap   + STAT.pmCap   + STAT.puCap   + STAT.fbCap   + STAT.naCap;
+  const totUsed  = STAT.hwUsed  + STAT.pmUsed  + STAT.puUsed  + STAT.fbUsed  + STAT.naUsed;
+  const totFree  = STAT.hwFree  + STAT.pmFree  + STAT.puFree  + STAT.fbFree  + STAT.naFree;
+  const totAlm   = STAT.hwAlarms + STAT.pmAlarms + STAT.puAlarms + STAT.fbAlarms + STAT.naAlarms;
+  const totWarn  = STAT.hwWarn   + STAT.pmWarn   + STAT.puWarn  + STAT.fbWarn  + STAT.naWarn;
   const pb = totCap / 1024;
 
   const fmt = (n, frac = 0) => n.toLocaleString('tr-TR', { minimumFractionDigits:frac, maximumFractionDigits:frac });
@@ -1448,7 +1475,9 @@ function render() {
   document.getElementById('v-cabs-sub').innerHTML =
     `HW: <span style="color:var(--accent3)">${STAT.hwCabs}</span> &nbsp;·&nbsp; ` +
     `PMAX: <span style="color:var(--accent2)">${STAT.pmCabs}</span>` +
-    (STAT.puCabs > 0 ? ` &nbsp;·&nbsp; Pure: <span style="color:var(--accent)">${STAT.puCabs}</span>` : '');
+    (STAT.puCabs > 0 ? ` &nbsp;·&nbsp; Pure FA: <span style="color:var(--accent)">${STAT.puCabs}</span>` : '') +
+    (STAT.fbCabs > 0  ? ` &nbsp;·&nbsp; Pure FB: <span style="color:#f67c00">${STAT.fbCabs}</span>` : '') +
+    (STAT.naCabs > 0  ? ` &nbsp;·&nbsp; NetApp: <span style="color:#00b4d8">${STAT.naCabs}</span>` : '');
 
   document.getElementById('v-pb').textContent = fmt(pb, 2);
   document.getElementById('v-cap-sub').innerHTML =
@@ -1487,7 +1516,7 @@ function render() {
   LOG.push('');
   LOG.push('═══════ GENEL TOPLAM ═══════');
   LOG.push(`Hosts     : ${totHosts}  (HW: ${STAT.hwHosts}  ·  PMAX: ${STAT.pmHosts})`);
-  LOG.push(`Cabinet   : ${totCabs}  (HW: ${STAT.hwCabs}  ·  PMAX: ${STAT.pmCabs})`);
+  LOG.push(`Cabinet   : ${totCabs}  (HW: ${STAT.hwCabs}  ·  PMAX: ${STAT.pmCabs}  ·  Pure FA: ${STAT.puCabs}  ·  Pure FB: ${STAT.fbCabs}  ·  NetApp: ${STAT.naCabs})`);
   LOG.push(`Kapasite  : ${totCap.toFixed(2)} TB  =  ${pb.toFixed(2)} PB`);
   LOG.push(`Used      : ${totUsed.toFixed(2)} TB`);
   LOG.push(`Free      : ${totFree.toFixed(2)} TB`);
@@ -1537,7 +1566,17 @@ async function main() {
     LOG.push(`[PURE HATA] ${e.message}`);
   }
 
-  ldStep('NetApp ONTAP verisi...', 75);
+  ldStep('Pure FlashBlade verisi...', 68);
+  // Pure FlashBlade
+  try {
+    const rows = parseCSV(await fetchCSVText('./Pure/FB_Dashboard.csv'));
+    LOG.push(`[FB] ${rows.length} satir`);
+    processPureFB(rows);
+  } catch (e) {
+    LOG.push(`[FB HATA] ${e.message}`);
+  }
+
+  ldStep('NetApp ONTAP verisi...', 80);
   // NetApp
   try {
     const rows = parseCSV(await fetchCSVText('./NetApp/NetApp_Dashboard.csv'));
