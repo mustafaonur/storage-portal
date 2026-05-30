@@ -1442,45 +1442,40 @@ header {
 }
 
 
+
 /* ═══════════════════════════════════════════════════════════════
-   PREMIUM MICRO-INTERACTIONS & SECTION ZONES  [v2 polish pass]
+   MICRO-INTERACTIONS v3  —  physical, handcrafted, domain-specific
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Section zone wrappers: each gets its own ambient radial light ── */
-.section-zone { position: relative; }
+/* ── Section zones: visible ambient light, not wallpaper ── */
+.section-zone { position: relative; padding: 2px 0 16px; }
 
-/* Analytics: cool blue glow bleeds from left edge */
 .zone-analytics::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse 55% 240px at -2% 50%,
-    rgba(75,159,232,.065) 0%, transparent 100%);
+  content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 72% 320px at -4% 50%, rgba(75,159,232,.11) 0%, transparent 100%),
+    radial-gradient(ellipse 30% 120px at 98% 20%, rgba(75,159,232,.05) 0%, transparent 100%);
 }
-
-/* Storage Systems: teal glow from the right */
 .zone-storage::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse 60% 260px at 104% 50%,
-    rgba(75,232,160,.055) 0%, transparent 100%);
+  content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 340px at 106% 55%, rgba(75,232,160,.09) 0%, transparent 100%),
+    radial-gradient(ellipse 25% 100px at 0% 80%, rgba(75,232,160,.04) 0%, transparent 100%);
 }
-
-/* Utilities: gold warmth from above-center */
 .zone-utilities::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse 70% 200px at 50% -10%,
-    rgba(232,184,75,.05) 0%, transparent 100%);
+  content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 65% 260px at 50% -8%, rgba(232,184,75,.08) 0%, transparent 100%),
+    radial-gradient(ellipse 20% 80px at 85% 95%, rgba(232,184,75,.04) 0%, transparent 100%);
 }
-
-/* Operations: purple from bottom-left */
 .zone-ops::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse 50% 180px at -4% 110%,
-    rgba(192,132,252,.06) 0%, transparent 100%);
+  content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 55% 200px at -3% 115%, rgba(192,132,252,.09) 0%, transparent 100%);
 }
-
-/* Ensure children sit above the zone pseudo-element */
 .section-zone > * { position: relative; z-index: 1; }
 
-/* ── Section title: gradient-fade rule that draws in on scroll ── */
+/* ── Section title: gradient rule draws in on scroll ── */
 .section-title {
   border-bottom: none !important;
   padding-bottom: 9px;
@@ -1493,100 +1488,107 @@ header {
   margin-top: 8px;
   background: linear-gradient(90deg,
     var(--accent) 0%,
-    rgba(232,184,75,.35) 40%,
-    transparent 72%);
-  transition: width .75s cubic-bezier(.4,0,.2,1);
+    rgba(232,184,75,.4) 35%,
+    transparent 68%);
+  transition: width .8s cubic-bezier(.4,0,.2,1);
 }
 .section-title.title-visible::after { width: 100%; }
 
-/* ── App card: specular surface + premium accent bar + arrow spring ── */
+/* ── App card: 3D tilt context + cursor spotlight ── */
 .app-card {
+  --mx: 50%; --my: 50%;
   background-image:
-    linear-gradient(135deg, rgba(255,255,255,.018) 0%, transparent 50%) !important;
+    linear-gradient(145deg, rgba(255,255,255,.022) 0%, transparent 55%) !important;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: border-color .25s, box-shadow .25s !important;
+  isolation: isolate;
 }
-.app-card::before {
-  transition: width .22s ease !important;
+/* Cursor spotlight overlay — driven by --mx/--my from JS */
+.app-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--mx) var(--my),
+    rgba(255,255,255,.06) 0%,
+    rgba(75,159,232,.05) 28%,
+    transparent 62%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+  z-index: 0;
+  border-radius: inherit;
 }
-.app-card:hover:not(.app-disabled)::before {
-  width: 4px !important;
-}
-/* Arrow spring on hover */
+.app-card:hover:not(.app-disabled)::after { opacity: 1; }
+
+/* Accent bar grows on hover */
+.app-card::before { transition: width .2s ease !important; }
+.app-card:hover:not(.app-disabled)::before { width: 4px !important; }
+
+/* Arrow spring */
 .app-card .footer-open {
   display: inline-block;
-  transition: transform .22s cubic-bezier(.34,1.56,.64,1), color .15s ease;
+  transition: transform .24s cubic-bezier(.34,1.56,.64,1), color .15s;
 }
-.app-card:hover:not(.app-disabled) .footer-open {
-  transform: translateX(5px);
-}
-/* Card name sharpens slightly on hover */
+.app-card:hover:not(.app-disabled) .footer-open { transform: translateX(6px); }
+
+/* Name sharpens */
 .app-card:hover:not(.app-disabled) .app-card-name {
-  color: var(--text-bright);
-  transition: color .15s ease;
+  color: var(--text-bright); transition: color .15s;
 }
 
-/* ── Layer card: bar brightens on hover ── */
+/* ── Layer cards ── */
 .layer-bar-fill {
-  transition: width .9s cubic-bezier(.4,0,.2,1), filter .2s ease !important;
+  transition: width 1s cubic-bezier(.4,0,.2,1), filter .2s ease !important;
 }
-.layer-card:hover .layer-bar-fill {
-  filter: brightness(1.4) saturate(1.2);
-}
+.layer-card:hover .layer-bar-fill { filter: brightness(1.45) saturate(1.3); }
 
-/* ── Stat card: value scales on hover ── */
+/* ── Stat card: value pops on hover ── */
 .stat-value {
   display: inline-block;
-  transition: transform .22s ease, color .15s ease;
+  transition: transform .22s ease, color .15s;
   transform-origin: left center;
 }
-.stat-card:hover .stat-value {
-  transform: scale(1.03);
-  color: var(--text-bright);
-}
+.stat-card:hover .stat-value { transform: scale(1.04); color: var(--text-bright); }
 
 /* ── ONLINE badge: breathing ring ── */
-.badge-ok {
-  position: relative;
-  overflow: visible;
-}
+.badge-ok { position: relative; overflow: visible; }
 .badge-ok::after {
   content: '';
   position: absolute;
   inset: -2px;
-  border: 1px solid rgba(75,232,160,.5);
+  border: 1px solid rgba(75,232,160,.55);
   border-radius: inherit;
   animation: badge-ring 3.5s ease-in-out infinite;
   pointer-events: none;
 }
 @keyframes badge-ring {
-  0%, 100% { opacity: 0;   transform: scale(1);    }
-  40%, 60% { opacity: 0.9; transform: scale(1.06); }
+  0%, 100% { opacity: 0;    transform: scale(1);    }
+  45%, 55% {  opacity: 0.9; transform: scale(1.07); }
 }
 
-/* ── Scroll-triggered card reveal ── */
-@keyframes card-reveal {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0);    }
+/* ── Card reveal: construction (blur+overshoot), not just fade ── */
+@keyframes card-construct {
+  0%   { opacity: 0; transform: translateY(22px) scale(0.96); filter: blur(4px); }
+  52%  { opacity: 1; filter: blur(0); }
+  76%  { transform: translateY(-3px) scale(1.006); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
-.app-card.reveal-pending {
-  opacity: 0;
-}
-.app-card.revealed {
-  animation: card-reveal .48s cubic-bezier(.4,0,.2,1) both;
-}
+.app-card.reveal-pending { opacity: 0; }
+.app-card.revealed { animation: card-construct .58s cubic-bezier(.4,0,.2,1) both; }
 
-/* ── Skeleton shimmer ── */
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+/* ── Layer card reveal ── */
+@keyframes layer-construct {
+  0%   { opacity: 0; transform: translateX(-14px) scale(0.97); }
+  65%  { opacity: 1; }
+  82%  { transform: translateX(2px) scale(1.003); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
 }
-.skeleton-line {
-  background: linear-gradient(90deg,
-    var(--surface2) 0%,
-    rgba(30,45,68,.8) 50%,
-    var(--surface2) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
-  border-radius: 2px;
-  height: 10px;
-}
+.layer-card.reveal-pending { opacity: 0; }
+.layer-card.revealed { animation: layer-construct .52s cubic-bezier(.4,0,.2,1) both; }
+
+/* ── Scramble: section title while resolving ── */
+.section-title.scrambling { opacity: 0.7; letter-spacing: 3.5px; }
+.section-title { transition: letter-spacing .3s ease, opacity .2s ease; }
