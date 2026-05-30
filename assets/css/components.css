@@ -308,6 +308,20 @@ header {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 16px;
 }
+/* ── APP CARD — index.html navigation cards (anchor elements) ── */
+.app-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;   /* suppress browser default link underline */
+  color: inherit;          /* suppress browser default link colour     */
+  transition: border-color .25s, box-shadow .25s;
+}
+
+/* ── CABINET CARD — vendor detail pages ── */
 .cabinet-card {
   background: var(--surface); border: 1px solid var(--border);
   position: relative; overflow: hidden;
