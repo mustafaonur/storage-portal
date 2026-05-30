@@ -253,7 +253,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
     <div class="kb-sum-item">Fabric: <b id="kb-s-fab" class="miss">—</b></div>
     <div class="kb-sum-item">Storage: <b id="kb-s-stor" class="miss">—</b></div>
     <div class="kb-sum-item">PG: <b id="kb-s-pg" class="miss">—</b></div>
-    <button class="kb-gen-btn" id="kb-gen" disabled id="kb-gen-btn">Zone Komutlarını Üret →</button>
+    <button class="kb-gen-btn" id="kb-gen-btn" disabled>Zone Komutlarını Üret →</button>
   </div>
 
   <!-- KANBAN ÇIKTI -->
@@ -1929,7 +1929,7 @@ function kbUpdateSummary(){
   set('kb-s-pg', KB.pg?KB.pg.pg:'', !!KB.pg);
 
   const ready = KB.host && fabOk && cab && KB.pg;
-  const btn=document.getElementById('kb-gen');
+  const btn=document.getElementById('kb-gen-btn');
   if(btn) btn.disabled=!ready;
 }
 
