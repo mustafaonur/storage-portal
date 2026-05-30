@@ -346,6 +346,9 @@ function setStatus(state, msg) {
   statusText.className = 'status-text ' + (state === 'error' ? 'error' : state === 'ok' ? 'ok' : '');
   statusText.textContent = msg;
 }
+
+function parseCSV(text) {
+  var filtered = text.split('\n').filter(function(l) { return l.trim() !== ''; });
   allRows = [];
   var start = isHeader(filtered[0]) ? 1 : 0;
 

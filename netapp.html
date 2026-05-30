@@ -699,7 +699,7 @@ function cabinetCard(c) {
   const osBars = osKeys.map(k => `<div class="os-bar-wrap"><div class="os-bar ${osBarMap[k]||'os-linux'}" style="height:${totOS>0?c.os[k]/totOS*100:0}%"></div></div>`).join('');
   const osLegend = osKeys.map(k => {
     const safeK = k.replace(/'/g, "\\'");
-    return `<div class="os-legend-item os-legend-clickable" data-host-filter='{"label":"${c.name} - ${k}","cabinet":"${c.name}","os":"${safeK"}'><div class="os-dot" style="background:${dotColors[(osBarMap[k]||'os-linux').replace('os-','')]}"></div><span>${k}: ${c.os[k]}</span></div>`;
+    return `<div class="os-legend-item os-legend-clickable" data-host-filter='{"label":"${c.name} - ${k}","cabinet":"${c.name}","os":"${safeK}"}'>div class="os-dot" style="background:${dotColors[(osBarMap[k]||'os-linux').replace('os-','')]}"></div><span>${k}: ${c.os[k]}</span></div>`;
   }).join('');
 
   const svmCount = c.hostCount;
