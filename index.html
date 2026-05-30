@@ -9,6 +9,7 @@
 <script src="./assets/js/storage-utils.js"></script>
 <script src="./assets/js/asset-inventory.js"></script>
 <script src="./assets/js/report-export.js"></script>
+<script src="./assets/js/micro-interactions.js" defer></script>
 <style>
   /* =========================================================
      DESIGN TOKENS  -  ortak tema (huawei.html ile uyumlu)
@@ -620,6 +621,7 @@
   </div>
 
   <!-- ========== ANALYTICS ========== -->
+  <div class="section-zone zone-analytics">
   <div class="section-title">Analytics</div>
   <div class="apps-grid">
 
@@ -769,7 +771,10 @@
 
   </div>
 
+  </div><!-- /zone-analytics -->
+
   <!-- ========== STORAGE SYSTEMS ========== -->
+  <div class="section-zone zone-storage">
   <div class="section-title">Storage Systems</div>
   <div class="apps-grid">
 
@@ -963,7 +968,10 @@
 
   </div>
 
+  </div><!-- /zone-storage -->
+
   <!-- ========== UTILITIES / SECONDARY HUB ========== -->
+  <div class="section-zone zone-utilities">
   <div class="section-title">Utilities</div>
   <div class="apps-grid">
 
@@ -1178,7 +1186,10 @@
 
   </div>
 
+  </div><!-- /zone-utilities -->
+
   <!-- ========== OPERATIONS CENTER ========== -->
+  <div class="section-zone zone-ops">
   <div class="section-title">Operations Center</div>
   <div class="apps-grid">
 
@@ -1205,7 +1216,8 @@
       </div>
     </a>
 
-  </div>
+  </div><!-- /apps-grid ops -->
+  </div><!-- /zone-ops -->
 
   <div id="dbg-btn" role="button" tabindex="0">&#9654; Debug</div>
   <div id="dbg-out"></div>
@@ -1503,6 +1515,9 @@ function render() {
     const el = document.getElementById(id);
     if (el) el.remove();
   });
+
+  // Trigger count-up animations now that values are set
+  if (typeof triggerStatCountUps === 'function') triggerStatCountUps();
 
   // Debug
   LOG.push('');
