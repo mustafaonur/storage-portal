@@ -1308,31 +1308,91 @@ header {
 }
 /* ════════════════════════════════════════════════════════════
    LIGHT THEME — data-theme="light" on <html>
+   Soft modern warm-neutral palette — not too white, not too grey.
+   Base is a warm off-white with slate-blue tints for depth.
 ════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --bg:         #f0f2f6;
-  --surface:    #ffffff;
-  --surface2:   #eaecf0;
-  --surface3:   #e2e5ea;
-  --border:     #c8cdd6;
-  --border2:    #b8bec8;
-  --accent:     #c8860a;
-  --accent2:    #1a6fc4;
-  --accent3:    #1a9150;
-  --purple:     #7c3aed;
-  --danger:     #c0392b;
-  --warn:       #c05c0a;
-  --text:       #2c3345;
-  --text-dim:   #7a849a;
-  --text-bright:#0d1420;
-  --grid:       #e8eaee;
+  /* Backgrounds — warm slate, not pure white */
+  --bg:         #f2f4f7;   /* page canvas: cool-warm neutral */
+  --surface:    #ffffff;   /* cards/panels */
+  --surface2:   #edf0f4;   /* inset sections, zebra rows */
+  --surface3:   #e6eaf0;   /* deeper inset, toolbar bg */
+  --grid:       #eaecf0;   /* subtle panel bg */
+
+  /* Borders — soft, not harsh */
+  --border:     #d4d9e3;
+  --border2:    #c3c9d6;
+
+  /* Accent colors — slightly desaturated for softer look */
+  --accent:     #b8730d;   /* warm amber/gold */
+  --accent2:    #2264b5;   /* calm steel blue */
+  --accent3:    #1a8c4a;   /* muted emerald */
+  --purple:     #6d35d9;
+
+  /* Semantic */
+  --danger:     #b83232;
+  --warn:       #b05a0a;
+
+  /* Typography — warm slate, readable contrast */
+  --text:       #3a4257;   /* body text */
+  --text-dim:   #7e8ba0;   /* muted labels */
+  --text-bright:#1a2033;   /* headings, emphasis */
+
+  /* Vendor */
+  --hitachi:    #b84040;
+  --c-hitachi:  #b84040;
+
+  /* Node colours — slightly desaturated for light bg */
+  --c-host:     #1a8c4a;
+  --c-hba:      #2264b5;
+  --c-sw:       #b8730d;
+  --c-stor:     #6d35d9;
 }
 
 [data-theme="light"] body::before {
+  /* Very subtle grid — barely visible, adds texture without noise */
   background-image:
-    linear-gradient(rgba(100,120,160,.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(100,120,160,.12) 1px, transparent 1px);
+    linear-gradient(rgba(80,100,140,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80,100,140,.055) 1px, transparent 1px);
 }
+
+/* Light-mode node box backgrounds — more visible against white */
+[data-theme="light"] .node-box.n-host  { background: rgba(26,140,74,.07); }
+[data-theme="light"] .node-box.n-hba   { background: rgba(34,100,181,.07); }
+[data-theme="light"] .node-box.n-sw    { background: rgba(184,115,13,.07); }
+[data-theme="light"] .node-box.n-stor  { background: rgba(109,53,217,.07); }
+[data-theme="light"] .node-box.n-err   { background: rgba(184,50,50,.07); }
+
+/* Light-mode scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-track { background: var(--bg); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* Light-mode tooltip */
+[data-theme="light"] .tip {
+  box-shadow: 0 4px 16px rgba(40,60,100,.12);
+}
+
+/* Light-mode stat box slight shadow for card depth */
+[data-theme="light"] .sp-stat-box {
+  box-shadow: 0 1px 3px rgba(40,60,100,.07);
+}
+
+/* Light-mode path card */
+[data-theme="light"] .path-card {
+  box-shadow: 0 1px 3px rgba(40,60,100,.06);
+}
+[data-theme="light"] .path-card:hover {
+  box-shadow: 0 4px 12px rgba(40,60,100,.10);
+}
+
+/* Light-mode schema SVG background */
+[data-theme="light"] .schema-svg-box {
+  background: radial-gradient(circle at 50% 40%, rgba(34,100,181,.04) 0%, transparent 60%);
+}
+
+/* Light-mode fabric lane headers */
+[data-theme="light"] .fab-a-hdr { background: rgba(26,140,74,.06); }
+[data-theme="light"] .fab-b-hdr { background: rgba(34,100,181,.06); }
 
 /* Theme toggle button */
 .theme-toggle {

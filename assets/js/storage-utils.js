@@ -601,7 +601,7 @@ function buildTr(cells, rowClass) {
 const SP_THEME_KEY = 'sp-theme';
 
 function spGetTheme() {
-  try { return localStorage.getItem(SP_THEME_KEY) || 'dark'; } catch { return 'dark'; }
+  try { return localStorage.getItem(SP_THEME_KEY) || 'light'; } catch { return 'light'; }
 }
 
 function spSetTheme(t) {
@@ -635,7 +635,8 @@ function injectThemeToggle(containerId) {
 // Apply saved theme immediately on every page
 (function applyThemeOnLoad() {
   const saved = spGetTheme();
-  if (saved === 'light') {
+  // Default is now light — apply attribute only if explicitly dark
+  if (saved !== 'dark') {
     document.documentElement.setAttribute('data-theme', 'light');
   }
   // Inject toggle into header-meta if it exists (index.html), or nav area
