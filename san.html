@@ -322,6 +322,96 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
   .td-role-host    { color:var(--purple); }
   .td-role-storage { color:var(--accent2); }
   .td-role-isl     { color:var(--text-dim); }
+  /* ═══════════════ ISL MAP ═══════════════ */
+  #tab-islmap { padding: 0; }
+
+  .isl-toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 18px 0 14px;
+  }
+  .isl-toolbar select,
+  .isl-toolbar button {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; padding: 6px 12px; outline: none; cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .isl-toolbar select:hover,
+  .isl-toolbar button:hover { border-color: var(--accent2); color: var(--text); }
+  .isl-toolbar button.active-view { border-color: var(--accent); color: var(--accent); }
+
+  .isl-legend {
+    display: flex; align-items: center; gap: 18px; margin-left: auto;
+    font-size: 10px; color: var(--text-dim);
+  }
+  .isl-legend-item { display: flex; align-items: center; gap: 6px; }
+  .isl-legend-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .isl-canvas-wrap {
+    position: relative; background: var(--surface);
+    border: 1px solid var(--border); overflow: hidden;
+  }
+  .isl-canvas-wrap svg { display: block; width: 100%; height: 100%; }
+
+  .isl-stats-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 16px;
+  }
+  .isl-stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 14px 16px; position: relative; overflow: hidden;
+  }
+  .isl-stat-card::before {
+    content: ''; position: absolute; left: 0; top: 0;
+    width: 3px; height: 100%; background: var(--accent2);
+  }
+  .isl-stat-card.fab-a::before { background: var(--accent); }
+  .isl-stat-card.fab-b::before { background: var(--purple); }
+  .isl-stat-card.fab-total::before { background: var(--accent3); }
+  .isl-stat-label { font-size: 9px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; }
+  .isl-stat-value { font-size: 22px; font-weight: 700; color: var(--text-bright); font-family: 'Syne', sans-serif; }
+  .isl-stat-sub { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+
+  .isl-table-wrap { background: var(--surface); border: 1px solid var(--border); max-height: 340px; overflow: auto; }
+  .isl-table-wrap table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .isl-table-wrap th {
+    background: var(--surface2); padding: 8px 12px; text-align: left;
+    font-size: 9px; letter-spacing: 1.5px; color: var(--text-dim);
+    text-transform: uppercase; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 2;
+  }
+  .isl-table-wrap td { padding: 7px 12px; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--text); vertical-align: middle; }
+  .isl-table-wrap tr:hover td { background: var(--surface2); }
+  .isl-fab-badge {
+    display: inline-block; padding: 1px 8px; font-size: 10px; font-weight: 700;
+    letter-spacing: .5px; border-radius: 2px;
+  }
+  .isl-fab-badge.A { background: rgba(232,184,75,.15); color: var(--accent); border: 1px solid rgba(232,184,75,.3); }
+  .isl-fab-badge.B { background: rgba(168,85,247,.15); color: var(--purple); border: 1px solid rgba(168,85,247,.3); }
+  .isl-port-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 140px; }
+  .isl-port-bar {
+    flex: 1; height: 6px; background: var(--surface2);
+    border-radius: 3px; overflow: hidden;
+  }
+  .isl-port-bar-fill { height: 100%; border-radius: 3px; background: var(--accent2); transition: width .3s; }
+  .isl-port-count { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+
+  /* SVG node & link styles (applied via JS attribute) */
+  .isl-node-group { cursor: pointer; }
+  .isl-node-group:hover .isl-node-rect { filter: brightness(1.3); }
+  .isl-tooltip {
+    position: absolute; background: var(--surface2); border: 1px solid var(--border);
+    padding: 10px 14px; font-size: 11px; color: var(--text); pointer-events: none;
+    white-space: nowrap; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    line-height: 1.8;
+  }
+  .isl-tooltip-title { font-weight: 700; color: var(--text-bright); margin-bottom: 4px; font-size: 12px; }
+  .isl-tooltip-row { display: flex; gap: 10px; justify-content: space-between; }
+  .isl-tooltip-key { color: var(--text-dim); }
+  .isl-tooltip-val { color: var(--accent); font-weight: 600; }
+
   .td-role-free    { color:var(--text-dim); font-style:italic; }
 
   /* Hata badge'leri - tek sütunda, ne olduğu açık */
@@ -498,6 +588,7 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <button class="tab-btn" data-tab="charts">Grafikler</button>
     <button class="tab-btn" data-tab="zoneaudit">Zone Audit</button>
     <button class="tab-btn" data-tab="compliance">Uyumluluk</button>
+    <button class="tab-btn" data-tab="islmap">ISL Haritası</button>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -611,6 +702,101 @@ header { display:flex; align-items:flex-end; justify-content:space-between; marg
     <div id="compliance-results"></div>
   </div>
 
+
+  <div id="tab-islmap" class="tab-content sp-hidden">
+    <div class="section-title" style="padding:24px 0 12px">
+      ISL Haritası — Switch↔Switch Bağlantı Topolojisi
+    </div>
+
+    <!-- KPI stat cards -->
+    <div class="isl-stats-row" id="islStatsRow">
+      <div class="isl-stat-card fab-a">
+        <div class="isl-stat-label">Fabric A · ISL Port</div>
+        <div class="isl-stat-value" id="isl-kpi-a">—</div>
+        <div class="isl-stat-sub" id="isl-kpi-a-sw">— switch</div>
+      </div>
+      <div class="isl-stat-card fab-b">
+        <div class="isl-stat-label">Fabric B · ISL Port</div>
+        <div class="isl-stat-value" id="isl-kpi-b">—</div>
+        <div class="isl-stat-sub" id="isl-kpi-b-sw">— switch</div>
+      </div>
+      <div class="isl-stat-card">
+        <div class="isl-stat-label">ISL'li Site</div>
+        <div class="isl-stat-value" id="isl-kpi-sites">—</div>
+        <div class="isl-stat-sub">aktif ISL bağlantısı olan</div>
+      </div>
+      <div class="isl-stat-card fab-total">
+        <div class="isl-stat-label">Toplam ISL Port</div>
+        <div class="isl-stat-value" id="isl-kpi-total">—</div>
+        <div class="isl-stat-sub">tüm fabric, tüm site</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="isl-toolbar">
+      <select id="islFabricFilter">
+        <option value="all">Tüm Fabric</option>
+        <option value="A">Fabric A</option>
+        <option value="B">Fabric B</option>
+      </select>
+      <select id="islSiteFilter">
+        <option value="all">Tüm Site</option>
+      </select>
+      <button id="islViewTopo" class="active-view">Topoloji</button>
+      <button id="islViewTable">Tablo</button>
+
+      <div class="isl-legend">
+        <div class="isl-legend-item">
+          <div class="isl-legend-dot" style="background:var(--accent)"></div>Fabric A
+        </div>
+        <div class="isl-legend-item">
+          <div class="isl-legend-dot" style="background:var(--purple)"></div>Fabric B
+        </div>
+        <div class="isl-legend-item">
+          <svg width="26" height="10"><line x1="0" y1="5" x2="26" y2="5" stroke="var(--accent2)" stroke-width="2" stroke-dasharray="4,2"/></svg>
+          ISL Trunk
+        </div>
+        <div class="isl-legend-item">
+          <svg width="26" height="10"><line x1="0" y1="5" x2="26" y2="5" stroke="rgba(150,150,200,.35)" stroke-width="1.5"/></svg>
+          ISL Yok
+        </div>
+      </div>
+    </div>
+
+    <!-- Topology canvas -->
+    <div class="isl-canvas-wrap" id="islCanvasWrap" style="height:540px; display:block;">
+      <svg id="islSvg" viewBox="0 0 1200 540" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="arrow-a" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3 z" fill="rgba(232,184,75,.7)"/>
+          </marker>
+          <marker id="arrow-b" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3 z" fill="rgba(168,85,247,.7)"/>
+          </marker>
+          <filter id="glow-a">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-b">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g id="islLinksLayer"></g>
+        <g id="islNodesLayer"></g>
+        <g id="islLabelsLayer"></g>
+        <g id="islSiteLabelsLayer"></g>
+      </svg>
+      <!-- floating tooltip -->
+      <div class="isl-tooltip" id="islTooltip" style="display:none"></div>
+    </div>
+
+    <!-- Table view (hidden by default) -->
+    <div id="islTableView" style="display:none; margin-top:0;">
+      <div class="isl-table-wrap" id="islTableWrap"></div>
+    </div>
+  </div>
+
   <div class="dash-footer">
     <span>BROCADE SAN FLEET DASHBOARD</span>
     <span>POWERSHELL AUTOMATION v2.0</span>
@@ -675,6 +861,7 @@ function setTab(name, ev) {
   if (name === 'zoneaudit' && zoneAudit.length === 0) loadZoneAudit();
   else if (name === 'zoneaudit') renderZoneAudit();
   if (name === 'compliance') setTimeout(runCompliance, 50);
+  if (name === 'islmap') { if (typeof window.initISLMap === 'function' && directors.length > 0) window.initISLMap(); }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1885,6 +2072,516 @@ loadZoneRules();
     } catch (err) {
       console.warn('[san] Failed to parse port filter:', err);
     }
+  });
+
+})();
+
+/* ════════════════════════════════════════════════════════════
+   ISL MAP — topology renderer
+════════════════════════════════════════════════════════════ */
+
+(function() {
+
+  /* ── State ─────────────────────────────────────── */
+  let islFabricFilter = 'all';
+  let islSiteFilter   = 'all';
+  let islViewMode     = 'topo'; // 'topo' | 'table'
+  let islInitialized  = false;
+
+  /* ── Color palette (matches CSS vars resolved at runtime) ── */
+  const COLOR = {
+    A     : 'rgba(232,184,75,1)',
+    Adim  : 'rgba(232,184,75,.55)',
+    B     : 'rgba(168,85,247,1)',
+    Bdim  : 'rgba(168,85,247,.55)',
+    link  : 'rgba(100,180,255,.8)',
+    nolink: 'rgba(80,100,130,.25)',
+    site  : 'rgba(255,255,255,.04)',
+    siteBorder: 'rgba(255,255,255,.08)',
+    text  : '#c8d8f0',
+    textDim: '#6a8098',
+  };
+
+  /* ── Derive ISL links from director data ───────────── */
+  function buildISLData(dirs) {
+    // Group by fabric + site
+    const map = {};
+    dirs.forEach(d => {
+      const key = d.Fabric + '|' + d.Lokasyon;
+      if (!map[key]) map[key] = [];
+      map[key].push(d);
+    });
+
+    // ISL links: within same fabric, connect every pair of switches
+    // that both have ISLPorts > 0 (inter-site) OR are in same site
+    // Use all switches in same fabric as a full-mesh (realistic for Brocade X7)
+    const links = [];
+    const fabrics = ['A', 'B'];
+
+    fabrics.forEach(fab => {
+      const switches = dirs.filter(d => d.Fabric === fab);
+      // Sort by site so intra-site pairs come first
+      const sites = [...new Set(switches.map(d => d.Lokasyon))];
+      
+      // Intra-site links (full mesh within same site, same fabric)
+      sites.forEach(site => {
+        const siteSwitches = switches.filter(d => d.Lokasyon === site);
+        for (let i = 0; i < siteSwitches.length; i++) {
+          for (let j = i + 1; j < siteSwitches.length; j++) {
+            const s = siteSwitches[i];
+            const t = siteSwitches[j];
+            const ports = Math.min(parseInt(s.ISLPorts)||0, parseInt(t.ISLPorts)||0);
+            links.push({
+              source: s.SwitchName,
+              target: t.SwitchName,
+              fabric: fab,
+              ports : ports,
+              type  : 'intra',
+              site  : site,
+            });
+          }
+        }
+      });
+
+      // Inter-site links: connect switches between different sites (ISLPorts > 0 on both)
+      for (let si = 0; si < sites.length; si++) {
+        for (let sj = si + 1; sj < sites.length; sj++) {
+          const siteA = sites[si];
+          const siteB = sites[sj];
+          const swA = switches.filter(d => d.Lokasyon === siteA && (parseInt(d.ISLPorts)||0) > 0);
+          const swB = switches.filter(d => d.Lokasyon === siteB && (parseInt(d.ISLPorts)||0) > 0);
+          // One representative inter-site trunk per fabric pair (first match)
+          if (swA.length > 0 && swB.length > 0) {
+            const ports = Math.min(parseInt(swA[0].ISLPorts)||0, parseInt(swB[0].ISLPorts)||0);
+            links.push({
+              source: swA[0].SwitchName,
+              target: swB[0].SwitchName,
+              fabric: fab,
+              ports : ports,
+              type  : 'inter',
+              siteA : siteA,
+              siteB : siteB,
+            });
+          }
+        }
+      }
+    });
+
+    return links;
+  }
+
+  /* ── Layout: position sites and their switches ──── */
+  function buildLayout(dirs, fabricFilter, siteFilter) {
+    let filtered = dirs.filter(d => (parseInt(d.ISLPorts)||0) >= 0); // include all
+    if (fabricFilter !== 'all') filtered = filtered.filter(d => d.Fabric === fabricFilter);
+    if (siteFilter   !== 'all') filtered = filtered.filter(d => d.Lokasyon === siteFilter);
+
+    const sites = [...new Set(filtered.map(d => d.Lokasyon))];
+    const W = 1200, H = 520;
+    const PAD = 50;
+
+    // Site boxes arranged in a row (or 2×2 grid if > 2 sites)
+    const cols = sites.length <= 2 ? sites.length : 2;
+    const rows = Math.ceil(sites.length / cols);
+    const boxW = (W - PAD * 2 - (cols - 1) * 40) / cols;
+    const boxH = (H - PAD * 2 - (rows - 1) * 40) / rows;
+
+    const siteLayouts = {};
+    sites.forEach((site, idx) => {
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const bx = PAD + col * (boxW + 40);
+      const by = PAD + row * (boxH + 40);
+
+      const siteSwitches = filtered.filter(d => d.Lokasyon === site);
+      // Arrange switches within site box
+      const cols2 = siteSwitches.length <= 2 ? 1 : 2;
+      const nodeW = 120, nodeH = 46;
+      const innerPadX = 24, innerPadY = 36;
+      const colGapX = 30, rowGapY = 18;
+
+      const positions = {};
+      siteSwitches.forEach((sw, i) => {
+        const c = i % cols2;
+        const r = Math.floor(i / cols2);
+        const nx = bx + innerPadX + c * (nodeW + colGapX) + (cols2 === 1 ? (boxW - nodeW) / 2 - innerPadX : 0);
+        const ny = by + innerPadY + r * (nodeH + rowGapY);
+        positions[sw.SwitchName] = { x: nx, y: ny, w: nodeW, h: nodeH, data: sw };
+      });
+
+      siteLayouts[site] = { x: bx, y: by, w: boxW, h: boxH, positions };
+    });
+
+    return { siteLayouts, sites, W, H };
+  }
+
+  /* ── SVG helpers ─────────────────────────────── */
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+    return el;
+  }
+
+  function escH(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Tooltip ─────────────────────────────────── */
+  const tooltip = document.getElementById('islTooltip');
+  function showTooltip(html, evt) {
+    if (!tooltip) return;
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    positionTooltip(evt);
+  }
+  function positionTooltip(evt) {
+    if (!tooltip) return;
+    const wrap = document.getElementById('islCanvasWrap');
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    let lx = evt.clientX - rect.left + 14;
+    let ly = evt.clientY - rect.top  + 14;
+    if (lx + 240 > rect.width)  lx -= 260;
+    if (ly + 160 > rect.height) ly -= 120;
+    tooltip.style.left = lx + 'px';
+    tooltip.style.top  = ly + 'px';
+  }
+  function hideTooltip() { if (tooltip) tooltip.style.display = 'none'; }
+
+  /* ── Main render ─────────────────────────────── */
+  function renderISLMap() {
+    if (!directors || directors.length === 0) return;
+
+    const svgEl2 = document.getElementById('islSvg');
+    if (!svgEl2) return;
+
+    const linksLayer = document.getElementById('islLinksLayer');
+    const nodesLayer = document.getElementById('islNodesLayer');
+    const labLayer   = document.getElementById('islLabelsLayer');
+    const siteLab    = document.getElementById('islSiteLabelsLayer');
+    if (!linksLayer || !nodesLayer) return;
+
+    linksLayer.innerHTML = '';
+    nodesLayer.innerHTML = '';
+    labLayer.innerHTML   = '';
+    siteLab.innerHTML    = '';
+
+    const layout = buildLayout(directors, islFabricFilter, islSiteFilter);
+    const allLinks = buildISLData(directors);
+
+    // ── Site boxes
+    layout.sites.forEach(site => {
+      const sl = layout.siteLayouts[site];
+      const rect = svgEl('rect', {
+        x: sl.x, y: sl.y, width: sl.w, height: sl.h,
+        rx: 6, fill: COLOR.site, stroke: COLOR.siteBorder, 'stroke-width': 1,
+      });
+      siteLab.appendChild(rect);
+
+      const lbl = svgEl('text', {
+        x: sl.x + 12, y: sl.y + 18,
+        fill: COLOR.textDim, 'font-size': 10,
+        'font-family': "'JetBrains Mono',monospace",
+        'letter-spacing': 2, 'text-transform': 'uppercase',
+      });
+      lbl.textContent = escH(site).toUpperCase();
+      siteLab.appendChild(lbl);
+    });
+
+    // ── Collect all node centres for link routing
+    const centres = {};
+    Object.values(layout.siteLayouts).forEach(sl => {
+      Object.entries(sl.positions).forEach(([name, pos]) => {
+        centres[name] = { cx: pos.x + pos.w / 2, cy: pos.y + pos.h / 2, pos };
+      });
+    });
+
+    // ── Links
+    allLinks.forEach(link => {
+      if (islFabricFilter !== 'all' && link.fabric !== islFabricFilter) return;
+      const src = centres[link.source];
+      const tgt = centres[link.target];
+      if (!src || !tgt) return;
+
+      const hasISL  = link.ports > 0;
+      const isInter = link.type === 'inter';
+      const color   = link.fabric === 'A'
+        ? (hasISL ? COLOR.A    : COLOR.nolink)
+        : (hasISL ? COLOR.B    : COLOR.nolink);
+      const width   = isInter ? (hasISL ? 2.5 : 1) : (hasISL ? 1.8 : 0.8);
+      const dash    = isInter ? (hasISL ? '8,4' : '3,5') : (hasISL ? '5,3' : '2,5');
+      const opacity = hasISL ? 1 : 0.4;
+
+      // Bezier control point (slight curve for aesthetics)
+      const mx = (src.cx + tgt.cx) / 2;
+      const my = (src.cy + tgt.cy) / 2 - (isInter ? 40 : 20);
+      const path = svgEl('path', {
+        d: `M ${src.cx} ${src.cy} Q ${mx} ${my} ${tgt.cx} ${tgt.cy}`,
+        stroke: color, 'stroke-width': width, fill: 'none',
+        'stroke-dasharray': dash, opacity: opacity,
+        'stroke-linecap': 'round',
+      });
+
+      if (hasISL && isInter) {
+        path.setAttribute('marker-end', link.fabric === 'A' ? 'url(#arrow-a)' : 'url(#arrow-b)');
+      }
+
+      // Link tooltip
+      path.style.cursor = 'pointer';
+      path.addEventListener('mouseenter', evt => {
+        const html = `
+          <div class="isl-tooltip-title">${escH(link.source)} → ${escH(link.target)}</div>
+          <div class="isl-tooltip-row"><span class="isl-tooltip-key">Fabric</span><span class="isl-tooltip-val">${escH(link.fabric)}</span></div>
+          <div class="isl-tooltip-row"><span class="isl-tooltip-key">Tür</span><span class="isl-tooltip-val">${link.type === 'inter' ? 'Inter-site' : 'Intra-site'}</span></div>
+          <div class="isl-tooltip-row"><span class="isl-tooltip-key">ISL Port</span><span class="isl-tooltip-val">${link.ports}</span></div>
+        `;
+        showTooltip(html, evt);
+      });
+      path.addEventListener('mousemove', positionTooltip);
+      path.addEventListener('mouseleave', hideTooltip);
+
+      linksLayer.appendChild(path);
+
+      // Port count label on inter-site links
+      if (hasISL && isInter && link.ports > 0) {
+        const lx = mx, ly = my - 5;
+        const badge = svgEl('text', {
+          x: lx, y: ly, 'text-anchor': 'middle',
+          fill: color, 'font-size': 9,
+          'font-family': "'JetBrains Mono',monospace",
+        });
+        badge.textContent = link.ports + 'p';
+        labLayer.appendChild(badge);
+      }
+    });
+
+    // ── Nodes
+    Object.values(layout.siteLayouts).forEach(sl => {
+      Object.entries(sl.positions).forEach(([name, pos]) => {
+        const d    = pos.data;
+        const fab  = d.Fabric;
+        const isl  = parseInt(d.ISLPorts) || 0;
+        const hasI = isl > 0;
+        const fillColor = fab === 'A'
+          ? (hasI ? 'rgba(232,184,75,.18)' : 'rgba(60,75,100,.4)')
+          : (hasI ? 'rgba(168,85,247,.18)' : 'rgba(60,75,100,.4)');
+        const strokeColor = fab === 'A'
+          ? (hasI ? COLOR.A : 'rgba(232,184,75,.3)')
+          : (hasI ? COLOR.B : 'rgba(168,85,247,.3)');
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'isl-node-group');
+        g.style.cursor = 'pointer';
+
+        const rect2 = svgEl('rect', {
+          x: pos.x, y: pos.y, width: pos.w, height: pos.h,
+          rx: 4, fill: fillColor, stroke: strokeColor, 'stroke-width': hasI ? 1.5 : 1,
+          class: 'isl-node-rect',
+        });
+        if (hasI && fab === 'A') rect2.setAttribute('filter', 'url(#glow-a)');
+        if (hasI && fab === 'B') rect2.setAttribute('filter', 'url(#glow-b)');
+        g.appendChild(rect2);
+
+        // Fabric badge strip top
+        const strip = svgEl('rect', {
+          x: pos.x, y: pos.y, width: pos.w, height: 4,
+          rx: 4, fill: fab === 'A' ? COLOR.A : COLOR.B, opacity: hasI ? 0.8 : 0.3,
+        });
+        g.appendChild(strip);
+
+        // Switch name
+        const nameTxt = svgEl('text', {
+          x: pos.x + pos.w / 2, y: pos.y + 17,
+          'text-anchor': 'middle', fill: hasI ? COLOR.text : COLOR.textDim,
+          'font-size': 9, 'font-family': "'JetBrains Mono',monospace",
+          'font-weight': hasI ? '600' : '400',
+        });
+        nameTxt.textContent = escH(name);
+        g.appendChild(nameTxt);
+
+        // ISL port count
+        const islTxt = svgEl('text', {
+          x: pos.x + pos.w / 2, y: pos.y + 32,
+          'text-anchor': 'middle',
+          fill: hasI ? (fab === 'A' ? COLOR.A : COLOR.B) : COLOR.textDim,
+          'font-size': 11, 'font-family': "'Syne',sans-serif", 'font-weight': '700',
+        });
+        islTxt.textContent = isl > 0 ? isl + ' ISL' : '—';
+        g.appendChild(islTxt);
+
+        // Node tooltip on hover
+        g.addEventListener('mouseenter', evt => {
+          const rows = [
+            ['Model',    d.Model    || '—'],
+            ['Firmware', d.Firmware || '—'],
+            ['ISL Ports', isl],
+            ['Total Ports', d.TotalPorts || '—'],
+            ['Online Ports', d.OnlinePorts || '—'],
+            ['Error Ports', d.ErrorPorts || '0'],
+            ['Uptime', d.Uptime || '—'],
+          ];
+          const html = `
+            <div class="isl-tooltip-title">${escH(name)}</div>
+            <div class="isl-tooltip-row"><span class="isl-tooltip-key">Fabric</span>
+              <span class="isl-tooltip-val">${escH(fab)}</span></div>
+            ${rows.map(([k,v]) =>
+              `<div class="isl-tooltip-row">
+                <span class="isl-tooltip-key">${escH(k)}</span>
+                <span class="isl-tooltip-val">${escH(v)}</span>
+              </div>`).join('')}
+          `;
+          showTooltip(html, evt);
+        });
+        g.addEventListener('mousemove', positionTooltip);
+        g.addEventListener('mouseleave', hideTooltip);
+
+        nodesLayer.appendChild(g);
+      });
+    });
+  }
+
+  /* ── KPI cards ────────────────────────────────── */
+  function updateISLKPIs() {
+    if (!directors || directors.length === 0) return;
+    const aSwitch = directors.filter(d => d.Fabric === 'A' && (parseInt(d.ISLPorts)||0) > 0);
+    const bSwitch = directors.filter(d => d.Fabric === 'B' && (parseInt(d.ISLPorts)||0) > 0);
+    const aISL = aSwitch.reduce((s,d) => s + (parseInt(d.ISLPorts)||0), 0);
+    const bISL = bSwitch.reduce((s,d) => s + (parseInt(d.ISLPorts)||0), 0);
+    const sites = new Set(directors.filter(d => (parseInt(d.ISLPorts)||0) > 0).map(d => d.Lokasyon));
+
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('isl-kpi-a',     aISL);
+    set('isl-kpi-a-sw',  aSwitch.length + ' switch');
+    set('isl-kpi-b',     bISL);
+    set('isl-kpi-b-sw',  bSwitch.length + ' switch');
+    set('isl-kpi-sites', sites.size);
+    set('isl-kpi-total', aISL + bISL);
+  }
+
+  /* ── Table view ───────────────────────────────── */
+  function renderISLTable() {
+    const wrap = document.getElementById('islTableWrap');
+    if (!wrap || !directors) return;
+
+    let rows = directors.filter(d => {
+      if (islFabricFilter !== 'all' && d.Fabric !== islFabricFilter) return false;
+      if (islSiteFilter   !== 'all' && d.Lokasyon !== islSiteFilter)   return false;
+      return true;
+    });
+
+    rows.sort((a,b) => {
+      if (a.Lokasyon !== b.Lokasyon) return a.Lokasyon.localeCompare(b.Lokasyon);
+      if (a.Fabric !== b.Fabric) return a.Fabric.localeCompare(b.Fabric);
+      return a.SwitchName.localeCompare(b.SwitchName);
+    });
+
+    const thead = `<thead><tr>
+      <th>Switch</th><th>Fabric</th><th>Site</th><th>Model</th>
+      <th>ISL Port</th><th>Total Port</th><th>Online Port</th>
+      <th>Error Port</th><th>Uptime</th>
+    </tr></thead>`;
+
+    const tbody = rows.map(d => {
+      const isl = parseInt(d.ISLPorts) || 0;
+      const total = parseInt(d.TotalPorts) || 1;
+      const pct   = Math.round((isl / total) * 100);
+      return `<tr>
+        <td style="color:var(--text-bright);font-weight:600">${escH(d.SwitchName)}</td>
+        <td><span class="isl-fab-badge ${escH(d.Fabric)}">${escH(d.Fabric)}</span></td>
+        <td>${escH(d.Lokasyon)}</td>
+        <td style="color:var(--text-dim)">${escH(d.Model||'—')}</td>
+        <td>
+          <div class="isl-port-bar-wrap">
+            <div class="isl-port-bar">
+              <div class="isl-port-bar-fill" style="width:${pct}%;background:${d.Fabric==='A'?'var(--accent)':'var(--purple)'}"></div>
+            </div>
+            <span class="isl-port-count">${isl}</span>
+          </div>
+        </td>
+        <td>${escH(d.TotalPorts||'—')}</td>
+        <td>${escH(d.OnlinePorts||'—')}</td>
+        <td style="color:${parseInt(d.ErrorPorts)>0?'var(--danger)':'var(--text-dim)'}">${escH(d.ErrorPorts||'0')}</td>
+        <td style="color:var(--text-dim)">${escH(d.Uptime||'—')}</td>
+      </tr>`;
+    }).join('');
+
+    wrap.innerHTML = `<table>${thead}<tbody>${tbody}</tbody></table>`;
+  }
+
+  /* ── Site filter population ───────────────────── */
+  function populateSiteFilter() {
+    const sel = document.getElementById('islSiteFilter');
+    if (!sel || !directors) return;
+    const sites = [...new Set(directors.map(d => d.Lokasyon))].sort();
+    sites.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ── Toggle view mode ─────────────────────────── */
+  function setISLView(mode) {
+    islViewMode = mode;
+    const canvas = document.getElementById('islCanvasWrap');
+    const table  = document.getElementById('islTableView');
+    const btnT   = document.getElementById('islViewTopo');
+    const btnTab = document.getElementById('islViewTable');
+    if (!canvas || !table) return;
+    if (mode === 'topo') {
+      canvas.style.display = 'block';
+      table.style.display  = 'none';
+      if (btnT)   btnT.classList.add('active-view');
+      if (btnTab) btnTab.classList.remove('active-view');
+      renderISLMap();
+    } else {
+      canvas.style.display = 'none';
+      table.style.display  = 'block';
+      if (btnT)   btnT.classList.remove('active-view');
+      if (btnTab) btnTab.classList.add('active-view');
+      renderISLTable();
+    }
+  }
+
+  /* ── Public init (called from setTab) ─────────── */
+  window.initISLMap = function() {
+    if (!islInitialized) {
+      populateSiteFilter();
+      updateISLKPIs();
+
+      const fabSel  = document.getElementById('islFabricFilter');
+      const siteSel = document.getElementById('islSiteFilter');
+      const btnTopo = document.getElementById('islViewTopo');
+      const btnTab  = document.getElementById('islViewTable');
+
+      if (fabSel)  fabSel.addEventListener('change',  () => { islFabricFilter = fabSel.value;  refresh(); });
+      if (siteSel) siteSel.addEventListener('change', () => { islSiteFilter   = siteSel.value; refresh(); });
+      if (btnTopo) btnTopo.addEventListener('click',  () => setISLView('topo'));
+      if (btnTab)  btnTab.addEventListener('click',   () => setISLView('table'));
+
+      islInitialized = true;
+    }
+    if (islViewMode === 'topo') renderISLMap();
+    else renderISLTable();
+  };
+
+  function refresh() {
+    if (islViewMode === 'topo') renderISLMap();
+    else renderISLTable();
+  }
+
+  // Re-render on window resize (debounced)
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (document.getElementById('tab-islmap') &&
+          !document.getElementById('tab-islmap').classList.contains('sp-hidden')) {
+        renderISLMap();
+      }
+    }, 200);
   });
 
 })();
