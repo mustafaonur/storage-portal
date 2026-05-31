@@ -24,6 +24,52 @@
 .sch-legend-group{display:flex;gap:14px;align-items:center;margin-left:auto;flex-wrap:wrap;}
 .sch-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);white-space:nowrap;}
 .sch-legend-item .ln{width:14px;height:2px;display:inline-block;}
+/* ─── SAN GRAF ─────────────────────────────────────────────── */
+.sg-layout{display:grid;grid-template-columns:200px 1fr 260px;gap:0;height:calc(100vh - 160px);min-height:540px;}
+.sg-sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:2px;}
+.sg-ctrl-section{margin-bottom:16px;}
+.sg-ctrl-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-weight:700;}
+.sg-input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;padding:6px 10px;outline:none;border-radius:3px;transition:border-color .2s;}
+.sg-input:focus{border-color:var(--accent);}
+.sg-chip-row{display:flex;gap:4px;flex-wrap:wrap;}
+.sg-chip{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:9px;padding:4px 10px;cursor:pointer;letter-spacing:1px;border-radius:12px;transition:all .15s;}
+.sg-chip:hover{border-color:var(--accent);color:var(--accent);}
+.sg-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(232,184,75,.12);}
+.sg-toggle{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-dim);cursor:pointer;padding:4px 0;user-select:none;}
+.sg-toggle input{display:none;}
+.sg-toggle-dot{width:10px;height:10px;border-radius:50%;background:var(--tc,var(--border));flex-shrink:0;transition:opacity .2s;}
+.sg-toggle input:not(:checked) ~ .sg-toggle-dot{opacity:.25;}
+.sg-toggle input:not(:checked) ~ *{opacity:.4;}
+.sg-btn{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:9px;padding:6px 10px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;border-radius:3px;transition:all .15s;margin-bottom:4px;text-align:left;}
+.sg-btn:hover{border-color:var(--accent3);color:var(--accent3);}
+.sg-stats-block{display:flex;flex-direction:column;gap:6px;}
+.sg-stat-row{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text-dim);}
+.sg-stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sg-canvas-wrap{position:relative;background:radial-gradient(ellipse at 30% 40%,rgba(75,159,232,.06) 0%,transparent 60%),radial-gradient(ellipse at 70% 60%,rgba(192,132,252,.05) 0%,transparent 60%),var(--bg);overflow:hidden;}
+#sg-canvas{display:block;width:100%;height:100%;cursor:grab;}
+#sg-canvas:active{cursor:grabbing;}
+.sg-canvas-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;color:var(--text-dim);pointer-events:none;letter-spacing:1px;}
+.sg-legend{position:absolute;bottom:14px;left:14px;display:flex;gap:14px;flex-wrap:wrap;background:rgba(13,20,32,.82);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:6px;padding:8px 12px;}
+.sg-leg-item{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--text-dim);letter-spacing:.5px;}
+.sg-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sg-leg-line{width:16px;height:2px;flex-shrink:0;border-radius:1px;}
+.sg-detail{background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;padding:16px;}
+.sg-detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-dim);font-size:10px;text-align:center;letter-spacing:.5px;line-height:1.8;}
+.sg-detail-content{font-size:10px;color:var(--text);line-height:1.7;}
+.sg-det-title{font-size:13px;font-weight:700;color:var(--text-bright);margin-bottom:4px;word-break:break-all;}
+.sg-det-type{font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;padding:3px 8px;border-radius:10px;display:inline-block;}
+.sg-det-type.host{color:var(--c-host);background:rgba(75,232,160,.1);border:1px solid rgba(75,232,160,.25);}
+.sg-det-type.switch{color:var(--accent);background:rgba(232,184,75,.1);border:1px solid rgba(232,184,75,.25);}
+.sg-det-type.storage{color:var(--c-stor);background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.25);}
+.sg-det-section{margin-bottom:14px;}
+.sg-det-section-title{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;}
+.sg-det-kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:10px;}
+.sg-det-k{color:var(--text-dim);}
+.sg-det-v{color:var(--text-bright);word-break:break-all;font-family:'JetBrains Mono',monospace;font-size:9px;}
+.sg-det-tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:2px 7px;font-size:9px;color:var(--text-dim);margin:2px 2px 2px 0;font-family:'JetBrains Mono',monospace;}
+.sg-det-tag.ok{border-color:rgba(75,232,160,.4);color:var(--c-host);}
+.sg-det-tag.warn{border-color:rgba(232,132,75,.4);color:var(--warn);}
+/* ─── END SAN GRAF ────────────────────────────────────────── */
 .sch-zone-fab{fill:rgba(232,184,75,.04);stroke:rgba(232,184,75,.25);stroke-width:1.5;stroke-dasharray:6 4;}
 .sch-link.dimmed{opacity:.12;}
 .sch-link.highlight{opacity:1;stroke-width:2.4;}
@@ -104,6 +150,7 @@
 <button class="tp-tab" data-tptab="schema">Şema Görünümü</button>
 <button class="tp-tab" data-tptab="matrix">Fabric Matrisi</button>
 <button class="tp-tab" data-tptab="switchdetail">Switch Detay</button>
+<button class="tp-tab" data-tptab="sangraf">SAN Graf</button>
 </div>
 <!-- SEKME 1: PATH ARAMA -->
 <div class="tp-page active" id="tppage-path">
@@ -176,6 +223,70 @@
   </div>
   <div id="sd-content">
     <div class="center-state" style="padding:40px">Switch seçerek başlayın</div>
+  </div>
+</div>
+
+<!-- SEKME 5: SAN GRAF -->
+<div class="tp-page" id="tppage-sangraf">
+  <div class="sg-layout">
+    <!-- Left: controls -->
+    <div class="sg-sidebar">
+      <div class="sg-ctrl-section">
+        <div class="sg-ctrl-label">ARAMA</div>
+        <input id="sg-search" type="text" class="sg-input" placeholder="Host, switch, kabinet...">
+      </div>
+      <div class="sg-ctrl-section">
+        <div class="sg-ctrl-label">FABRIC FİLTRE</div>
+        <div class="sg-chip-row">
+          <button class="sg-chip active" data-sgfab="ALL">Tümü</button>
+          <button class="sg-chip" data-sgfab="A">Fabric A</button>
+          <button class="sg-chip" data-sgfab="B">Fabric B</button>
+        </div>
+      </div>
+      <div class="sg-ctrl-section">
+        <div class="sg-ctrl-label">NODE TİPİ</div>
+        <label class="sg-toggle"><input type="checkbox" id="sg-show-hosts" checked><span class="sg-toggle-dot" style="--tc:var(--c-host)"></span>Hostlar</label>
+        <label class="sg-toggle"><input type="checkbox" id="sg-show-switches" checked><span class="sg-toggle-dot" style="--tc:var(--accent)"></span>Switchler</label>
+        <label class="sg-toggle"><input type="checkbox" id="sg-show-storage" checked><span class="sg-toggle-dot" style="--tc:var(--c-stor)"></span>Kabinetler</label>
+      </div>
+      <div class="sg-ctrl-section">
+        <div class="sg-ctrl-label">GÖRÜNÜM</div>
+        <button class="sg-btn" id="sg-fit-btn">⊡ Sığdır</button>
+        <button class="sg-btn" id="sg-reset-btn">↺ Sıfırla</button>
+        <button class="sg-btn" id="sg-freeze-btn">❄ Dondur</button>
+      </div>
+      <div class="sg-ctrl-section">
+        <div class="sg-ctrl-label">İSTATİSTİK</div>
+        <div id="sg-stats" class="sg-stats-block">
+          <div class="sg-stat-row"><span class="sg-stat-dot" style="background:var(--c-host)"></span><span id="sg-stat-hosts">0 host</span></div>
+          <div class="sg-stat-row"><span class="sg-stat-dot" style="background:var(--accent)"></span><span id="sg-stat-switches">0 switch</span></div>
+          <div class="sg-stat-row"><span class="sg-stat-dot" style="background:var(--c-stor)"></span><span id="sg-stat-cabs">0 kabinet</span></div>
+          <div class="sg-stat-row"><span class="sg-stat-dot" style="background:var(--border)"></span><span id="sg-stat-links">0 bağlantı</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: canvas -->
+    <div class="sg-canvas-wrap" id="sg-canvas-wrap">
+      <canvas id="sg-canvas"></canvas>
+      <div class="sg-canvas-hint" id="sg-hint">Veri yükleniyor...</div>
+      <div class="sg-legend">
+        <span class="sg-leg-item"><span class="sg-leg-dot" style="background:var(--c-host)"></span>Host</span>
+        <span class="sg-leg-item"><span class="sg-leg-dot" style="background:var(--accent)"></span>Switch</span>
+        <span class="sg-leg-item"><span class="sg-leg-dot" style="background:var(--c-stor)"></span>Kabinet</span>
+        <span class="sg-leg-item"><span class="sg-leg-line" style="background:rgba(75,232,160,.6)"></span>Aktif Bağlantı</span>
+        <span class="sg-leg-item"><span class="sg-leg-line" style="background:rgba(232,132,75,.5)"></span>Ghost Path</span>
+      </div>
+    </div>
+
+    <!-- Right: detail panel -->
+    <div class="sg-detail" id="sg-detail">
+      <div class="sg-detail-empty" id="sg-detail-empty">
+        <svg viewBox="0 0 40 40" width="36" height="36" style="opacity:.3"><circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="4" fill="currentColor"/><line x1="20" y1="6" x2="20" y2="14" stroke="currentColor" stroke-width="1.5"/><line x1="20" y1="26" x2="20" y2="34" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="20" x2="14" y2="20" stroke="currentColor" stroke-width="1.5"/><line x1="26" y1="20" x2="34" y2="20" stroke="currentColor" stroke-width="1.5"/></svg>
+        <p>Node'a tıklayarak<br>detayları inceleyin</p>
+      </div>
+      <div class="sg-detail-content" id="sg-detail-content" style="display:none"></div>
+    </div>
   </div>
 </div>
 
@@ -577,6 +688,8 @@ function tpSwitch(name, btn){
   if(name === 'matrix')       buildFabricMatrix();
 
   if(name === 'switchdetail') initSwitchDetail();
+
+  if(name === 'sangraf')      initSanGraf();
 
 }
 
@@ -1784,5 +1897,494 @@ function initSwitchDetail() {
     if (el) matrixDrilldown(el.dataset.matrixSw, el.dataset.matrixSk);
   });
 })();
+
+/* ════════════════════════════════════════════════════════════
+   SAN GRAF — Force-directed canvas graph
+   Nodes: Host (green) · Switch (amber) · Storage Cabinet (purple)
+   Physics: Verlet integration, spring + repulsion + centering
+════════════════════════════════════════════════════════════ */
+
+const SG = {
+  built:     false,
+  frozen:    false,
+  nodes:     [],
+  links:     [],
+  nodeMap:   {},
+  transform: { x: 0, y: 0, scale: 1 },
+  drag:      null,
+  pan:       null,
+  hover:     null,
+  selected:  null,
+  raf:       null,
+  filter:    { fab: 'ALL', hosts: true, switches: true, storage: true, search: '' },
+  particles: [],
+  tick:      0,
+  _storLinkSeen: null,
+};
+
+function sgCssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+const SG_COLORS = {
+  host:    () => sgCssVar('--c-host')      || '#4be8a0',
+  switch:  () => sgCssVar('--accent')      || '#e8b84b',
+  storage: () => sgCssVar('--c-stor')      || '#c084fc',
+  bg:      () => sgCssVar('--bg')          || '#0d1420',
+  text:    () => sgCssVar('--text')        || '#8ba0c0',
+  bright:  () => sgCssVar('--text-bright') || '#e2eaf8',
+};
+
+function sgCanvas() { return document.getElementById('sg-canvas'); }
+
+function sgBuildGraph() {
+  SG.nodes = []; SG.links = []; SG.nodeMap = {};
+  SG._storLinkSeen = new Set();
+
+  const fab    = SG.filter.fab;
+  const search = SG.filter.search.toLowerCase().trim();
+  const canvas = sgCanvas();
+  if (!canvas) return;
+  const W = canvas.width || 800, H = canvas.height || 600;
+  const cx = W / 2, cy = H / 2;
+
+  function addNode(id, label, type, meta) {
+    if (SG.nodeMap[id]) return SG.nodeMap[id];
+    const angle = Math.random() * Math.PI * 2;
+    const r = 80 + Math.random() * Math.min(W, H) * 0.28;
+    const node = { id, label, type, meta,
+      x: cx + Math.cos(angle)*r, y: cy + Math.sin(angle)*r,
+      vx:0, vy:0, r: type==='switch'?13: type==='storage'?15: 9, pinned:false };
+    SG.nodes.push(node);
+    SG.nodeMap[id] = node;
+    return node;
+  }
+
+  function addLink(srcId, tgtId, type, weight) {
+    if (!SG.nodeMap[srcId] || !SG.nodeMap[tgtId]) return;
+    SG.links.push({ source:srcId, target:tgtId, type, weight:weight||1 });
+  }
+
+  const validSwitches = new Set();
+  Object.keys(DATA.switchFabric).forEach(sw => {
+    if (fab==='ALL' || DATA.switchFabric[sw]===fab) validSwitches.add(sw);
+  });
+
+  let hostCount=0, switchCount=0, storCount=0;
+
+  if (SG.filter.switches) {
+    validSwitches.forEach(sw => {
+      if (search && !sw.toLowerCase().includes(search)) return;
+      addNode('sw:'+sw, sw, 'switch', {
+        switch:sw, fabric:DATA.switchFabric[sw],
+        hostCount: DATA.switchStorageDetail[sw] ? Object.values(DATA.switchStorageDetail[sw]).reduce((a,s)=>a+s.size,0):0,
+        storageCount: DATA.switchStorageMap[sw] ? DATA.switchStorageMap[sw].size:0,
+      });
+      switchCount++;
+    });
+  }
+
+  const storageNodes = new Set();
+  if (SG.filter.storage) {
+    Object.keys(DATA.storageSwitchMap||{}).forEach(sk => {
+      const parts = sk.split('|');
+      const vendor = parts[0], kabinet = parts[1];
+      if (search && !vendor.toLowerCase().includes(search) && !(kabinet||'').toLowerCase().includes(search)) return;
+      const connSwitches = [...(DATA.storageSwitchMap[sk]||[])].filter(sw=>validSwitches.has(sw));
+      if (!connSwitches.length) return;
+      addNode('stor:'+sk, kabinet||vendor, 'storage', {
+        vendor, kabinet, sk,
+        hostCount: DATA.storageSwitchDetail[sk] ? Object.values(DATA.storageSwitchDetail[sk]).reduce((a,s)=>a+s.size,0):0,
+      });
+      storageNodes.add(sk);
+      storCount++;
+    });
+  }
+
+  if (SG.filter.hosts) {
+    Object.keys(DATA.hosts).forEach(name => {
+      if (search && !name.toLowerCase().includes(search)) return;
+      const stArr  = DATA.hostStorage[name]||[];
+      const status = getHostStatus(name);
+      const hostSwitches = [...(DATA.hostSwitches[name]||[])].filter(sw=>validSwitches.has(sw));
+      if (!hostSwitches.length && !stArr.length) return;
+      if (fab!=='ALL' && !hostSwitches.length) return;
+      const h = DATA.hosts[name];
+      addNode('host:'+name, name, 'host', {
+        name, os:h.os, vendor:h.vendor, kabinet:h.kabinet,
+        lokasyon:h.lokasyon, status, wwnCount:(DATA.hostWwns[name]||[]).length, storageArr:stArr,
+      });
+      hostCount++;
+      hostSwitches.forEach(sw => {
+        if (SG.nodeMap['sw:'+sw]) addLink('host:'+name, 'sw:'+sw, status==='ok'?'ok':'warn', 1);
+      });
+      stArr.forEach(st => {
+        if (!st.kabinet) return;
+        const sk=`${st.vendor}|${st.kabinet}`;
+        if (!storageNodes.has(sk)) return;
+        hostSwitches.forEach(sw => {
+          const key=`sw:${sw}|stor:${sk}`;
+          if (!SG._storLinkSeen.has(key)) {
+            SG._storLinkSeen.add(key);
+            if (SG.nodeMap['sw:'+sw] && SG.nodeMap['stor:'+sk]) addLink('sw:'+sw,'stor:'+sk,'storage',2);
+          }
+        });
+      });
+    });
+  }
+
+  document.getElementById('sg-stat-hosts').textContent    = `${hostCount} host`;
+  document.getElementById('sg-stat-switches').textContent = `${switchCount} switch`;
+  document.getElementById('sg-stat-cabs').textContent     = `${storCount} kabinet`;
+  document.getElementById('sg-stat-links').textContent    = `${SG.links.length} bağlantı`;
+  const hint = document.getElementById('sg-hint');
+  if (hint) hint.style.display = SG.nodes.length ? 'none' : 'block';
+}
+
+const SG_SPRING=0.04, SG_REPULSE=2800, SG_CENTER=0.003, SG_DAMP=0.82;
+const SG_IDEAL={ ok:100, warn:110, storage:90 };
+
+function sgTick() {
+  if (SG.frozen) return;
+  const nodes=SG.nodes, links=SG.links, N=nodes.length;
+  const canvas=sgCanvas(); if(!canvas) return;
+  const cx=canvas.width/(2*SG.transform.scale), cy=canvas.height/(2*SG.transform.scale);
+  for (let i=0;i<N;i++) {
+    const a=nodes[i]; if(a.pinned) continue;
+    for (let j=i+1;j<N;j++) {
+      const b=nodes[j];
+      const dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy||1, d=Math.sqrt(d2);
+      const f=SG_REPULSE/d2, fx=dx/d*f, fy=dy/d*f;
+      a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+    }
+  }
+  for (let i=0;i<links.length;i++) {
+    const l=links[i], a=SG.nodeMap[l.source], b=SG.nodeMap[l.target];
+    if(!a||!b) continue;
+    const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||1;
+    const ideal=SG_IDEAL[l.type]||100, f=(d-ideal)*SG_SPRING*l.weight;
+    const fx=dx/d*f, fy=dy/d*f;
+    if(!a.pinned){a.vx+=fx; a.vy+=fy;}
+    if(!b.pinned){b.vx-=fx; b.vy-=fy;}
+  }
+  for (let i=0;i<N;i++) {
+    const n=nodes[i]; if(n.pinned) continue;
+    n.vx+=(cx-n.x)*SG_CENTER; n.vy+=(cy-n.y)*SG_CENTER;
+    n.vx*=SG_DAMP; n.vy*=SG_DAMP; n.x+=n.vx; n.y+=n.vy;
+  }
+  SG.tick++;
+}
+
+function sgTickParticles() {
+  if (SG.tick%4===0 && SG.nodes.length<400 && SG.links.length) {
+    const l=SG.links[Math.floor(Math.random()*SG.links.length)];
+    const a=SG.nodeMap[l.source], b=SG.nodeMap[l.target];
+    if(a&&b) SG.particles.push({sx:a.x,sy:a.y,tx:b.x,ty:b.y,t:0,speed:0.012+Math.random()*0.008,type:l.type});
+  }
+  SG.particles=SG.particles.filter(p=>{p.t+=p.speed; return p.t<1;});
+}
+
+function sgHexAlpha(color, alpha) {
+  if (color.startsWith('#')) {
+    const r=parseInt(color.slice(1,3),16), g=parseInt(color.slice(3,5),16), b=parseInt(color.slice(5,7),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  if (color.startsWith('rgb(')) return color.replace('rgb(','rgba(').replace(')',`,${alpha})`);
+  return color;
+}
+
+function sgIsConn(node) {
+  if (!SG.selected) return true;
+  const sid=SG.selected.id;
+  return SG.links.some(l=>(l.source===sid&&l.target===node.id)||(l.target===sid&&l.source===node.id));
+}
+
+function sgDraw() {
+  const canvas=sgCanvas(); if(!canvas) return;
+  const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height, T=SG.transform;
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(T.x,T.y);
+  ctx.scale(T.scale,T.scale);
+
+  /* grid */
+  const gs=40;
+  ctx.fillStyle='rgba(94,112,144,0.05)';
+  const ox=((-T.x/T.scale)%gs+gs)%gs, oy=((-T.y/T.scale)%gs+gs)%gs;
+  for(let gx=-ox; gx<W/T.scale; gx+=gs) for(let gy=-oy; gy<H/T.scale; gy+=gs) {
+    ctx.beginPath(); ctx.arc(gx,gy,1,0,Math.PI*2); ctx.fill();
+  }
+
+  /* links */
+  SG.links.forEach(l => {
+    const a=SG.nodeMap[l.source], b=SG.nodeMap[l.target]; if(!a||!b) return;
+    const hi=SG.selected&&(SG.selected.id===l.source||SG.selected.id===l.target);
+    const dim=SG.selected&&!hi;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+    if(l.type==='storage'){
+      ctx.strokeStyle=dim?'rgba(192,132,252,0.05)':hi?'rgba(192,132,252,0.85)':'rgba(192,132,252,0.22)';
+      ctx.lineWidth=dim?.5:hi?2:1; ctx.setLineDash([4,4]);
+    } else if(l.type==='warn'){
+      ctx.strokeStyle=dim?'rgba(232,132,75,0.05)':hi?'rgba(232,132,75,0.9)':'rgba(232,132,75,0.3)';
+      ctx.lineWidth=dim?.5:hi?2:1; ctx.setLineDash([]);
+    } else {
+      ctx.strokeStyle=dim?'rgba(75,232,160,0.04)':hi?'rgba(75,232,160,0.9)':'rgba(75,232,160,0.18)';
+      ctx.lineWidth=dim?.5:hi?2:1; ctx.setLineDash([]);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  });
+
+  /* particles */
+  SG.particles.forEach(p => {
+    const px=p.sx+(p.tx-p.sx)*p.t, py=p.sy+(p.ty-p.sy)*p.t;
+    ctx.beginPath(); ctx.arc(px,py,2.2,0,Math.PI*2);
+    ctx.fillStyle=p.type==='storage'?'rgba(192,132,252,0.85)':p.type==='warn'?'rgba(232,132,75,0.85)':'rgba(75,232,160,0.85)';
+    ctx.fill();
+  });
+
+  /* nodes */
+  SG.nodes.forEach(n => {
+    const sel=SG.selected&&SG.selected.id===n.id;
+    const hov=SG.hover&&SG.hover.id===n.id;
+    const dim=SG.selected&&!sel&&!sgIsConn(n);
+    const color=n.type==='switch'?SG_COLORS.switch():n.type==='storage'?SG_COLORS.storage():SG_COLORS.host();
+    ctx.globalAlpha=dim?0.12:1;
+
+    if(sel||hov){
+      ctx.beginPath(); ctx.arc(n.x,n.y,n.r+10,0,Math.PI*2);
+      const grd=ctx.createRadialGradient(n.x,n.y,n.r,n.x,n.y,n.r+12);
+      grd.addColorStop(0,sgHexAlpha(color,0.35)); grd.addColorStop(1,'transparent');
+      ctx.fillStyle=grd; ctx.fill();
+    }
+
+    ctx.beginPath();
+    if(n.type==='switch'){
+      ctx.moveTo(n.x,n.y-n.r); ctx.lineTo(n.x+n.r,n.y); ctx.lineTo(n.x,n.y+n.r); ctx.lineTo(n.x-n.r,n.y); ctx.closePath();
+    } else if(n.type==='storage'){
+      const rr=4,sz=n.r;
+      ctx.moveTo(n.x-sz+rr,n.y-sz); ctx.lineTo(n.x+sz-rr,n.y-sz);
+      ctx.arcTo(n.x+sz,n.y-sz,n.x+sz,n.y-sz+rr,rr); ctx.lineTo(n.x+sz,n.y+sz-rr);
+      ctx.arcTo(n.x+sz,n.y+sz,n.x+sz-rr,n.y+sz,rr); ctx.lineTo(n.x-sz+rr,n.y+sz);
+      ctx.arcTo(n.x-sz,n.y+sz,n.x-sz,n.y+sz-rr,rr); ctx.lineTo(n.x-sz,n.y-sz+rr);
+      ctx.arcTo(n.x-sz,n.y-sz,n.x-sz+rr,n.y-sz,rr); ctx.closePath();
+    } else {
+      ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    }
+
+    ctx.fillStyle=sel?sgHexAlpha(color,0.5):sgHexAlpha(color,0.15);
+    ctx.strokeStyle=color;
+    ctx.lineWidth=sel?2.5:hov?2:1.5;
+    ctx.fill(); ctx.stroke();
+
+    if(T.scale>0.42||sel||hov){
+      ctx.font=(sel?'bold ':'')+'8px \'JetBrains Mono\',monospace';
+      ctx.fillStyle=sel?SG_COLORS.bright():SG_COLORS.text();
+      ctx.textAlign='center';
+      let lbl=n.label;
+      if(ctx.measureText(lbl).width>68) lbl=lbl.substring(0,10)+'…';
+      ctx.fillText(lbl,n.x,n.y+n.r+11);
+    }
+    ctx.globalAlpha=1;
+  });
+  ctx.restore();
+}
+
+function sgLoop() {
+  sgTick(); sgTickParticles(); sgDraw();
+  SG.raf=requestAnimationFrame(sgLoop);
+}
+
+function sgHit(mx,my) {
+  const T=SG.transform, wx=(mx-T.x)/T.scale, wy=(my-T.y)/T.scale;
+  let best=null, bd=Infinity;
+  SG.nodes.forEach(n=>{
+    const d=Math.hypot(wx-n.x,wy-n.y);
+    if(d<Math.max(n.r+6,12)&&d<bd){best=n;bd=d;}
+  });
+  return best;
+}
+
+function sgBindEvents() {
+  const canvas=sgCanvas(); if(!canvas||canvas._sgBound) return;
+  canvas._sgBound=true;
+
+  canvas.addEventListener('mousemove',e=>{
+    const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    SG.hover=sgHit(mx,my);
+    canvas.style.cursor=SG.hover?'pointer':SG.drag?'grabbing':SG.pan?'grabbing':'grab';
+    if(SG.drag){
+      const T=SG.transform;
+      SG.drag.node.x=(mx-T.x)/T.scale; SG.drag.node.y=(my-T.y)/T.scale;
+      SG.drag.node.vx=0; SG.drag.node.vy=0;
+    } else if(SG.pan){
+      SG.transform.x+=mx-SG.pan.lastX; SG.transform.y+=my-SG.pan.lastY;
+      SG.pan.lastX=mx; SG.pan.lastY=my;
+    }
+  });
+
+  canvas.addEventListener('mousedown',e=>{
+    const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    const hit=sgHit(mx,my);
+    if(hit){SG.drag={node:hit}; hit.pinned=true;}
+    else SG.pan={lastX:mx,lastY:my};
+  });
+
+  canvas.addEventListener('mouseup',()=>{
+    if(SG.drag) SG.drag.node.pinned=false;
+    SG.drag=null; SG.pan=null;
+  });
+
+  let clickMoved=false;
+  canvas.addEventListener('mousedown',()=>{clickMoved=false;});
+  canvas.addEventListener('mousemove',()=>{clickMoved=true;});
+  canvas.addEventListener('click',e=>{
+    if(clickMoved&&SG.drag) return;
+    const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    const hit=sgHit(mx,my);
+    SG.selected=(hit&&SG.selected&&SG.selected.id===hit.id)?null:hit;
+    sgRenderDetail(SG.selected);
+  });
+
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    const delta=e.deltaY<0?1.12:0.9, T=SG.transform;
+    T.x=mx-(mx-T.x)*delta; T.y=my-(my-T.y)*delta;
+    T.scale=Math.max(0.08,Math.min(8,T.scale*delta));
+  },{passive:false});
+}
+
+function sgRenderDetail(node) {
+  const empty=document.getElementById('sg-detail-empty');
+  const content=document.getElementById('sg-detail-content');
+  if(!node){empty.style.display='';content.style.display='none';return;}
+  empty.style.display='none'; content.style.display='';
+
+  const connLinks=SG.links.filter(l=>l.source===node.id||l.target===node.id);
+  const connNodes=connLinks.map(l=>SG.nodeMap[l.source===node.id?l.target:l.source]).filter(Boolean);
+
+  function sgE(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  let h='';
+  h+=`<div class="sg-det-title">${sgE(node.label)}</div>`;
+  h+=`<span class="sg-det-type ${node.type}">${node.type.toUpperCase()}</span>`;
+
+  if(node.type==='host'){
+    const m=node.meta;
+    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bilgi</div><div class="sg-det-kv">`;
+    if(m.os)       h+=`<span class="sg-det-k">OS</span><span class="sg-det-v">${sgE(m.os)}</span>`;
+    if(m.vendor)   h+=`<span class="sg-det-k">Vendor</span><span class="sg-det-v">${sgE(m.vendor)}</span>`;
+    if(m.kabinet)  h+=`<span class="sg-det-k">Kabinet</span><span class="sg-det-v">${sgE(m.kabinet)}</span>`;
+    if(m.lokasyon) h+=`<span class="sg-det-k">Lokasyon</span><span class="sg-det-v">${sgE(m.lokasyon)}</span>`;
+    h+=`<span class="sg-det-k">WWN</span><span class="sg-det-v">${m.wwnCount} adet</span>`;
+    h+=`</div></div>`;
+    const stLbl={ok:'✓ Sağlıklı','no-hba':'⚠ HBA Yok','no-fabric':'⚠ Fabric Yok','no-storage':'⚠ Storage Yok','partial-ghost':'⚠ Partial Ghost',empty:'— Boş'};
+    const stCls=m.status==='ok'?'ok':m.status==='empty'?'':'warn';
+    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Path Durumu</div><span class="sg-det-tag ${stCls}">${stLbl[m.status]||m.status}</span></div>`;
+    if(m.storageArr&&m.storageArr.length){
+      h+=`<div class="sg-det-section"><div class="sg-det-section-title">Storage Atamalar</div>`;
+      m.storageArr.forEach(s=>{h+=`<span class="sg-det-tag">${sgE(s.vendor)}: ${sgE(s.kabinet)}${s.provTB?' — '+s.provTB.toFixed(1)+' TB':''}</span>`;});
+      h+=`</div>`;
+    }
+  }
+
+  if(node.type==='switch'){
+    const m=node.meta;
+    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bilgi</div><div class="sg-det-kv">`;
+    h+=`<span class="sg-det-k">Fabric</span><span class="sg-det-v">${sgE(m.fabric||'?')}</span>`;
+    h+=`<span class="sg-det-k">Bağlı Host</span><span class="sg-det-v">${m.hostCount}</span>`;
+    h+=`<span class="sg-det-k">Storage</span><span class="sg-det-v">${m.storageCount} kabinet</span>`;
+    h+=`</div></div>`;
+  }
+
+  if(node.type==='storage'){
+    const m=node.meta;
+    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bilgi</div><div class="sg-det-kv">`;
+    h+=`<span class="sg-det-k">Vendor</span><span class="sg-det-v">${sgE(m.vendor)}</span>`;
+    h+=`<span class="sg-det-k">Kabinet</span><span class="sg-det-v">${sgE(m.kabinet)}</span>`;
+    h+=`<span class="sg-det-k">Host Sayısı</span><span class="sg-det-v">${m.hostCount}</span>`;
+    h+=`</div></div>`;
+  }
+
+  if(connNodes.length){
+    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bağlı (${connNodes.length})</div>`;
+    [...connNodes].sort((a,b)=>a.type.localeCompare(b.type)||a.label.localeCompare(b.label))
+      .slice(0,30).forEach(n=>{h+=`<span class="sg-det-tag">${sgE(n.label)}</span>`;});
+    if(connNodes.length>30) h+=`<span class="sg-det-tag">+${connNodes.length-30} daha</span>`;
+    h+=`</div>`;
+  }
+
+  content.innerHTML=h;
+}
+
+function sgFit() {
+  if(!SG.nodes.length) return;
+  const canvas=sgCanvas(); if(!canvas) return;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  SG.nodes.forEach(n=>{minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x);maxY=Math.max(maxY,n.y);});
+  const pad=60, W=canvas.width-pad*2, H=canvas.height-pad*2;
+  const nW=maxX-minX||1, nH=maxY-minY||1;
+  const scale=Math.min(W/nW,H/nH,2.5);
+  SG.transform.scale=scale;
+  SG.transform.x=pad-minX*scale+(W-nW*scale)/2;
+  SG.transform.y=pad-minY*scale+(H-nH*scale)/2;
+}
+
+function sgResize() {
+  const wrap=document.getElementById('sg-canvas-wrap'), canvas=sgCanvas();
+  if(!wrap||!canvas) return;
+  canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight;
+}
+
+function sgRebuild() {
+  SG.selected=null; SG.particles=[];
+  sgRenderDetail(null);
+  sgBuildGraph();
+  setTimeout(sgFit, 80);
+}
+
+function initSanGraf() {
+  if(SG.built) return;
+  SG.built=true;
+
+  sgResize();
+  sgBindEvents();
+  sgBuildGraph();
+  setTimeout(sgFit, 120);
+
+  document.getElementById('sg-fit-btn')?.addEventListener('click', sgFit);
+  document.getElementById('sg-reset-btn')?.addEventListener('click', ()=>{
+    SG.transform={x:0,y:0,scale:1}; SG.selected=null;
+    sgRenderDetail(null); sgBuildGraph(); setTimeout(sgFit,80);
+  });
+  document.getElementById('sg-freeze-btn')?.addEventListener('click', function(){
+    SG.frozen=!SG.frozen;
+    this.textContent=SG.frozen?'▶ Çalıştır':'❄ Dondur';
+    this.style.color=SG.frozen?'var(--accent3)':'';
+    this.style.borderColor=SG.frozen?'var(--accent3)':'';
+  });
+  document.getElementById('sg-search')?.addEventListener('input', e=>{
+    SG.filter.search=e.target.value; sgRebuild();
+  });
+  document.querySelectorAll('.sg-chip[data-sgfab]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.sg-chip[data-sgfab]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      SG.filter.fab=btn.dataset.sgfab;
+      sgRebuild();
+    });
+  });
+  ['hosts','switches','storage'].forEach(t=>{
+    document.getElementById(`sg-show-${t}`)?.addEventListener('change',e=>{
+      SG.filter[t]=e.target.checked; sgRebuild();
+    });
+  });
+  window.addEventListener('resize',()=>{sgResize(); sgFit();});
+  sgLoop();
+}
+
+/* ════════════════════════════════════════════════════════════
+   END SAN GRAF
+════════════════════════════════════════════════════════════ */
 
 </script>
