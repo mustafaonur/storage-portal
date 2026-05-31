@@ -1491,7 +1491,7 @@ td, th, .sp-num, .footer-open,
 .layer-ring-unit { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 3px; }
 
 /* ── 6. SECTION ZONES: dual-radial ambient light ── */
-.section-zone { position: relative; padding: 2px 0 16px; }
+.section-zone { position: relative; padding: 2px 0 16px; content-visibility: auto; contain-intrinsic-size: auto 600px; }
 
 .zone-analytics::before {
   content: ''; position: absolute; inset: -32px 0; pointer-events: none; z-index: 0;

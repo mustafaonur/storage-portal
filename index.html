@@ -8,6 +8,7 @@
 <title>Enterprise Storage Portal</title>
 <link rel="stylesheet" href="./assets/css/storage-styles.css">
 <link rel="stylesheet" href="./assets/css/components.css">
+<link rel="stylesheet" href="./assets/css/premium.css">
   <style>
 .layer-grid {
     display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;
@@ -223,6 +224,7 @@
 <script src="./assets/js/asset-inventory.js"></script>
 <script src="./assets/js/report-export.js"></script>
 <script src="./assets/js/micro-interactions.js" defer></script>
+<script src="./assets/js/premium.js" defer></script>
 
 </head>
 <body>
@@ -424,6 +426,10 @@
     </div>
 
   </div>
+
+  <!-- ═══ PREMIUM: recently visited + changes strip ═══ -->
+  <div id="recently-visited-container"></div>
+  <div id="changes-strip-container"></div>
 
   <!-- ========== ANALYTICS ========== -->
   <div class="section-zone zone-analytics">
@@ -1323,6 +1329,9 @@ function render() {
 
   // Trigger count-up animations now that values are set
   if (typeof triggerStatCountUps === 'function') triggerStatCountUps();
+
+  // Premium features: preview data, sparklines, changes strip
+  if (typeof premiumOnRender === 'function') premiumOnRender(STAT);
 
   // Debug
   LOG.push('');
