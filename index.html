@@ -116,6 +116,27 @@
     text-transform:uppercase;
   }
 .footer-open.dim   { color:var(--text-dim); }
+/* ── GKD PILL TABS ───────────────────────────────────────── */
+.gkd-tab {
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px; letter-spacing:1.2px;
+    text-transform:uppercase;
+    padding:3px 10px;
+    cursor:pointer;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+.gkd-tab:hover {
+    border-color:var(--accent2);
+    color:var(--text);
+  }
+.gkd-tab-active {
+    border-color:var(--accent2);
+    color:var(--accent2);
+    background:rgba(75,159,232,.07);
+  }
 #dbg-btn {
     margin-top:16px;
     font-size:10px; color:var(--text-dim);
@@ -385,7 +406,10 @@
     <!-- Change Log -->
     <div style="background:var(--surface);border:1px solid var(--border)">
       <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Gece Ne Oldu</div>
+        <div>
+          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Değişim Günlüğü</div>
+          <div style="font-size:9px;color:var(--text-dim);opacity:.55;margin-top:2px;letter-spacing:.5px">gece ne oldu</div>
+        </div>
         <div style="display:flex;align-items:center;gap:10px">
           <canvas id="velocity-spark" width="80" height="24" title="14 günlük değişim hızı (TB/gün)" style="opacity:.7"></canvas>
           <div style="font-size:9px;color:var(--text-dim)" id="cl-date-range">—</div>
@@ -398,16 +422,16 @@
 
     <!-- Garanti + Kabinet Durumu (unified card with tab switcher) -->
     <div style="background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column">
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span id="gkd-title" style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Garanti Durumu</span>
-          <!-- Circle indicators -->
-          <div style="display:flex;gap:6px">
-            <span id="gkd-dot-warranty" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent2);border:2px solid var(--accent2);cursor:pointer;opacity:1;transition:opacity .2s" role="button" tabindex="0" title="Garanti Durumu"></span>
-            <span id="gkd-dot-cabinet" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:transparent;border:2px solid var(--border);cursor:pointer;opacity:.5;transition:opacity .2s" role="button" tabindex="0" title="Kabinet Durumu"></span>
-          </div>
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span id="gkd-title" style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Kontrat & Kapasite</span>
+          <a id="gkd-link" href="./management.html" style="font-size:9px;color:var(--accent2);text-decoration:none">Kontrat Takip →</a>
         </div>
-        <a id="gkd-link" href="./management.html" style="font-size:9px;color:var(--accent2);text-decoration:none">Kontrat Takip →</a>
+        <!-- Pill tab switcher -->
+        <div style="display:flex;gap:6px">
+          <button id="gkd-tab-warranty" class="gkd-tab gkd-tab-active" type="button">Garanti Durumu</button>
+          <button id="gkd-tab-cabinet"  class="gkd-tab" type="button">Kabinet Doluluk</button>
+        </div>
       </div>
       <div style="position:relative;min-height:200px">
         <!-- Garanti panel -->
@@ -1034,7 +1058,7 @@
   <div id="dbg-out"></div>
 
   <!-- ALARM MODAL -->
-  <div id="alarm-modal" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;" id="alarm-modal-backdrop">
+  <div id="alarm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;">
     <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);width:90%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;">
       <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">&#9888; Kapasite Alarm Listesi</div>
@@ -1052,7 +1076,7 @@
 
 
 <!-- LAST-RUN MODAL -->
-<div id="last-run-modal" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;display:none;align-items:center;justify-content:center">
+<div id="last-run-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);max-width:640px;width:90%;max-height:80vh;overflow-y:auto">
     <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Son Tarama Detayı</div>
@@ -1589,7 +1613,7 @@ async function loadChangeLog() {
   const fetchCsv = async u => {
     try {
       const txt = await fetchCSVText(u);
-      const _t = await fetchCSVText(u); return parseCSV(_t);
+      return parseCSV(txt);
     } catch { return []; }
   };
 
@@ -1686,10 +1710,10 @@ function loadWarranty() {
     }
 
     el.innerHTML = items.map(r => {
-      const color = r.days < 0 ? 'var(--danger)' : r.days < 90 ? 'var(--warn)' : r.days < 180 ? 'var(--accent)' : 'var(--accent3)';
+      const color = r.days < 0 ? 'var(--danger)' : r.days < 30 ? 'var(--danger)' : r.days < 90 ? 'var(--warn)' : r.days < 180 ? 'var(--accent)' : 'var(--accent3)';
       const dayStr = r.days < 0 ? `${Math.abs(r.days)} gün önce doldu` : r.days === 0 ? 'BUGÜN' : `${r.days} gün kaldı`;
       const icon = r.days < 0 ? '✗' : r.days < 90 ? '⚠' : '✓';
-      const statusLbl = r.days < 0 ? 'SÜRESİ DOLDU' : r.days < 180 ? 'KRİTİK' : r.days < 365 ? 'UYARI' : 'SAKİN';
+      const statusLbl = r.days < 0 ? 'SÜRESİ DOLDU' : r.days < 30 ? 'ACİL' : r.days < 90 ? 'KRİTİK' : r.days < 180 ? 'UYARI' : 'NORMAL';
       return `<div style="display:flex;align-items:center;gap:8px;padding:5px 14px;border-bottom:1px solid rgba(30,45,68,.4)">
         <span style="color:${color};font-size:12px;flex-shrink:0">${icon}</span>
         <div style="flex:1;overflow:hidden">
@@ -1738,21 +1762,20 @@ function loadCabinetStatus() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   GKD TAB SWITCHER — Garanti/Kabinet Durumu circle toggle
+   GKD TAB SWITCHER — pill tab toggle
 ════════════════════════════════════════════════════════════ */
 function switchGkdTab(tab) {
   const showWarranty = tab === 'warranty';
   document.getElementById('gkd-panel-warranty').style.display = showWarranty ? 'block' : 'none';
-  document.getElementById('gkd-panel-cabinet').style.display = showWarranty ? 'none' : 'block';
-  document.getElementById('gkd-dot-warranty').style.background = showWarranty ? 'var(--accent2)' : 'transparent';
-  document.getElementById('gkd-dot-warranty').style.borderColor = showWarranty ? 'var(--accent2)' : 'var(--border)';
-  document.getElementById('gkd-dot-warranty').style.opacity = showWarranty ? '1' : '.5';
-  document.getElementById('gkd-dot-cabinet').style.background = showWarranty ? 'transparent' : 'var(--danger)';
-  document.getElementById('gkd-dot-cabinet').style.borderColor = showWarranty ? 'var(--border)' : 'var(--danger)';
-  document.getElementById('gkd-dot-cabinet').style.opacity = showWarranty ? '.5' : '1';
-  document.getElementById('gkd-title').textContent = showWarranty ? 'Garanti Durumu' : 'Kabinet Durumu';
-  document.getElementById('gkd-link').textContent = showWarranty ? 'Kontrat Takip →' : '%70+ Doluluk';
-  document.getElementById('gkd-link').href = showWarranty ? './management.html' : '#';
+  document.getElementById('gkd-panel-cabinet').style.display  = showWarranty ? 'none' : 'block';
+
+  const tabW = document.getElementById('gkd-tab-warranty');
+  const tabC = document.getElementById('gkd-tab-cabinet');
+  if (tabW) tabW.classList.toggle('gkd-tab-active', showWarranty);
+  if (tabC) tabC.classList.toggle('gkd-tab-active', !showWarranty);
+
+  document.getElementById('gkd-link').textContent = showWarranty ? 'Kontrat Takip →' : 'Tüm Kapasite →';
+  document.getElementById('gkd-link').href = showWarranty ? './management.html' : './capacity-planner.html';
 }
 
 main();
@@ -1795,7 +1818,6 @@ async function loadRunway() {
 
   for (const src of SOURCES) {
     for (let di = 0; di < dates.length; di += 3) {
-      const chunk = dates.slice(di, i => i + 3).slice(0, 3);
       const chunkDates = dates.slice(di, di + 3);
       await Promise.allSettled(chunkDates.map(async (d, ci) => {
         const url  = src.url.replace('{D}', d);
@@ -2104,15 +2126,15 @@ renderVelocitySparkline();
     alarmCard.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAlarmModal(); } });
   }
 
-  const dotWarranty = document.getElementById('gkd-dot-warranty');
-  const dotCabinet  = document.getElementById('gkd-dot-cabinet');
-  if (dotWarranty) {
-    dotWarranty.addEventListener('click', () => switchGkdTab('warranty'));
-    dotWarranty.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchGkdTab('warranty'); } });
+  const tabWarranty = document.getElementById('gkd-tab-warranty');
+  const tabCabinet  = document.getElementById('gkd-tab-cabinet');
+  if (tabWarranty) {
+    tabWarranty.addEventListener('click', () => switchGkdTab('warranty'));
+    tabWarranty.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchGkdTab('warranty'); } });
   }
-  if (dotCabinet) {
-    dotCabinet.addEventListener('click', () => switchGkdTab('cabinet'));
-    dotCabinet.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchGkdTab('cabinet'); } });
+  if (tabCabinet) {
+    tabCabinet.addEventListener('click', () => switchGkdTab('cabinet'));
+    tabCabinet.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchGkdTab('cabinet'); } });
   }
 
   const dbgBtn = document.getElementById('dbg-btn');
@@ -2121,7 +2143,7 @@ renderVelocitySparkline();
     dbgBtn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('dbg-out').classList.toggle('show'); } });
   }
 
-  const alarmBackdrop = document.getElementById('alarm-modal-backdrop');
+  const alarmBackdrop = document.getElementById('alarm-modal');
   const alarmClose    = document.getElementById('alarm-modal-close');
   if (alarmBackdrop) alarmBackdrop.addEventListener('click', e => { if (e.target === alarmBackdrop) closeAlarmModal(); });
   if (alarmClose)    alarmClose.addEventListener('click', closeAlarmModal);

@@ -199,7 +199,7 @@
 
     container.innerHTML =
       '<div class="recently-visited">' +
-      '<div class="recently-visited-label">↩ Jump back to</div>' +
+      '<div class="recently-visited-label">↩ Son Ziyaretler</div>' +
       '<div class="recently-visited-list">' + items + '</div>' +
       '</div>';
   }
@@ -467,7 +467,7 @@
 
     container.innerHTML =
       '<div class="changes-strip">' +
-      '<div class="changes-header" onclick="var b=this.nextElementSibling;b.classList.toggle(\'open\')">' +
+      '<div class="changes-header" data-toggle-changes>' +
         '<span>⚡ Changes since last scan</span>' +
         '<span class="changes-badge">' + changes.length + '</span>' +
       '</div>' +
@@ -569,6 +569,14 @@
     recordVisit();
     initBreadcrumb();
     initHoverPreview();
+
+    /* Event delegation for changes strip toggle */
+    document.addEventListener('click', function(e) {
+      var hdr = e.target.closest('[data-toggle-changes]');
+      if (!hdr) return;
+      var body = hdr.nextElementSibling;
+      if (body) body.classList.toggle('open');
+    });
   }
 
   if (document.readyState === 'loading') {
