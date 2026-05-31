@@ -563,15 +563,17 @@ function tpSwitch(name, btn){
 
   document.querySelectorAll('.tp-tabs > .tp-tab').forEach(b=>b.classList.remove('active'));
 
-  document.getElementById('tppage-'+name).classList.add('active');
+  const page = document.getElementById('tppage-'+name);
+
+  if(page) page.classList.add('active');
 
   if(btn) btn.classList.add('active');
 
   if(name === 'schema' && SCH.built) drawSchema();
 
-  if(name === 'visnet') vn3dInit();
+  if(name === 'matrix')       buildFabricMatrix();
 
-  if(name === 'layout') slFlowInit();
+  if(name === 'switchdetail') initSwitchDetail();
 
 }
 
@@ -1561,7 +1563,10 @@ window.addEventListener('DOMContentLoaded', () => {
    FABRIC MATRİSİ — Switch × Storage heat-map
    Hücre değeri: o switch üzerinden o storage'a erişen host sayısı
 ════════════════════════════════════════════════════════════ */
+const MTX = { built: false };
 function buildFabricMatrix() {
+  if (MTX.built) return;
+  MTX.built = true;
   const wrap = document.getElementById('matrix-wrap');
   if (!wrap) return;
 
@@ -1664,12 +1669,15 @@ function buildSwitchDetailSelector() {
     switches.map(sw => {
       const fab = DATA.switchFabric[sw] || '?';
       const hostCount = Object.values(DATA.switchStorageDetail[sw] || {}).reduce((s,v) => s + v.size, 0);
-      return `<option value="${esc(sw)}">F${esc(fab)} · ${esc(sw)} (${hostCount} host)`;
+      return `<option value="${esc(sw)}">F${esc(fab)} · ${esc(sw)} (${hostCount} host)</option>`;
     }).join('');
 
-  sel.addEventListener('change', () => renderSwitchDetail(sel.value));
+  // Attach change listener only once via SD guard
+  if (!SD.listenerAttached) {
+    sel.addEventListener('change', () => renderSwitchDetail(sel.value));
+    SD.listenerAttached = true;
+  }
 }
-
 function renderSwitchDetail(sw) {
   const el  = document.getElementById('sd-content');
   const sum = document.getElementById('sd-summary');
@@ -1745,30 +1753,17 @@ function renderSwitchDetail(sw) {
   el.innerHTML = html;
 }
 
-// Hook into tpSwitch to init new tabs
-const _origTpSwitch = tpSwitch;
-function tpSwitch(name, btn) {
-  document.querySelectorAll('.tp-page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tp-tabs > .tp-tab').forEach(b => b.classList.remove('active'));
-  const page = document.getElementById('tppage-' + name);
-  if (page) page.classList.add('active');
-  if (btn) btn.classList.add('active');
-
-  if (name === 'schema' && SCH.built) drawSchema();
-  if (name === 'matrix')      buildFabricMatrix();
-  if (name === 'switchdetail') buildSwitchDetailSelector();
+// initSwitchDetail: builds selector once, subsequent calls only re-render if needed
+const SD = { built: false };
+function initSwitchDetail() {
+  if (!SD.built) {
+    buildSwitchDetailSelector();
+    SD.built = true;
+  }
 }
-
-// Also remove old vn3d/slFlow calls that no longer exist
-// (they were inside the old tpSwitch — now overridden above)
 
 /* ════════════ EVENT DELEGATION — topology.html ════════════ */
 (function wireEvents() {
-  const db = typeof debounce === 'function' ? debounce : (fn) => fn;
-  const wire = (id, fn, ev='input') => { const el=document.getElementById(id); if(el && fn) el.addEventListener(ev, fn); };
-  wire('searchBox',  db(onSearch), 'input');
-  wire('sch-filter', db(schFilter), 'input');
-
   // Path-header accordion (event delegation — many cards)
   document.addEventListener('click', e => {
     const hdr = e.target.closest('.path-header');
@@ -1780,7 +1775,7 @@ function tpSwitch(name, btn) {
     }
   });
 
-  // Matrix drilldown (dynamically rendered SVG cells)
+  // Matrix drilldown
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-matrix-sw]');
     if (el) matrixDrilldown(el.dataset.matrixSw, el.dataset.matrixSk);
