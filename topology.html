@@ -25,7 +25,7 @@
 .sch-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);white-space:nowrap;}
 .sch-legend-item .ln{width:14px;height:2px;display:inline-block;}
 /* ─── SAN GRAF ─────────────────────────────────────────────── */
-.sg-layout{display:grid;grid-template-columns:200px 1fr 260px;gap:0;height:calc(100vh - 160px);min-height:540px;}
+.sg-layout{display:grid;grid-template-columns:200px 1fr 260px;gap:0;height:calc(100vh - 220px);min-height:520px;}
 .sg-sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:2px;}
 .sg-ctrl-section{margin-bottom:16px;}
 .sg-ctrl-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-weight:700;}
@@ -264,7 +264,11 @@
           <div class="sg-stat-row"><span class="sg-stat-dot" style="background:var(--accent)"></span><span id="sg-stat-switches">0 switch</span></div>
           <div class="sg-stat-row"><span class="sg-stat-dot" style="background:var(--c-stor)"></span><span id="sg-stat-cabs">0 kabinet</span></div>
           <div class="sg-stat-row"><span class="sg-stat-dot" style="background:var(--border)"></span><span id="sg-stat-links">0 bağlantı</span></div>
+          <div class="sg-stat-row" id="sg-stat-ghost-row" style="display:none"><span class="sg-stat-dot" style="background:var(--warn)"></span><span id="sg-stat-ghost" style="color:var(--warn)">0 ghost path</span></div>
         </div>
+      </div>
+      <div class="sg-ctrl-section" id="sg-back-section" style="display:none;margin-top:auto;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="sg-btn" id="sg-back-btn" style="border-color:var(--accent3);color:var(--accent3)">↩ Cluster Görünümü</button>
       </div>
     </div>
 
@@ -2017,6 +2021,14 @@ function sgBuildClusters(){
   document.getElementById('sg-stat-switches').textContent=`${swList.length} switch`;
   document.getElementById('sg-stat-cabs').textContent    =`${storList.length} kabinet`;
   document.getElementById('sg-stat-links').textContent   =`${SG.links.length} bağlantı`;
+  /* Ghost count */
+  const ghostCount=Object.keys(DATA.hosts).filter(n=>{const s=getHostStatus(n);return s!=='ok'&&s!=='empty';}).length;
+  const ghostRow=document.getElementById('sg-stat-ghost-row');
+  const ghostEl=document.getElementById('sg-stat-ghost');
+  if(ghostRow) ghostRow.style.display=ghostCount?'':'none';
+  if(ghostEl)  ghostEl.textContent=ghostCount+' ghost path';
+  const backSec=document.getElementById('sg-back-section');
+  if(backSec) backSec.style.display='none';
   const hint=document.getElementById('sg-hint');
   if(hint) hint.style.display=SG.nodes.length?'none':'block';
   const mi=document.getElementById('sg-mode-indicator');
@@ -2035,7 +2047,7 @@ function sgBuildExpand(swName){
     id:'sw:'+swName, label:swName, type:'switch',
     x:cx,y:cy, vx:0,vy:0, r:22, pinned:true,
     meta:{switch:swName,fabric:DATA.switchFabric[swName]||'?',hostCount:0,
-          storageCount:DATA.switchStorageMap[swName]?DATA.switchStorageMap[swName].size:0},
+          storageCount:(DATA.switchStorageMap&&DATA.switchStorageMap[swName])?DATA.switchStorageMap[swName].size:0},
   };
   SG.nodes.push(swNode); SG.nodeMap[swNode.id]=swNode;
 
@@ -2100,11 +2112,16 @@ function sgBuildExpand(swName){
   document.getElementById('sg-stat-switches').textContent=`1 switch`;
   document.getElementById('sg-stat-cabs').textContent    =`${storKeys.length} kabinet`;
   document.getElementById('sg-stat-links').textContent   =`${SG.links.length} bağlantı`;
+  /* Show back button in sidebar */
+  const backSec=document.getElementById('sg-back-section');
+  if(backSec) backSec.style.display='';
+  const ghostRow=document.getElementById('sg-stat-ghost-row');
+  if(ghostRow) ghostRow.style.display='none';
   const hint=document.getElementById('sg-hint');
   if(hint) hint.style.display='none';
   const mi=document.getElementById('sg-mode-indicator');
   if(mi){
-    mi.textContent=`↩ GERİ  ·  ${swName}  ·  ${allHosts.length} host${overflow?' (ilk 120)':''}`;
+    mi.textContent='↩ GERİ  ·  '+swName+'  ·  '+allHosts.length+' host'+(overflow?' (ilk 120)':'');
     mi.style.cursor='pointer';
   }
 }
@@ -2349,6 +2366,13 @@ function sgBindEvents(){
   document.getElementById('sg-mode-indicator')?.addEventListener('click',()=>{
     if(SG.mode==='expand') sgExitExpand();
   });
+  /* Escape key exits expand mode */
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&SG.mode==='expand'){
+      const page=document.getElementById('tppage-sangraf');
+      if(page&&page.classList.contains('active')) sgExitExpand();
+    }
+  });
 }
 
 function sgEnterExpand(swName){
@@ -2456,6 +2480,7 @@ function initSanGraf(){
   }
   tryBuild();
   document.getElementById('sg-fit-btn')?.addEventListener('click',sgFit);
+  document.getElementById('sg-back-btn')?.addEventListener('click',sgExitExpand);
   document.getElementById('sg-reset-btn')?.addEventListener('click',()=>{
     SG.mode='cluster'; SG.expandSw=null; SG.transform={x:0,y:0,scale:1};
     SG.selected=null; sgRenderDetail(null); sgBuildClusters(); setTimeout(sgFit,80);
