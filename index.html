@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="view-transition" content="same-origin">
 <title>Enterprise Storage Portal</title>
@@ -60,10 +60,10 @@
 .app-card.type-pmax::before   { background:var(--accent2); }
 .app-card.type-huawei::before  { background:var(--accent3); }
 .app-card.type-san::before     { background:var(--accent); }
-.app-card.type-pure::before    { background:#f67c00; }
-.app-card.type-netapp::before  { background:#00b4d8; }
-.app-card.type-hitachi::before { background:#cc2936; }
-.app-card.type-ecs::before     { background:#6e44b2; }
+.app-card.type-pure::before    { background:var(--c-pure); }
+.app-card.type-netapp::before  { background:var(--c-netapp); }
+.app-card.type-hitachi::before { background:var(--c-hitachi); }
+.app-card.type-ecs::before     { background:var(--c-ecs); }
 .app-card.type-report::before  { background:var(--accent2); }
 .app-card.type-app::before     { background:var(--accent2); }
 .app-card.type-zone::before    { background:#e8844b; }

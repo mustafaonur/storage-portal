@@ -95,6 +95,11 @@
   --hitachi:#e05f5f;
   --c-hitachi:#e05f5f;
 
+  /* Vendor accent tokens — additional vendors */
+  --c-netapp:  #00b4d8;
+  --c-pure:    #f67c00;
+  --c-ecs:     #6e44b2;
+
 }
 
 * {
@@ -1063,6 +1068,11 @@ header {
 .sp-mb-12 { margin-bottom:12px; }
 .sp-mb-14 { margin-bottom:14px; }
 .sp-mb-16 { margin-bottom:16px; }
+.sp-mb-18 { margin-bottom:18px; }
+.sp-mb-20 { margin-bottom:20px; }
+.sp-mb-24 { margin-bottom:24px; }
+.sp-mb-28 { margin-bottom:28px; }
+.sp-mb-32 { margin-bottom:32px; }
 .sp-mt-2 { margin-top:2px; }
 .sp-mt-3 { margin-top:3px; }
 .sp-mt-12 { margin-top:12px; }
@@ -1091,12 +1101,7 @@ header {
 .sp-table-info { font-size:10px; color:var(--text-dim); padding:8px 0 10px; }
 .sp-flex { display:flex; }
 .sp-between { justify-content:space-between; align-items:center; }
-.sp-mt-3 { margin-top:3px; }
-.sp-bl-accent { border-left:3px solid var(--accent); }
-.sp-bl-accent2 { border-left:3px solid var(--accent2); }
-.sp-bl-accent3 { border-left:3px solid var(--accent3); }
-.sp-bl-purple { border-left:3px solid var(--purple); }
-.sp-bl-danger { border-left:3px solid var(--danger); }
+/* .sp-bl-* removed — superseded by .sp-border-* utilities above */
 .sp-fs-9 { font-size:9px; }
 .sp-fs-10 { font-size:10px; }
 .sp-fs-11 { font-size:11px; }
@@ -1249,11 +1254,7 @@ header {
 
 }
 
-@keyframes spin {
-
-  to { transform: rotate(360deg); }
-
-}
+/* @keyframes spin — defined in components.css */
 
 .tip {
 
@@ -1283,11 +1284,7 @@ header {
 
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-
-::-webkit-scrollbar-track { background: var(--bg); }
-
-::-webkit-scrollbar-thumb { background: var(--border); }
+/* ::-webkit-scrollbar — defined with richer styles in components.css */
 
 /* Responsive */
 
@@ -1341,6 +1338,11 @@ header {
   /* Vendor */
   --hitachi:    #b84040;
   --c-hitachi:  #b84040;
+
+  /* Vendor accents — lightened for light bg */
+  --c-netapp:   #0078a0;
+  --c-pure:     #c05800;
+  --c-ecs:      #5230a0;
 
   /* Node colours — slightly desaturated for light bg */
   --c-host:     #1a8c4a;

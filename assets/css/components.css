@@ -2,6 +2,10 @@
    components.css  —  shared component library
    All inline <style> blocks from *.html were consolidated here.
    Each HTML file now only keeps truly page-specific rules.
+
+   Load order: storage-styles.css → components.css → premium.css
+   This file intentionally re-declares body/shell to override any
+   differences in storage-styles.css (e.g. body::before opacity).
    ================================================================ */
 
 /* ── RESET ───────────────────────────────────────────────────── */
@@ -800,5 +804,4 @@ th:hover     { color: var(--text); }
 tr:hover td  { background: rgba(255,255,255,.02); }
 
 .map-status  { font-size: 10px; padding: 2px 8px; border-radius: 2px; }
-.mapped      { background: rgba(75,232,160,.15); color: var(--accent3); }
-.unmapped    { background: rgba(90,112,144,.15); color: var(--text-dim); }
+/* .mapped / .unmapped — defined above with full padding/radius rules */

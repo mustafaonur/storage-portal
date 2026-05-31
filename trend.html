@@ -12,7 +12,7 @@
 .sbtn.aw.active{color:var(--warn);border-color:var(--warn);background:rgba(232,132,75,.08);}
 .sbtn.ap.active{color:var(--purple);border-color:var(--purple);background:rgba(192,132,252,.08);}
 .sbtn.ar.active{color:var(--danger);border-color:var(--danger);background:rgba(232,75,75,.08);}
-.sbtn.ac.active{color:#00b4d8;border-color:#00b4d8;background:rgba(0,180,216,.08);}
+.sbtn.ac.active{color:var(--c-netapp);border-color:var(--c-netapp);background:rgba(0,180,216,.08);}
 .badge-cnt{font-size:9px;padding:1px 5px;background:var(--surface2);border:1px solid var(--border);margin-left:4px;}
 .delta-band{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
 .dc{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--border);padding:12px 16px;}
@@ -40,7 +40,7 @@ thead{position:sticky;top:0;z-index:2;}
 .loading-bar progress::-webkit-progress-value{background:var(--accent2);}
   </style>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="view-transition" content="same-origin">
 <title>Trend Analizi · Storage Portal</title>
@@ -245,7 +245,7 @@ const VCFG = {
 
   netapp:{
 
-    label:'NetApp', color:'#00b4d8', cls:'ac',
+    label:'NetApp', color:'var(--c-netapp)', cls:'ac',
 
     hist:'./data/NetApp/_history/NetApp_Dashboard_{D}.csv',
 
