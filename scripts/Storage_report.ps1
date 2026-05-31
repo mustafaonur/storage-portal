@@ -265,7 +265,7 @@ if (-not ([System.Management.Automation.PSTypeName]'SSLBypass').Type) {
 [SSLBypass]::Enable()
 
 # Yollar
-$LocalBase  = Join-Path $ScriptRoot '..' 'data'
+$LocalBase  = Join-Path (Join-Path $ScriptRoot '..') 'data'
 $RemoteBase = '\\uniprddb02\share'
 
 $LocalHw      = Join-Path $LocalBase 'Hw'
@@ -1102,7 +1102,7 @@ function Invoke-HuaweiScan {
 
     foreach ($Kabinet in $Cabinets) {
         $Lokasyon    = $Kabinet.Lokasyon
-        $DisplayName = if ($Kabinet.DisplayName) { $Kabinet.DisplayName } else { $Kabinet.Name }
+        $DisplayName = if ($Kabinet.ContainsKey('DisplayName') -and $Kabinet.DisplayName) { $Kabinet.DisplayName } else { $Kabinet.Name }
 
         Write-Step "  -> Baglaniyor: $Lokasyon / $DisplayName ($($Kabinet.IP))" Cyan
 
