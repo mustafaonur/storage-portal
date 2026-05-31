@@ -45,8 +45,10 @@
 .sg-stats-block{display:flex;flex-direction:column;gap:6px;}
 .sg-stat-row{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text-dim);}
 .sg-stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.sg-canvas-wrap{position:relative;background:radial-gradient(ellipse at 30% 40%,rgba(75,159,232,.06) 0%,transparent 60%),radial-gradient(ellipse at 70% 60%,rgba(192,132,252,.05) 0%,transparent 60%),var(--bg);overflow:hidden;}
-#sg-canvas{display:block;width:100%;height:100%;cursor:grab;}
+.sg-canvas-wrap{position:relative;background:radial-gradient(ellipse at 30% 40%,rgba(75,159,232,.06) 0%,transparent 60%),radial-gradient(ellipse at 70% 60%,rgba(192,132,252,.05) 0%,transparent 60%),var(--bg);overflow:hidden;display:flex;flex-direction:column;}
+.sg-mode-bar{flex-shrink:0;padding:5px 14px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);background:rgba(13,20,32,.85);border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;transition:color .2s;}
+.sg-mode-bar:hover{color:var(--accent);}
+#sg-canvas{display:block;width:100%;flex:1;min-height:0;cursor:grab;}
 #sg-canvas:active{cursor:grabbing;}
 .sg-canvas-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;color:var(--text-dim);pointer-events:none;letter-spacing:1px;}
 .sg-legend{position:absolute;bottom:14px;left:14px;display:flex;gap:14px;flex-wrap:wrap;background:rgba(13,20,32,.82);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:6px;padding:8px 12px;}
@@ -268,6 +270,7 @@
 
     <!-- Center: canvas -->
     <div class="sg-canvas-wrap" id="sg-canvas-wrap">
+      <div class="sg-mode-bar" id="sg-mode-indicator">CLUSTER GÖRÜNÜMÜ · Switch'e çift tıkla → hostları gör</div>
       <canvas id="sg-canvas"></canvas>
       <div class="sg-canvas-hint" id="sg-hint">Veri yükleniyor...</div>
       <div class="sg-legend">
@@ -1899,488 +1902,559 @@ function initSwitchDetail() {
 })();
 
 /* ════════════════════════════════════════════════════════════
-   SAN GRAF — Force-directed canvas graph
-   Nodes: Host (green) · Switch (amber) · Storage Cabinet (purple)
-   Physics: Verlet integration, spring + repulsion + centering
+   SAN GRAF v2 — Clustered topology map
+   Architecture:
+   - Two rendering modes: CLUSTER view (default) and EXPAND view
+   - CLUSTER: each switch = 1 super-node containing its hosts
+   - EXPAND: click a switch cluster to drill in, only that cluster's
+     hosts are simulated (~20-50 nodes max at a time)
+   - Canvas LOD: labels only at scale > threshold
+   - Physics runs ONLY on visible expanded nodes (never 1000+ at once)
 ════════════════════════════════════════════════════════════ */
 
 const SG = {
-  built:     false,
-  frozen:    false,
-  nodes:     [],
-  links:     [],
-  nodeMap:   {},
-  transform: { x: 0, y: 0, scale: 1 },
-  drag:      null,
-  pan:       null,
-  hover:     null,
-  selected:  null,
-  raf:       null,
-  filter:    { fab: 'ALL', hosts: true, switches: true, storage: true, search: '' },
-  particles: [],
-  tick:      0,
-  _storLinkSeen: null,
+  built:      false,
+  mode:       'cluster',
+  expandSw:   null,
+  frozen:     false,
+  nodes:      [],
+  links:      [],
+  nodeMap:    {},
+  transform:  { x:0, y:0, scale:1 },
+  drag: null, pan: null, hover: null, selected: null, raf: null,
+  filter:     { fab:'ALL', hosts:true, switches:true, storage:true, search:'' },
+  particles:  [],
+  tick:       0,
 };
 
-function sgCssVar(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
-
-const SG_COLORS = {
-  host:    () => sgCssVar('--c-host')      || '#4be8a0',
-  switch:  () => sgCssVar('--accent')      || '#e8b84b',
-  storage: () => sgCssVar('--c-stor')      || '#c084fc',
-  bg:      () => sgCssVar('--bg')          || '#0d1420',
-  text:    () => sgCssVar('--text')        || '#8ba0c0',
-  bright:  () => sgCssVar('--text-bright') || '#e2eaf8',
+const SGC = {
+  host:   ()=>getComputedStyle(document.documentElement).getPropertyValue('--c-host').trim()    ||'#4be8a0',
+  sw:     ()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()    ||'#e8b84b',
+  stor:   ()=>getComputedStyle(document.documentElement).getPropertyValue('--c-stor').trim()    ||'#c084fc',
+  warn:   ()=>getComputedStyle(document.documentElement).getPropertyValue('--warn').trim()      ||'#e8844b',
+  text:   ()=>getComputedStyle(document.documentElement).getPropertyValue('--text').trim()      ||'#8ba0c0',
+  bright: ()=>getComputedStyle(document.documentElement).getPropertyValue('--text-bright').trim()||'#e2eaf8',
 };
 
-function sgCanvas() { return document.getElementById('sg-canvas'); }
+function sgCanvas(){return document.getElementById('sg-canvas');}
 
-function sgBuildGraph() {
-  SG.nodes = []; SG.links = []; SG.nodeMap = {};
-  SG._storLinkSeen = new Set();
+/* ═══ CLUSTER VIEW BUILD ═══ */
+function sgBuildClusters(){
+  SG.nodes=[]; SG.links=[]; SG.nodeMap={};
+  const canvas=sgCanvas(); if(!canvas) return;
+  const W=canvas.width||900, H=canvas.height||600;
+  const fab=SG.filter.fab, search=SG.filter.search.toLowerCase().trim();
 
-  const fab    = SG.filter.fab;
-  const search = SG.filter.search.toLowerCase().trim();
-  const canvas = sgCanvas();
-  if (!canvas) return;
-  const W = canvas.width || 800, H = canvas.height || 600;
-  const cx = W / 2, cy = H / 2;
-
-  function addNode(id, label, type, meta) {
-    if (SG.nodeMap[id]) return SG.nodeMap[id];
-    const angle = Math.random() * Math.PI * 2;
-    const r = 80 + Math.random() * Math.min(W, H) * 0.28;
-    const node = { id, label, type, meta,
-      x: cx + Math.cos(angle)*r, y: cy + Math.sin(angle)*r,
-      vx:0, vy:0, r: type==='switch'?13: type==='storage'?15: 9, pinned:false };
-    SG.nodes.push(node);
-    SG.nodeMap[id] = node;
-    return node;
-  }
-
-  function addLink(srcId, tgtId, type, weight) {
-    if (!SG.nodeMap[srcId] || !SG.nodeMap[tgtId]) return;
-    SG.links.push({ source:srcId, target:tgtId, type, weight:weight||1 });
-  }
-
-  const validSwitches = new Set();
-  Object.keys(DATA.switchFabric).forEach(sw => {
-    if (fab==='ALL' || DATA.switchFabric[sw]===fab) validSwitches.add(sw);
+  const swList=Object.keys(DATA.switchFabric).filter(sw=>{
+    if(fab!=='ALL'&&DATA.switchFabric[sw]!==fab) return false;
+    if(search&&!sw.toLowerCase().includes(search)) return false;
+    return true;
   });
 
-  let hostCount=0, switchCount=0, storCount=0;
+  const storList=Object.keys(DATA.storageSwitchMap||{}).filter(sk=>{
+    const parts=sk.split('|');
+    if(search&&!parts[0].toLowerCase().includes(search)&&!(parts[1]||'').toLowerCase().includes(search)) return false;
+    return [...(DATA.storageSwitchMap[sk]||[])].some(sw=>swList.includes(sw));
+  });
 
-  if (SG.filter.switches) {
-    validSwitches.forEach(sw => {
-      if (search && !sw.toLowerCase().includes(search)) return;
-      addNode('sw:'+sw, sw, 'switch', {
-        switch:sw, fabric:DATA.switchFabric[sw],
-        hostCount: DATA.switchStorageDetail[sw] ? Object.values(DATA.switchStorageDetail[sw]).reduce((a,s)=>a+s.size,0):0,
-        storageCount: DATA.switchStorageMap[sw] ? DATA.switchStorageMap[sw].size:0,
-      });
-      switchCount++;
+  const swN=Math.max(swList.length,1);
+  swList.forEach((sw,i)=>{
+    const angle=(i/swN)*Math.PI*2-Math.PI/2;
+    const rBase=Math.min(W,H)*0.33;
+    const hosts=DATA.switchStorageDetail[sw]
+      ?Object.values(DATA.switchStorageDetail[sw]).reduce((a,s)=>a+s.size,0):0;
+    const n={
+      id:'sw:'+sw, label:sw, type:'switch',
+      x:W/2+Math.cos(angle)*rBase+(Math.random()-.5)*20,
+      y:H/2+Math.sin(angle)*rBase+(Math.random()-.5)*20,
+      vx:0,vy:0, r:Math.min(26,16+(hosts/100)*3), pinned:false,
+      hostCount:hosts,
+      meta:{switch:sw,fabric:DATA.switchFabric[sw],hostCount:hosts,
+            storageCount:DATA.switchStorageMap[sw]?DATA.switchStorageMap[sw].size:0},
+    };
+    SG.nodes.push(n); SG.nodeMap[n.id]=n;
+  });
+
+  const storN=Math.max(storList.length,1);
+  storList.forEach((sk,i)=>{
+    const parts=sk.split('|'), vendor=parts[0], kabinet=parts[1]||'';
+    const angle=(i/storN)*Math.PI*2-Math.PI/2;
+    const hosts=DATA.storageSwitchDetail[sk]
+      ?Object.values(DATA.storageSwitchDetail[sk]).reduce((a,s)=>a+s.size,0):0;
+    const n={
+      id:'stor:'+sk, label:kabinet||vendor, type:'storage',
+      x:W/2+Math.cos(angle)*Math.min(W,H)*0.13+(Math.random()-.5)*15,
+      y:H/2+Math.sin(angle)*Math.min(W,H)*0.13+(Math.random()-.5)*15,
+      vx:0,vy:0, r:Math.min(22,14+(hosts/200)*4), pinned:false,
+      meta:{vendor,kabinet,sk,hostCount:hosts},
+    };
+    SG.nodes.push(n); SG.nodeMap[n.id]=n;
+  });
+
+  const seen=new Set();
+  swList.forEach(sw=>{
+    (DATA.switchStorageMap[sw]||new Set()).forEach(sk=>{
+      if(!SG.nodeMap['stor:'+sk]) return;
+      const key='sw:'+sw+'|stor:'+sk;
+      if(seen.has(key)) return; seen.add(key);
+      const hc=DATA.switchStorageDetail[sw]?.[sk]?.size||0;
+      SG.links.push({source:'sw:'+sw,target:'stor:'+sk,type:'storage',weight:Math.max(1,Math.log2(hc+1))});
     });
-  }
+  });
 
-  const storageNodes = new Set();
-  if (SG.filter.storage) {
-    Object.keys(DATA.storageSwitchMap||{}).forEach(sk => {
-      const parts = sk.split('|');
-      const vendor = parts[0], kabinet = parts[1];
-      if (search && !vendor.toLowerCase().includes(search) && !(kabinet||'').toLowerCase().includes(search)) return;
-      const connSwitches = [...(DATA.storageSwitchMap[sk]||[])].filter(sw=>validSwitches.has(sw));
-      if (!connSwitches.length) return;
-      addNode('stor:'+sk, kabinet||vendor, 'storage', {
-        vendor, kabinet, sk,
-        hostCount: DATA.storageSwitchDetail[sk] ? Object.values(DATA.storageSwitchDetail[sk]).reduce((a,s)=>a+s.size,0):0,
-      });
-      storageNodes.add(sk);
-      storCount++;
-    });
-  }
-
-  if (SG.filter.hosts) {
-    Object.keys(DATA.hosts).forEach(name => {
-      if (search && !name.toLowerCase().includes(search)) return;
-      const stArr  = DATA.hostStorage[name]||[];
-      const status = getHostStatus(name);
-      const hostSwitches = [...(DATA.hostSwitches[name]||[])].filter(sw=>validSwitches.has(sw));
-      if (!hostSwitches.length && !stArr.length) return;
-      if (fab!=='ALL' && !hostSwitches.length) return;
-      const h = DATA.hosts[name];
-      addNode('host:'+name, name, 'host', {
-        name, os:h.os, vendor:h.vendor, kabinet:h.kabinet,
-        lokasyon:h.lokasyon, status, wwnCount:(DATA.hostWwns[name]||[]).length, storageArr:stArr,
-      });
-      hostCount++;
-      hostSwitches.forEach(sw => {
-        if (SG.nodeMap['sw:'+sw]) addLink('host:'+name, 'sw:'+sw, status==='ok'?'ok':'warn', 1);
-      });
-      stArr.forEach(st => {
-        if (!st.kabinet) return;
-        const sk=`${st.vendor}|${st.kabinet}`;
-        if (!storageNodes.has(sk)) return;
-        hostSwitches.forEach(sw => {
-          const key=`sw:${sw}|stor:${sk}`;
-          if (!SG._storLinkSeen.has(key)) {
-            SG._storLinkSeen.add(key);
-            if (SG.nodeMap['sw:'+sw] && SG.nodeMap['stor:'+sk]) addLink('sw:'+sw,'stor:'+sk,'storage',2);
-          }
-        });
-      });
-    });
-  }
-
-  document.getElementById('sg-stat-hosts').textContent    = `${hostCount} host`;
-  document.getElementById('sg-stat-switches').textContent = `${switchCount} switch`;
-  document.getElementById('sg-stat-cabs').textContent     = `${storCount} kabinet`;
-  document.getElementById('sg-stat-links').textContent    = `${SG.links.length} bağlantı`;
-  const hint = document.getElementById('sg-hint');
-  if (hint) hint.style.display = SG.nodes.length ? 'none' : 'block';
+  const totalHosts=Object.keys(DATA.hosts).length;
+  document.getElementById('sg-stat-hosts').textContent   =`${totalHosts} host`;
+  document.getElementById('sg-stat-switches').textContent=`${swList.length} switch`;
+  document.getElementById('sg-stat-cabs').textContent    =`${storList.length} kabinet`;
+  document.getElementById('sg-stat-links').textContent   =`${SG.links.length} bağlantı`;
+  const hint=document.getElementById('sg-hint');
+  if(hint) hint.style.display=SG.nodes.length?'none':'block';
+  const mi=document.getElementById('sg-mode-indicator');
+  if(mi){mi.textContent='CLUSTER GÖRÜNÜMÜ · Switch\'e çift tıkla → hostları gör';mi.style.cursor='default';}
 }
 
-const SG_SPRING=0.04, SG_REPULSE=2800, SG_CENTER=0.003, SG_DAMP=0.82;
-const SG_IDEAL={ ok:100, warn:110, storage:90 };
-
-function sgTick() {
-  if (SG.frozen) return;
-  const nodes=SG.nodes, links=SG.links, N=nodes.length;
+/* ═══ EXPAND VIEW BUILD ═══ */
+function sgBuildExpand(swName){
+  SG.nodes=[]; SG.links=[]; SG.nodeMap={};
   const canvas=sgCanvas(); if(!canvas) return;
-  const cx=canvas.width/(2*SG.transform.scale), cy=canvas.height/(2*SG.transform.scale);
-  for (let i=0;i<N;i++) {
-    const a=nodes[i]; if(a.pinned) continue;
-    for (let j=i+1;j<N;j++) {
-      const b=nodes[j];
-      const dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy||1, d=Math.sqrt(d2);
-      const f=SG_REPULSE/d2, fx=dx/d*f, fy=dy/d*f;
-      a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+  const W=canvas.width||900, H=canvas.height||600, cx=W/2, cy=H/2;
+  const fab=SG.filter.fab, search=SG.filter.search.toLowerCase().trim();
+
+  /* Central switch */
+  const swNode={
+    id:'sw:'+swName, label:swName, type:'switch',
+    x:cx,y:cy, vx:0,vy:0, r:22, pinned:true,
+    meta:{switch:swName,fabric:DATA.switchFabric[swName]||'?',hostCount:0,
+          storageCount:DATA.switchStorageMap[swName]?DATA.switchStorageMap[swName].size:0},
+  };
+  SG.nodes.push(swNode); SG.nodeMap[swNode.id]=swNode;
+
+  /* Storage cabinets */
+  const storKeys=[...(DATA.switchStorageMap[swName]||new Set())];
+  storKeys.forEach((sk,i)=>{
+    const parts=sk.split('|'), vendor=parts[0], kabinet=parts[1]||'';
+    const angle=(i/Math.max(storKeys.length,1))*Math.PI*2;
+    const hosts=DATA.switchStorageDetail[swName]?.[sk]?.size||0;
+    const sn={
+      id:'stor:'+sk, label:kabinet||vendor, type:'storage',
+      x:cx+Math.cos(angle)*160, y:cy+Math.sin(angle)*160,
+      vx:0,vy:0, r:16, pinned:false,
+      meta:{vendor,kabinet,sk,hostCount:hosts},
+    };
+    SG.nodes.push(sn); SG.nodeMap[sn.id]=sn;
+    SG.links.push({source:'sw:'+swName,target:'stor:'+sk,type:'storage',weight:2});
+  });
+
+  /* Host nodes — capped at 120 */
+  const swNameUp=swName.toUpperCase();
+  const allHosts=Object.keys(DATA.hosts).filter(name=>{
+    const hs=DATA.hostSwitches[name];
+    if(!hs||![...hs].includes(swNameUp)) return false;
+    if(search&&!name.toLowerCase().includes(search)) return false;
+    if(fab!=='ALL'){
+      const f=DATA.switchFabric[swNameUp];
+      if(f&&f!==fab) return false;
     }
+    return true;
+  });
+  const capped=allHosts.slice(0,120);
+  const overflow=allHosts.length-capped.length;
+  swNode.meta.hostCount=allHosts.length;
+
+  capped.forEach((name,i)=>{
+    const angle=(i/Math.max(capped.length,1))*Math.PI*2;
+    const radius=100+Math.random()*180;
+    const status=getHostStatus(name);
+    const h=DATA.hosts[name];
+    const hn={
+      id:'host:'+name, label:name, type:'host',
+      x:cx+Math.cos(angle)*radius+(Math.random()-.5)*30,
+      y:cy+Math.sin(angle)*radius+(Math.random()-.5)*30,
+      vx:0,vy:0, r:8, pinned:false,
+      meta:{name,os:h.os,vendor:h.vendor,kabinet:h.kabinet,lokasyon:h.lokasyon,
+            status,wwnCount:(DATA.hostWwns[name]||[]).length,storageArr:DATA.hostStorage[name]||[]},
+    };
+    SG.nodes.push(hn); SG.nodeMap[hn.id]=hn;
+    SG.links.push({source:'sw:'+swName,target:'host:'+name,type:status==='ok'?'ok':'warn',weight:1});
+    const storSeen=new Set();
+    (DATA.hostStorage[name]||[]).forEach(st=>{
+      if(!st.kabinet) return;
+      const sk=`${st.vendor}|${st.kabinet}`;
+      if(storSeen.has(sk)||!SG.nodeMap['stor:'+sk]) return;
+      storSeen.add(sk);
+      SG.links.push({source:'host:'+name,target:'stor:'+sk,type:'storage',weight:.4});
+    });
+  });
+
+  document.getElementById('sg-stat-hosts').textContent   =`${capped.length}${overflow?' / '+allHosts.length:''} host`;
+  document.getElementById('sg-stat-switches').textContent=`1 switch`;
+  document.getElementById('sg-stat-cabs').textContent    =`${storKeys.length} kabinet`;
+  document.getElementById('sg-stat-links').textContent   =`${SG.links.length} bağlantı`;
+  const hint=document.getElementById('sg-hint');
+  if(hint) hint.style.display='none';
+  const mi=document.getElementById('sg-mode-indicator');
+  if(mi){
+    mi.textContent=`↩ GERİ  ·  ${swName}  ·  ${allHosts.length} host${overflow?' (ilk 120)':''}`;
+    mi.style.cursor='pointer';
   }
-  for (let i=0;i<links.length;i++) {
-    const l=links[i], a=SG.nodeMap[l.source], b=SG.nodeMap[l.target];
-    if(!a||!b) continue;
+}
+
+/* ═══ PHYSICS ═══ */
+function sgTick(){
+  if(SG.frozen) return;
+  const nodes=SG.nodes, links=SG.links, N=nodes.length;
+  if(!N) return;
+  const canvas=sgCanvas(); if(!canvas) return;
+  const cx=canvas.width/2, cy=canvas.height/2;
+
+  if(N<=70){
+    for(let i=0;i<N;i++){
+      const a=nodes[i]; if(a.pinned) continue;
+      for(let j=i+1;j<N;j++){
+        const b=nodes[j];
+        const dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy||1;
+        if(d2>160000) continue;
+        const d=Math.sqrt(d2), f=3400/d2, fx=dx/d*f, fy=dy/d*f;
+        a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+      }
+    }
+  } else {
+    /* Grid-bucketed repulsion for cluster view (20-40 nodes typically) */
+    const cs=140, grid={};
+    nodes.forEach(n=>{
+      const k=`${Math.floor(n.x/cs)},${Math.floor(n.y/cs)}`;
+      (grid[k]||(grid[k]=[])).push(n);
+    });
+    nodes.forEach(a=>{
+      if(a.pinned) return;
+      const gx=Math.floor(a.x/cs), gy=Math.floor(a.y/cs);
+      for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
+        (grid[`${gx+dx},${gy+dy}`]||[]).forEach(b=>{
+          if(b===a) return;
+          const ddx=a.x-b.x, ddy=a.y-b.y, d2=ddx*ddx+ddy*ddy||1;
+          if(d2>90000) return;
+          const d=Math.sqrt(d2), f=3400/d2;
+          a.vx+=ddx/d*f; a.vy+=ddy/d*f;
+        });
+      }
+    });
+  }
+
+  links.forEach(l=>{
+    const a=SG.nodeMap[l.source], b=SG.nodeMap[l.target]; if(!a||!b) return;
     const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||1;
-    const ideal=SG_IDEAL[l.type]||100, f=(d-ideal)*SG_SPRING*l.weight;
-    const fx=dx/d*f, fy=dy/d*f;
-    if(!a.pinned){a.vx+=fx; a.vy+=fy;}
-    if(!b.pinned){b.vx-=fx; b.vy-=fy;}
-  }
-  for (let i=0;i<N;i++) {
-    const n=nodes[i]; if(n.pinned) continue;
-    n.vx+=(cx-n.x)*SG_CENTER; n.vy+=(cy-n.y)*SG_CENTER;
-    n.vx*=SG_DAMP; n.vy*=SG_DAMP; n.x+=n.vx; n.y+=n.vy;
-  }
+    const ideal=l.type==='storage'?130:l.type==='ok'?95:105;
+    const f=(d-ideal)*.038*l.weight;
+    if(!a.pinned){a.vx+=dx/d*f; a.vy+=dy/d*f;}
+    if(!b.pinned){b.vx-=dx/d*f; b.vy-=dy/d*f;}
+  });
+
+  nodes.forEach(n=>{
+    if(n.pinned) return;
+    n.vx+=(cx-n.x)*.0018; n.vy+=(cy-n.y)*.0018;
+    n.vx*=.76; n.vy*=.76;
+    n.x+=n.vx; n.y+=n.vy;
+  });
   SG.tick++;
 }
 
-function sgTickParticles() {
-  if (SG.tick%4===0 && SG.nodes.length<400 && SG.links.length) {
-    const l=SG.links[Math.floor(Math.random()*SG.links.length)];
-    const a=SG.nodeMap[l.source], b=SG.nodeMap[l.target];
-    if(a&&b) SG.particles.push({sx:a.x,sy:a.y,tx:b.x,ty:b.y,t:0,speed:0.012+Math.random()*0.008,type:l.type});
-  }
-  SG.particles=SG.particles.filter(p=>{p.t+=p.speed; return p.t<1;});
+/* ═══ DRAW ═══ */
+function sgHexA(c,a){
+  if(c.startsWith('#')){const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+  return c.replace('rgb(','rgba(').replace(')',`,${a})`);
 }
-
-function sgHexAlpha(color, alpha) {
-  if (color.startsWith('#')) {
-    const r=parseInt(color.slice(1,3),16), g=parseInt(color.slice(3,5),16), b=parseInt(color.slice(5,7),16);
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-  if (color.startsWith('rgb(')) return color.replace('rgb(','rgba(').replace(')',`,${alpha})`);
-  return color;
-}
-
-function sgIsConn(node) {
-  if (!SG.selected) return true;
+function sgIsConn(n){
+  if(!SG.selected) return true;
   const sid=SG.selected.id;
-  return SG.links.some(l=>(l.source===sid&&l.target===node.id)||(l.target===sid&&l.source===node.id));
+  return SG.links.some(l=>(l.source===sid&&l.target===n.id)||(l.target===sid&&l.source===n.id));
 }
 
-function sgDraw() {
+function sgDraw(){
   const canvas=sgCanvas(); if(!canvas) return;
   const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height, T=SG.transform;
   ctx.clearRect(0,0,W,H);
-  ctx.save();
-  ctx.translate(T.x,T.y);
-  ctx.scale(T.scale,T.scale);
+  ctx.save(); ctx.translate(T.x,T.y); ctx.scale(T.scale,T.scale);
+  const sc=T.scale;
 
-  /* grid */
-  const gs=40;
-  ctx.fillStyle='rgba(94,112,144,0.05)';
-  const ox=((-T.x/T.scale)%gs+gs)%gs, oy=((-T.y/T.scale)%gs+gs)%gs;
-  for(let gx=-ox; gx<W/T.scale; gx+=gs) for(let gy=-oy; gy<H/T.scale; gy+=gs) {
-    ctx.beginPath(); ctx.arc(gx,gy,1,0,Math.PI*2); ctx.fill();
+  /* Dot grid */
+  if(sc>0.18){
+    const gs=60;
+    ctx.fillStyle='rgba(94,112,144,0.045)';
+    const ox=((-T.x/sc)%gs+gs)%gs, oy=((-T.y/sc)%gs+gs)%gs;
+    for(let gx=-ox;gx<W/sc;gx+=gs) for(let gy=-oy;gy<H/sc;gy+=gs){
+      ctx.beginPath(); ctx.arc(gx,gy,1,0,Math.PI*2); ctx.fill();
+    }
   }
 
-  /* links */
-  SG.links.forEach(l => {
+  /* Links */
+  SG.links.forEach(l=>{
     const a=SG.nodeMap[l.source], b=SG.nodeMap[l.target]; if(!a||!b) return;
     const hi=SG.selected&&(SG.selected.id===l.source||SG.selected.id===l.target);
     const dim=SG.selected&&!hi;
     ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
     if(l.type==='storage'){
-      ctx.strokeStyle=dim?'rgba(192,132,252,0.05)':hi?'rgba(192,132,252,0.85)':'rgba(192,132,252,0.22)';
-      ctx.lineWidth=dim?.5:hi?2:1; ctx.setLineDash([4,4]);
+      ctx.strokeStyle=dim?'rgba(192,132,252,0.04)':hi?'rgba(192,132,252,0.92)':'rgba(192,132,252,0.28)';
+      ctx.lineWidth=dim?.3:hi?2.2:Math.max(.6,l.weight*.5); ctx.setLineDash([5,5]);
     } else if(l.type==='warn'){
-      ctx.strokeStyle=dim?'rgba(232,132,75,0.05)':hi?'rgba(232,132,75,0.9)':'rgba(232,132,75,0.3)';
-      ctx.lineWidth=dim?.5:hi?2:1; ctx.setLineDash([]);
+      ctx.strokeStyle=dim?'rgba(232,132,75,0.04)':hi?'rgba(232,132,75,0.95)':'rgba(232,132,75,0.38)';
+      ctx.lineWidth=dim?.3:hi?2.2:1; ctx.setLineDash([]);
     } else {
-      ctx.strokeStyle=dim?'rgba(75,232,160,0.04)':hi?'rgba(75,232,160,0.9)':'rgba(75,232,160,0.18)';
-      ctx.lineWidth=dim?.5:hi?2:1; ctx.setLineDash([]);
+      ctx.strokeStyle=dim?'rgba(75,232,160,0.03)':hi?'rgba(75,232,160,0.95)':'rgba(75,232,160,0.2)';
+      ctx.lineWidth=dim?.3:hi?2.2:1; ctx.setLineDash([]);
     }
     ctx.stroke(); ctx.setLineDash([]);
   });
 
-  /* particles */
-  SG.particles.forEach(p => {
-    const px=p.sx+(p.tx-p.sx)*p.t, py=p.sy+(p.ty-p.sy)*p.t;
-    ctx.beginPath(); ctx.arc(px,py,2.2,0,Math.PI*2);
-    ctx.fillStyle=p.type==='storage'?'rgba(192,132,252,0.85)':p.type==='warn'?'rgba(232,132,75,0.85)':'rgba(75,232,160,0.85)';
-    ctx.fill();
-  });
+  /* Particles (expand only) */
+  if(SG.mode==='expand'){
+    SG.particles.forEach(p=>{
+      const px=p.sx+(p.tx-p.sx)*p.t, py=p.sy+(p.ty-p.sy)*p.t;
+      ctx.beginPath(); ctx.arc(px,py,2,0,Math.PI*2);
+      ctx.fillStyle=p.type==='storage'?'rgba(192,132,252,0.9)':p.type==='warn'?'rgba(232,132,75,0.9)':'rgba(75,232,160,0.9)';
+      ctx.fill();
+    });
+  }
 
-  /* nodes */
-  SG.nodes.forEach(n => {
+  /* Nodes */
+  SG.nodes.forEach(n=>{
     const sel=SG.selected&&SG.selected.id===n.id;
     const hov=SG.hover&&SG.hover.id===n.id;
     const dim=SG.selected&&!sel&&!sgIsConn(n);
-    const color=n.type==='switch'?SG_COLORS.switch():n.type==='storage'?SG_COLORS.storage():SG_COLORS.host();
-    ctx.globalAlpha=dim?0.12:1;
+    const color=n.type==='switch'?SGC.sw():n.type==='storage'?SGC.stor():SGC.host();
+    ctx.globalAlpha=dim?.1:1;
 
     if(sel||hov){
-      ctx.beginPath(); ctx.arc(n.x,n.y,n.r+10,0,Math.PI*2);
-      const grd=ctx.createRadialGradient(n.x,n.y,n.r,n.x,n.y,n.r+12);
-      grd.addColorStop(0,sgHexAlpha(color,0.35)); grd.addColorStop(1,'transparent');
-      ctx.fillStyle=grd; ctx.fill();
+      const gr=ctx.createRadialGradient(n.x,n.y,n.r,n.x,n.y,n.r+18);
+      gr.addColorStop(0,sgHexA(color,.38)); gr.addColorStop(1,'transparent');
+      ctx.beginPath(); ctx.arc(n.x,n.y,n.r+18,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
     }
 
     ctx.beginPath();
     if(n.type==='switch'){
-      ctx.moveTo(n.x,n.y-n.r); ctx.lineTo(n.x+n.r,n.y); ctx.lineTo(n.x,n.y+n.r); ctx.lineTo(n.x-n.r,n.y); ctx.closePath();
+      const s=n.r;
+      ctx.moveTo(n.x,n.y-s); ctx.lineTo(n.x+s,n.y); ctx.lineTo(n.x,n.y+s); ctx.lineTo(n.x-s,n.y); ctx.closePath();
     } else if(n.type==='storage'){
-      const rr=4,sz=n.r;
-      ctx.moveTo(n.x-sz+rr,n.y-sz); ctx.lineTo(n.x+sz-rr,n.y-sz);
-      ctx.arcTo(n.x+sz,n.y-sz,n.x+sz,n.y-sz+rr,rr); ctx.lineTo(n.x+sz,n.y+sz-rr);
-      ctx.arcTo(n.x+sz,n.y+sz,n.x+sz-rr,n.y+sz,rr); ctx.lineTo(n.x-sz+rr,n.y+sz);
-      ctx.arcTo(n.x-sz,n.y+sz,n.x-sz,n.y+sz-rr,rr); ctx.lineTo(n.x-sz,n.y-sz+rr);
-      ctx.arcTo(n.x-sz,n.y-sz,n.x-sz+rr,n.y-sz,rr); ctx.closePath();
+      const s=n.r, rr=4;
+      ctx.moveTo(n.x-s+rr,n.y-s); ctx.lineTo(n.x+s-rr,n.y-s);
+      ctx.arcTo(n.x+s,n.y-s,n.x+s,n.y-s+rr,rr); ctx.lineTo(n.x+s,n.y+s-rr);
+      ctx.arcTo(n.x+s,n.y+s,n.x+s-rr,n.y+s,rr); ctx.lineTo(n.x-s+rr,n.y+s);
+      ctx.arcTo(n.x-s,n.y+s,n.x-s,n.y+s-rr,rr); ctx.lineTo(n.x-s,n.y-s+rr);
+      ctx.arcTo(n.x-s,n.y-s,n.x-s+rr,n.y-s,rr); ctx.closePath();
     } else {
       ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
     }
-
-    ctx.fillStyle=sel?sgHexAlpha(color,0.5):sgHexAlpha(color,0.15);
-    ctx.strokeStyle=color;
-    ctx.lineWidth=sel?2.5:hov?2:1.5;
+    ctx.fillStyle=sel?sgHexA(color,.55):hov?sgHexA(color,.28):sgHexA(color,.14);
+    ctx.strokeStyle=color; ctx.lineWidth=sel?2.5:hov?2:1.5;
     ctx.fill(); ctx.stroke();
 
-    if(T.scale>0.42||sel||hov){
-      ctx.font=(sel?'bold ':'')+'8px \'JetBrains Mono\',monospace';
-      ctx.fillStyle=sel?SG_COLORS.bright():SG_COLORS.text();
-      ctx.textAlign='center';
+    /* Host-count badge on cluster switch nodes */
+    if(n.type==='switch'&&SG.mode==='cluster'&&n.hostCount>0&&sc>0.3){
+      const bx=n.x+n.r*.65, by=n.y-n.r*.65;
+      ctx.beginPath(); ctx.arc(bx,by,8,0,Math.PI*2);
+      ctx.fillStyle=SGC.host(); ctx.fill();
+      ctx.font='bold 6px monospace'; ctx.textAlign='center'; ctx.fillStyle='#0d1420';
+      ctx.fillText(n.hostCount>99?'99+':String(n.hostCount),bx,by+2.5);
+    }
+
+    /* Hover hint on cluster switch */
+    if(SG.mode==='cluster'&&hov&&n.type==='switch'){
+      ctx.font='8px monospace'; ctx.fillStyle='rgba(232,184,75,.85)'; ctx.textAlign='center';
+      ctx.fillText('⇲ çift tıkla',n.x,n.y-n.r-10);
+    }
+
+    /* Labels */
+    const showLbl=n.type!=='host'?sc>0.45:sc>0.75;
+    if(showLbl||sel||hov){
+      ctx.font=`${sel?'bold ':''}`+(n.type==='host'?'8':'9')+`px 'JetBrains Mono',monospace`;
+      ctx.fillStyle=sel||hov?SGC.bright():SGC.text(); ctx.textAlign='center';
       let lbl=n.label;
-      if(ctx.measureText(lbl).width>68) lbl=lbl.substring(0,10)+'…';
-      ctx.fillText(lbl,n.x,n.y+n.r+11);
+      const maxPx=n.type==='host'?62:86;
+      if(ctx.measureText(lbl).width>maxPx) lbl=lbl.substring(0,n.type==='host'?8:11)+'…';
+      ctx.fillText(lbl,n.x,n.y+n.r+12);
     }
     ctx.globalAlpha=1;
   });
   ctx.restore();
 }
 
-function sgLoop() {
-  sgTick(); sgTickParticles(); sgDraw();
-  SG.raf=requestAnimationFrame(sgLoop);
+/* ═══ PARTICLES ═══ */
+function sgTickParticles(){
+  if(SG.mode!=='expand'||SG.tick%7!==0||!SG.links.length) return;
+  const l=SG.links[Math.floor(Math.random()*SG.links.length)];
+  const a=SG.nodeMap[l.source], b=SG.nodeMap[l.target];
+  if(a&&b) SG.particles.push({sx:a.x,sy:a.y,tx:b.x,ty:b.y,t:0,speed:.014+Math.random()*.008,type:l.type});
+  SG.particles=SG.particles.filter(p=>{p.t+=p.speed;return p.t<1;});
 }
 
-function sgHit(mx,my) {
+/* ═══ LOOP ═══ */
+function sgLoop(){sgTick(); sgTickParticles(); sgDraw(); SG.raf=requestAnimationFrame(sgLoop);}
+
+/* ═══ HIT TEST ═══ */
+function sgHit(mx,my){
   const T=SG.transform, wx=(mx-T.x)/T.scale, wy=(my-T.y)/T.scale;
-  let best=null, bd=Infinity;
-  SG.nodes.forEach(n=>{
-    const d=Math.hypot(wx-n.x,wy-n.y);
-    if(d<Math.max(n.r+6,12)&&d<bd){best=n;bd=d;}
-  });
+  let best=null,bd=Infinity;
+  SG.nodes.forEach(n=>{const d=Math.hypot(wx-n.x,wy-n.y); if(d<Math.max(n.r+8,14)&&d<bd){best=n;bd=d;}});
   return best;
 }
 
-function sgBindEvents() {
+/* ═══ EVENTS ═══ */
+function sgBindEvents(){
   const canvas=sgCanvas(); if(!canvas||canvas._sgBound) return;
   canvas._sgBound=true;
+  let lastClick=0, lastClickNode=null;
 
   canvas.addEventListener('mousemove',e=>{
     const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
     SG.hover=sgHit(mx,my);
-    canvas.style.cursor=SG.hover?'pointer':SG.drag?'grabbing':SG.pan?'grabbing':'grab';
-    if(SG.drag){
-      const T=SG.transform;
-      SG.drag.node.x=(mx-T.x)/T.scale; SG.drag.node.y=(my-T.y)/T.scale;
-      SG.drag.node.vx=0; SG.drag.node.vy=0;
-    } else if(SG.pan){
-      SG.transform.x+=mx-SG.pan.lastX; SG.transform.y+=my-SG.pan.lastY;
-      SG.pan.lastX=mx; SG.pan.lastY=my;
-    }
+    canvas.style.cursor=SG.hover?(SG.hover.type==='switch'&&SG.mode==='cluster'?'zoom-in':'pointer'):SG.drag?'grabbing':SG.pan?'grabbing':'grab';
+    if(SG.drag){const T=SG.transform; SG.drag.x=(mx-T.x)/T.scale; SG.drag.y=(my-T.y)/T.scale; SG.drag.vx=0; SG.drag.vy=0;}
+    else if(SG.pan){SG.transform.x+=mx-SG.pan.lx; SG.transform.y+=my-SG.pan.ly; SG.pan.lx=mx; SG.pan.ly=my;}
   });
-
   canvas.addEventListener('mousedown',e=>{
     const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
     const hit=sgHit(mx,my);
-    if(hit){SG.drag={node:hit}; hit.pinned=true;}
-    else SG.pan={lastX:mx,lastY:my};
+    if(hit){SG.drag=hit; hit.pinned=true;} else SG.pan={lx:mx,ly:my};
   });
-
   canvas.addEventListener('mouseup',()=>{
-    if(SG.drag) SG.drag.node.pinned=false;
-    SG.drag=null; SG.pan=null;
+    if(SG.drag) SG.drag.pinned=false; SG.drag=null; SG.pan=null;
   });
-
-  let clickMoved=false;
-  canvas.addEventListener('mousedown',()=>{clickMoved=false;});
-  canvas.addEventListener('mousemove',()=>{clickMoved=true;});
   canvas.addEventListener('click',e=>{
-    if(clickMoved&&SG.drag) return;
     const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
-    const hit=sgHit(mx,my);
+    const hit=sgHit(mx,my), now=Date.now();
+    if(hit&&hit.type==='switch'&&SG.mode==='cluster'&&now-lastClick<380&&lastClickNode===hit){
+      sgEnterExpand(hit.meta.switch); lastClick=0; lastClickNode=null; return;
+    }
+    lastClick=now; lastClickNode=hit;
     SG.selected=(hit&&SG.selected&&SG.selected.id===hit.id)?null:hit;
     sgRenderDetail(SG.selected);
   });
-
   canvas.addEventListener('wheel',e=>{
     e.preventDefault();
     const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
-    const delta=e.deltaY<0?1.12:0.9, T=SG.transform;
-    T.x=mx-(mx-T.x)*delta; T.y=my-(my-T.y)*delta;
-    T.scale=Math.max(0.08,Math.min(8,T.scale*delta));
+    const d=e.deltaY<0?1.12:.9, T=SG.transform;
+    T.x=mx-(mx-T.x)*d; T.y=my-(my-T.y)*d;
+    T.scale=Math.max(.06,Math.min(10,T.scale*d));
   },{passive:false});
+
+  document.getElementById('sg-mode-indicator')?.addEventListener('click',()=>{
+    if(SG.mode==='expand') sgExitExpand();
+  });
 }
 
-function sgRenderDetail(node) {
+function sgEnterExpand(swName){
+  SG.mode='expand'; SG.expandSw=swName; SG.selected=null; SG.particles=[];
+  sgRenderDetail(null); sgBuildExpand(swName); setTimeout(sgFit,80);
+}
+function sgExitExpand(){
+  SG.mode='cluster'; SG.expandSw=null; SG.selected=null; SG.particles=[];
+  sgRenderDetail(null); sgBuildClusters(); setTimeout(sgFit,80);
+}
+
+/* ═══ DETAIL PANEL ═══ */
+function sgRenderDetail(node){
   const empty=document.getElementById('sg-detail-empty');
   const content=document.getElementById('sg-detail-content');
   if(!node){empty.style.display='';content.style.display='none';return;}
   empty.style.display='none'; content.style.display='';
-
+  function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   const connLinks=SG.links.filter(l=>l.source===node.id||l.target===node.id);
   const connNodes=connLinks.map(l=>SG.nodeMap[l.source===node.id?l.target:l.source]).filter(Boolean);
-
-  function sgE(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-  let h='';
-  h+=`<div class="sg-det-title">${sgE(node.label)}</div>`;
+  let h=`<div class="sg-det-title">${e(node.label)}</div>`;
   h+=`<span class="sg-det-type ${node.type}">${node.type.toUpperCase()}</span>`;
-
-  if(node.type==='host'){
-    const m=node.meta;
-    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bilgi</div><div class="sg-det-kv">`;
-    if(m.os)       h+=`<span class="sg-det-k">OS</span><span class="sg-det-v">${sgE(m.os)}</span>`;
-    if(m.vendor)   h+=`<span class="sg-det-k">Vendor</span><span class="sg-det-v">${sgE(m.vendor)}</span>`;
-    if(m.kabinet)  h+=`<span class="sg-det-k">Kabinet</span><span class="sg-det-v">${sgE(m.kabinet)}</span>`;
-    if(m.lokasyon) h+=`<span class="sg-det-k">Lokasyon</span><span class="sg-det-v">${sgE(m.lokasyon)}</span>`;
-    h+=`<span class="sg-det-k">WWN</span><span class="sg-det-v">${m.wwnCount} adet</span>`;
-    h+=`</div></div>`;
-    const stLbl={ok:'✓ Sağlıklı','no-hba':'⚠ HBA Yok','no-fabric':'⚠ Fabric Yok','no-storage':'⚠ Storage Yok','partial-ghost':'⚠ Partial Ghost',empty:'— Boş'};
-    const stCls=m.status==='ok'?'ok':m.status==='empty'?'':'warn';
-    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Path Durumu</div><span class="sg-det-tag ${stCls}">${stLbl[m.status]||m.status}</span></div>`;
-    if(m.storageArr&&m.storageArr.length){
-      h+=`<div class="sg-det-section"><div class="sg-det-section-title">Storage Atamalar</div>`;
-      m.storageArr.forEach(s=>{h+=`<span class="sg-det-tag">${sgE(s.vendor)}: ${sgE(s.kabinet)}${s.provTB?' — '+s.provTB.toFixed(1)+' TB':''}</span>`;});
-      h+=`</div>`;
-    }
-  }
-
   if(node.type==='switch'){
     const m=node.meta;
     h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bilgi</div><div class="sg-det-kv">`;
-    h+=`<span class="sg-det-k">Fabric</span><span class="sg-det-v">${sgE(m.fabric||'?')}</span>`;
-    h+=`<span class="sg-det-k">Bağlı Host</span><span class="sg-det-v">${m.hostCount}</span>`;
+    h+=`<span class="sg-det-k">Fabric</span><span class="sg-det-v">${e(m.fabric||'?')}</span>`;
+    h+=`<span class="sg-det-k">Host</span><span class="sg-det-v">${m.hostCount}</span>`;
     h+=`<span class="sg-det-k">Storage</span><span class="sg-det-v">${m.storageCount} kabinet</span>`;
     h+=`</div></div>`;
+    if(SG.mode==='cluster') h+=`<div style="margin-top:10px"><button class="sg-btn" onclick="sgEnterExpand('${e(m.switch)}')">⇲ Hostları Görüntüle</button></div>`;
   }
-
+  if(node.type==='host'){
+    const m=node.meta;
+    const sl={ok:'✓ Sağlıklı','no-hba':'⚠ HBA Yok','no-fabric':'⚠ Fabric Yok','no-storage':'⚠ Storage Yok','partial-ghost':'⚠ Partial Ghost',empty:'— Boş'};
+    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bilgi</div><div class="sg-det-kv">`;
+    if(m.os) h+=`<span class="sg-det-k">OS</span><span class="sg-det-v">${e(m.os)}</span>`;
+    if(m.vendor) h+=`<span class="sg-det-k">Vendor</span><span class="sg-det-v">${e(m.vendor)}</span>`;
+    if(m.kabinet) h+=`<span class="sg-det-k">Kabinet</span><span class="sg-det-v">${e(m.kabinet)}</span>`;
+    h+=`<span class="sg-det-k">WWN</span><span class="sg-det-v">${m.wwnCount} adet</span>`;
+    h+=`</div></div>`;
+    h+=`<div class="sg-det-section"><div class="sg-det-section-title">Path</div><span class="sg-det-tag ${m.status==='ok'?'ok':'warn'}">${sl[m.status]||m.status}</span></div>`;
+    if(m.storageArr&&m.storageArr.length){
+      h+=`<div class="sg-det-section"><div class="sg-det-section-title">Storage</div>`;
+      m.storageArr.forEach(s=>{h+=`<span class="sg-det-tag">${e(s.vendor)}: ${e(s.kabinet)}${s.provTB?' — '+s.provTB.toFixed(1)+' TB':''}</span>`;});
+      h+=`</div>`;
+    }
+  }
   if(node.type==='storage'){
     const m=node.meta;
     h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bilgi</div><div class="sg-det-kv">`;
-    h+=`<span class="sg-det-k">Vendor</span><span class="sg-det-v">${sgE(m.vendor)}</span>`;
-    h+=`<span class="sg-det-k">Kabinet</span><span class="sg-det-v">${sgE(m.kabinet)}</span>`;
-    h+=`<span class="sg-det-k">Host Sayısı</span><span class="sg-det-v">${m.hostCount}</span>`;
+    h+=`<span class="sg-det-k">Vendor</span><span class="sg-det-v">${e(m.vendor)}</span>`;
+    h+=`<span class="sg-det-k">Kabinet</span><span class="sg-det-v">${e(m.kabinet)}</span>`;
+    h+=`<span class="sg-det-k">Host</span><span class="sg-det-v">${m.hostCount}</span>`;
     h+=`</div></div>`;
   }
-
   if(connNodes.length){
     h+=`<div class="sg-det-section"><div class="sg-det-section-title">Bağlı (${connNodes.length})</div>`;
     [...connNodes].sort((a,b)=>a.type.localeCompare(b.type)||a.label.localeCompare(b.label))
-      .slice(0,30).forEach(n=>{h+=`<span class="sg-det-tag">${sgE(n.label)}</span>`;});
+      .slice(0,30).forEach(n=>{h+=`<span class="sg-det-tag">${e(n.label)}</span>`;});
     if(connNodes.length>30) h+=`<span class="sg-det-tag">+${connNodes.length-30} daha</span>`;
     h+=`</div>`;
   }
-
   content.innerHTML=h;
 }
 
-function sgFit() {
+/* ═══ FIT / RESIZE / REBUILD ═══ */
+function sgFit(){
   if(!SG.nodes.length) return;
   const canvas=sgCanvas(); if(!canvas) return;
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   SG.nodes.forEach(n=>{minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x);maxY=Math.max(maxY,n.y);});
-  const pad=60, W=canvas.width-pad*2, H=canvas.height-pad*2;
-  const nW=maxX-minX||1, nH=maxY-minY||1;
-  const scale=Math.min(W/nW,H/nH,2.5);
+  const pad=70, W=canvas.width-pad*2, H=canvas.height-pad*2;
+  const nW=Math.max(maxX-minX,1), nH=Math.max(maxY-minY,1);
+  const scale=Math.min(W/nW,H/nH,2.8);
   SG.transform.scale=scale;
   SG.transform.x=pad-minX*scale+(W-nW*scale)/2;
   SG.transform.y=pad-minY*scale+(H-nH*scale)/2;
 }
-
-function sgResize() {
+function sgResize(){
   const wrap=document.getElementById('sg-canvas-wrap'), canvas=sgCanvas();
-  if(!wrap||!canvas) return;
-  canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight;
+  if(!wrap||!canvas) return; canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight;
 }
-
-function sgRebuild() {
+function sgRebuild(){
   SG.selected=null; SG.particles=[];
   sgRenderDetail(null);
-  sgBuildGraph();
-  setTimeout(sgFit, 80);
+  if(SG.mode==='expand') sgBuildExpand(SG.expandSw);
+  else sgBuildClusters();
+  setTimeout(sgFit,80);
 }
 
-function initSanGraf() {
-  if(SG.built) return;
-  SG.built=true;
-
-  sgResize();
-  sgBindEvents();
-  sgBuildGraph();
-  setTimeout(sgFit, 120);
-
-  document.getElementById('sg-fit-btn')?.addEventListener('click', sgFit);
-  document.getElementById('sg-reset-btn')?.addEventListener('click', ()=>{
-    SG.transform={x:0,y:0,scale:1}; SG.selected=null;
-    sgRenderDetail(null); sgBuildGraph(); setTimeout(sgFit,80);
+/* ═══ INIT ═══ */
+function initSanGraf(){
+  if(SG.built) return; SG.built=true;
+  sgResize(); sgBindEvents(); sgBuildClusters(); setTimeout(sgFit,150);
+  document.getElementById('sg-fit-btn')?.addEventListener('click',sgFit);
+  document.getElementById('sg-reset-btn')?.addEventListener('click',()=>{
+    SG.mode='cluster'; SG.expandSw=null; SG.transform={x:0,y:0,scale:1};
+    SG.selected=null; sgRenderDetail(null); sgBuildClusters(); setTimeout(sgFit,80);
   });
-  document.getElementById('sg-freeze-btn')?.addEventListener('click', function(){
-    SG.frozen=!SG.frozen;
-    this.textContent=SG.frozen?'▶ Çalıştır':'❄ Dondur';
+  document.getElementById('sg-freeze-btn')?.addEventListener('click',function(){
+    SG.frozen=!SG.frozen; this.textContent=SG.frozen?'▶ Çalıştır':'❄ Dondur';
     this.style.color=SG.frozen?'var(--accent3)':'';
-    this.style.borderColor=SG.frozen?'var(--accent3)':'';
   });
-  document.getElementById('sg-search')?.addEventListener('input', e=>{
-    SG.filter.search=e.target.value; sgRebuild();
-  });
+  document.getElementById('sg-search')?.addEventListener('input',e=>{SG.filter.search=e.target.value; sgRebuild();});
   document.querySelectorAll('.sg-chip[data-sgfab]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.sg-chip[data-sgfab]').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      SG.filter.fab=btn.dataset.sgfab;
-      sgRebuild();
+      btn.classList.add('active'); SG.filter.fab=btn.dataset.sgfab; sgRebuild();
     });
   });
   ['hosts','switches','storage'].forEach(t=>{
-    document.getElementById(`sg-show-${t}`)?.addEventListener('change',e=>{
-      SG.filter[t]=e.target.checked; sgRebuild();
-    });
+    document.getElementById(`sg-show-${t}`)?.addEventListener('change',e=>{SG.filter[t]=e.target.checked; sgRebuild();});
   });
   window.addEventListener('resize',()=>{sgResize(); sgFit();});
   sgLoop();
+}
 }
 
 /* ════════════════════════════════════════════════════════════
