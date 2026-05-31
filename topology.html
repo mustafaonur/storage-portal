@@ -334,9 +334,17 @@ let DATA = {
 
   portAlias:   {},
 
-  storageSwitchMap: {},
+  storageSwitchMap:    {},
 
-  switchStorageMap: {},
+  switchStorageMap:    {},
+
+  switchStorageDetail: {},
+
+  storageSwitchDetail: {},
+
+  hostSwitches:        {},
+
+  loaded: false,
 
 };
 
@@ -663,6 +671,8 @@ async function loadAll() {
     renderResults('');
 
     buildSchema();
+
+    DATA.loaded = true;
 
   } catch(err) {
 
@@ -1961,7 +1971,7 @@ function sgBuildClusters(){
   swList.forEach((sw,i)=>{
     const angle=(i/swN)*Math.PI*2-Math.PI/2;
     const rBase=Math.min(W,H)*0.33;
-    const hosts=DATA.switchStorageDetail[sw]
+    const hosts=(DATA.switchStorageDetail&&DATA.switchStorageDetail[sw])
       ?Object.values(DATA.switchStorageDetail[sw]).reduce((a,s)=>a+s.size,0):0;
     const n={
       id:'sw:'+sw, label:sw, type:'switch',
@@ -1979,7 +1989,7 @@ function sgBuildClusters(){
   storList.forEach((sk,i)=>{
     const parts=sk.split('|'), vendor=parts[0], kabinet=parts[1]||'';
     const angle=(i/storN)*Math.PI*2-Math.PI/2;
-    const hosts=DATA.storageSwitchDetail[sk]
+    const hosts=(DATA.storageSwitchDetail&&DATA.storageSwitchDetail[sk])
       ?Object.values(DATA.storageSwitchDetail[sk]).reduce((a,s)=>a+s.size,0):0;
     const n={
       id:'stor:'+sk, label:kabinet||vendor, type:'storage',
@@ -1997,7 +2007,7 @@ function sgBuildClusters(){
       if(!SG.nodeMap['stor:'+sk]) return;
       const key='sw:'+sw+'|stor:'+sk;
       if(seen.has(key)) return; seen.add(key);
-      const hc=DATA.switchStorageDetail[sw]?.[sk]?.size||0;
+      const hc=((DATA.switchStorageDetail||{})[sw]||{})[sk]?.size||0;
       SG.links.push({source:'sw:'+sw,target:'stor:'+sk,type:'storage',weight:Math.max(1,Math.log2(hc+1))});
     });
   });
@@ -2030,11 +2040,11 @@ function sgBuildExpand(swName){
   SG.nodes.push(swNode); SG.nodeMap[swNode.id]=swNode;
 
   /* Storage cabinets */
-  const storKeys=[...(DATA.switchStorageMap[swName]||new Set())];
+  const storKeys=[...((DATA.switchStorageMap||{})[swName]||new Set())];
   storKeys.forEach((sk,i)=>{
     const parts=sk.split('|'), vendor=parts[0], kabinet=parts[1]||'';
     const angle=(i/Math.max(storKeys.length,1))*Math.PI*2;
-    const hosts=DATA.switchStorageDetail[swName]?.[sk]?.size||0;
+    const hosts=((DATA.switchStorageDetail||{})[swName]||{})[sk]?.size||0;
     const sn={
       id:'stor:'+sk, label:kabinet||vendor, type:'storage',
       x:cx+Math.cos(angle)*160, y:cy+Math.sin(angle)*160,
@@ -2048,7 +2058,7 @@ function sgBuildExpand(swName){
   /* Host nodes — capped at 120 */
   const swNameUp=swName.toUpperCase();
   const allHosts=Object.keys(DATA.hosts).filter(name=>{
-    const hs=DATA.hostSwitches[name];
+    const hs=(DATA.hostSwitches||{})[name];
     if(!hs||![...hs].includes(swNameUp)) return false;
     if(search&&!name.toLowerCase().includes(search)) return false;
     if(fab!=='ALL'){
@@ -2432,7 +2442,19 @@ function sgRebuild(){
 /* ═══ INIT ═══ */
 function initSanGraf(){
   if(SG.built) return; SG.built=true;
-  sgResize(); sgBindEvents(); sgBuildClusters(); setTimeout(sgFit,150);
+  sgResize(); sgBindEvents();
+  /* Wait for CSV data to be ready before building */
+  function tryBuild(){
+    if(!DATA.loaded){
+      const hint=document.getElementById('sg-hint');
+      if(hint){hint.style.display='block'; hint.textContent='Veri yükleniyor, lütfen bekleyin...';}
+      setTimeout(tryBuild,300); return;
+    }
+    const hint=document.getElementById('sg-hint');
+    if(hint) hint.style.display='none';
+    sgBuildClusters(); setTimeout(sgFit,150);
+  }
+  tryBuild();
   document.getElementById('sg-fit-btn')?.addEventListener('click',sgFit);
   document.getElementById('sg-reset-btn')?.addEventListener('click',()=>{
     SG.mode='cluster'; SG.expandSw=null; SG.transform={x:0,y:0,scale:1};
@@ -2454,7 +2476,6 @@ function initSanGraf(){
   });
   window.addEventListener('resize',()=>{sgResize(); sgFit();});
   sgLoop();
-}
 }
 
 /* ════════════════════════════════════════════════════════════
